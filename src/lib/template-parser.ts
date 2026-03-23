@@ -304,28 +304,44 @@ export function cleanUpSections(text: string, format: ConfigFormat): string {
 
   const result: string[] = [];
 
-  // Check if a line is already a START or END marker
-  const isMarker = (line: string) => START_MARKER_RE.test(line) || END_MARKER_RE.test(line);
-
   for (let s = 0; s < sections.length; s++) {
     const section = sections[s];
     const sectionLines = section.template.split('\n');
 
-    // Inject START marker before the section (unless one already exists)
-    const firstLine = sectionLines[0];
-    if (!isMarker(firstLine)) {
-      result.push(`!##### ${section.name} - START #####`);
-    }
+    // Filter out legacy divider lines and existing START/END markers from the section content
+    const contentLines = sectionLines.filter((line) => {
+      // Remove START/END markers (we'll add fresh ones)
+      if (START_MARKER_RE.test(line) || END_MARKER_RE.test(line)) return false;
+      // Remove legacy inline dividers: !########## SECTION NAME ##########
+      if (/^[!]?\s*#{3,}\s+.+?\s+#{3,}\s*$/.test(line)) return false;
+      // Remove solid hash lines: !##############################
+      if (/^[!]?\s*#{10,}\s*$/.test(line)) return false;
+      // Remove standalone section name lines that follow solid hash lines: ! SECTION NAME
+      // These are tricky — only remove if they match a known section name
+      return true;
+    });
 
-    // Add all section lines
-    for (const line of sectionLines) {
+    // Trim leading/trailing empty lines from content
+    let start = 0;
+    while (start < contentLines.length && contentLines[start].trim() === '') start++;
+    let end = contentLines.length - 1;
+    while (end > start && contentLines[end].trim() === '') end--;
+    const trimmedContent = contentLines.slice(start, end + 1);
+
+    // Add START marker
+    result.push(`!##### ${section.name} - START #####`);
+
+    // Add the cleaned content
+    for (const line of trimmedContent) {
       result.push(line);
     }
 
-    // Inject END marker after the section (unless one already exists)
-    const lastLine = sectionLines[sectionLines.length - 1];
-    if (!isMarker(lastLine)) {
-      result.push(`!##### ${section.name} - END #####`);
+    // Add END marker
+    result.push(`!##### ${section.name} - END #####`);
+
+    // Add blank line between sections (except after last)
+    if (s < sections.length - 1) {
+      result.push('');
     }
   }
 

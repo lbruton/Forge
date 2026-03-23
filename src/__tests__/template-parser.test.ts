@@ -338,9 +338,12 @@ vtp domain CORP`;
     expect(result).toContain('!##### ISE Config - END #####');
     expect(result).toContain('!##### VTP Config - START #####');
     expect(result).toContain('!##### VTP Config - END #####');
-    // Original dividers preserved
-    expect(result).toContain('!########## ISE Config ##########');
-    expect(result).toContain('!########## VTP Config ##########');
+    // Original legacy dividers are REPLACED (not preserved) to avoid duplication
+    expect(result).not.toContain('!########## ISE Config ##########');
+    expect(result).not.toContain('!########## VTP Config ##########');
+    // Content is preserved
+    expect(result).toContain('aaa authentication dot1x default group radius');
+    expect(result).toContain('vtp domain CORP');
   });
 
   it('applies duplicate suffixes in output', () => {
