@@ -1,0 +1,163 @@
+import { useState, useMemo } from 'react';
+import { ArrowLeft, ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
+import { useForgeStore } from '../store/index.ts';
+import { ConfigPreview } from './ConfigPreview.tsx';
+import { CopyButton, DownloadButton } from './CopyButton.tsx';
+
+interface GeneratedConfigViewerProps {
+  configId: string;
+  onBack: () => void;
+}
+
+export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewerProps) {
+  const generatedConfigs = useForgeStore((s) => s.generatedConfigs);
+  const findVariant = useForgeStore((s) => s.findVariant);
+  const getConfigFormat = useForgeStore((s) => s.getConfigFormat);
+  const deleteGeneratedConfig = useForgeStore((s) => s.deleteGeneratedConfig);
+
+  const [variablesExpanded, setVariablesExpanded] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const config = generatedConfigs[configId];
+
+  // Resolve source variant info
+  const sourceInfo = useMemo(() => {
+    if (!config) return null;
+    return findVariant(config.sourceVariantId);
+  }, [config, findVariant]);
+
+  const configFormat = config ? getConfigFormat(config.sourceVariantId) : 'cli';
+
+  if (!config) {
+    return (
+      <div className="flex items-center justify-center h-full bg-forge-obsidian text-slate-500 text-sm">
+        Generated config not found
+      </div>
+    );
+  }
+
+  const formattedDate = new Date(config.createdAt).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const variantLabel = sourceInfo
+    ? `${sourceInfo.vendor.name} / ${sourceInfo.model.name} / ${sourceInfo.variant.name}`
+    : 'Source variant unavailable';
+
+  const variableEntries = Object.entries(config.variableValues);
+
+  const handleDelete = () => {
+    deleteGeneratedConfig(config.id);
+    onBack();
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-forge-obsidian">
+      {/* Header */}
+      <div className="shrink-0 px-4 py-3 border-b border-forge-graphite bg-forge-charcoal/30">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
+              text-slate-400 hover:text-slate-200 bg-forge-graphite/50 hover:bg-forge-graphite
+              border border-forge-steel/50 rounded transition-colors duration-150"
+          >
+            <ArrowLeft size={12} />
+            Back
+          </button>
+
+          <div className="flex-1 min-w-0">
+            <h2 className="text-base font-semibold text-slate-200 truncate">{config.name}</h2>
+            <p className="text-xs text-slate-500 truncate mt-0.5">
+              {formattedDate} &middot; {variantLabel}
+            </p>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-2">
+            <CopyButton text={config.fullConfig} label="Copy All" />
+            <DownloadButton
+              text={config.fullConfig}
+              filename={`${config.name}.txt`}
+              label="Download"
+            />
+            {!confirmDelete ? (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium
+                  text-red-400 hover:text-red-300 bg-forge-graphite/50 hover:bg-red-500/10
+                  border border-forge-steel/50 hover:border-red-500/30 rounded transition-colors duration-150"
+                title="Delete this saved config"
+              >
+                <Trash2 size={12} />
+                <span>Delete</span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={handleDelete}
+                  className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-semibold
+                    text-red-200 bg-red-600 hover:bg-red-500
+                    border border-red-500 rounded transition-colors duration-150"
+                >
+                  Confirm
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium
+                    text-slate-400 hover:text-slate-200 bg-forge-graphite/50 hover:bg-forge-graphite
+                    border border-forge-steel/50 rounded transition-colors duration-150"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Notes */}
+        {config.notes && (
+          <p className="text-xs text-slate-500 mt-2 italic">{config.notes}</p>
+        )}
+      </div>
+
+      {/* Variable values collapsible */}
+      {variableEntries.length > 0 && (
+        <div className="shrink-0 border-b border-forge-graphite">
+          <button
+            onClick={() => setVariablesExpanded(!variablesExpanded)}
+            className="w-full flex items-center gap-2 px-4 py-2 text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors"
+          >
+            {variablesExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            Variable Values ({variableEntries.length})
+          </button>
+          {variablesExpanded && (
+            <div className="px-4 pb-3">
+              <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
+                {variableEntries.map(([key, value]) => (
+                  <div key={key} className="contents">
+                    <span className="text-slate-500 font-mono">${key}</span>
+                    <span className="text-slate-300 font-mono truncate">{value || <span className="text-slate-600 italic">empty</span>}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Config preview */}
+      <div className="flex-1 min-h-0">
+        <ConfigPreview
+          sections={config.sections}
+          activeSection={null}
+          configFormat={configFormat}
+        />
+      </div>
+    </div>
+  );
+}

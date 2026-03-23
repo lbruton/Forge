@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseVariables, parseSections } from '../lib/template-parser.ts';
+import { parseVariables, parseSections, cleanUpSections } from '../lib/template-parser.ts';
 
 // Inline seed config for tests (representative Cisco IOS-style template)
 const seedConfig = `!########## GENERIC IOS CONFIG ##########
@@ -240,5 +240,150 @@ interfaces:
     const sections = parseSections(seedConfig, 'cli');
     const names = sections.map((s) => s.name);
     expect(names).toContain('Devices Sensor');
+  });
+
+  it('detects START/END markers correctly', () => {
+    const config = `!##### AAA Config - START #####
+aaa authentication dot1x default group radius
+aaa accounting dot1x default start-stop group radius
+!##### AAA Config - END #####
+!##### NAC Config - START #####
+dot1x system-auth-control
+!##### NAC Config - END #####`;
+    const sections = parseSections(config, 'cli');
+    expect(sections).toHaveLength(2);
+    expect(sections[0].name).toBe('AAA Config');
+    expect(sections[1].name).toBe('NAC Config');
+    expect(sections[0].template).toContain('aaa authentication');
+    expect(sections[1].template).toContain('dot1x system-auth-control');
+  });
+
+  it('mixed START/END and legacy dividers work together', () => {
+    const config = `!##### AAA Config - START #####
+aaa authentication dot1x default group radius
+!##### AAA Config - END #####
+!########## GENERIC IOS CONFIG ##########
+hostname $hostname
+service timestamps debug datetime msec`;
+    const sections = parseSections(config, 'cli');
+    expect(sections).toHaveLength(2);
+    expect(sections[0].name).toBe('AAA Config');
+    expect(sections[1].name).toBe('GENERIC IOS CONFIG');
+    // Order preserved: AAA comes first (line 0), GENERIC comes second
+    expect(sections[0].order).toBe(0);
+    expect(sections[1].order).toBe(1);
+  });
+
+  it('duplicate section names get "(2)", "(3)" suffixes', () => {
+    const config = `!########## ISE Config ##########
+aaa authentication dot1x default group radius
+!########## ISE Config ##########
+dot1x system-auth-control
+!########## ISE Config ##########
+radius server ISE1`;
+    const sections = parseSections(config, 'cli');
+    expect(sections).toHaveLength(3);
+    expect(sections[0].name).toBe('ISE Config');
+    expect(sections[1].name).toBe('ISE Config (2)');
+    expect(sections[2].name).toBe('ISE Config (3)');
+  });
+
+  it('duplicate names preserve order', () => {
+    const config = `!########## AAA ##########
+line 1
+!########## VTP ##########
+line 2
+!########## AAA ##########
+line 3`;
+    const sections = parseSections(config, 'cli');
+    expect(sections[0].name).toBe('AAA');
+    expect(sections[1].name).toBe('VTP');
+    expect(sections[2].name).toBe('AAA (2)');
+    expect(sections[0].order).toBe(0);
+    expect(sections[1].order).toBe(1);
+    expect(sections[2].order).toBe(2);
+  });
+
+  it('START/END markers are case-insensitive', () => {
+    const config = `!##### My Section - start #####
+some config
+!##### My Section - end #####`;
+    const sections = parseSections(config, 'cli');
+    expect(sections).toHaveLength(1);
+    expect(sections[0].name).toBe('My Section');
+  });
+
+  it('START/END section includes content between markers', () => {
+    const config = `!##### Routing - START #####
+ip route 0.0.0.0 0.0.0.0 10.0.0.1
+ip route 192.168.1.0 255.255.255.0 10.0.0.2
+!##### Routing - END #####`;
+    const sections = parseSections(config, 'cli');
+    expect(sections).toHaveLength(1);
+    expect(sections[0].template).toContain('ip route 0.0.0.0');
+    expect(sections[0].template).toContain('ip route 192.168.1.0');
+  });
+});
+
+// ── cleanUpSections ─────────────────────────────────────────────
+
+describe('cleanUpSections', () => {
+  it('injects START/END markers around legacy divider sections', () => {
+    const config = `!########## ISE Config ##########
+aaa authentication dot1x default group radius
+!########## VTP Config ##########
+vtp domain CORP`;
+    const result = cleanUpSections(config, 'cli');
+    expect(result).toContain('!##### ISE Config - START #####');
+    expect(result).toContain('!##### ISE Config - END #####');
+    expect(result).toContain('!##### VTP Config - START #####');
+    expect(result).toContain('!##### VTP Config - END #####');
+    // Original dividers preserved
+    expect(result).toContain('!########## ISE Config ##########');
+    expect(result).toContain('!########## VTP Config ##########');
+  });
+
+  it('applies duplicate suffixes in output', () => {
+    const config = `!########## ISE Config ##########
+section 1
+!########## ISE Config ##########
+section 2`;
+    const result = cleanUpSections(config, 'cli');
+    expect(result).toContain('!##### ISE Config - START #####');
+    expect(result).toContain('!##### ISE Config - END #####');
+    expect(result).toContain('!##### ISE Config (2) - START #####');
+    expect(result).toContain('!##### ISE Config (2) - END #####');
+  });
+
+  it('does not double-inject markers on text that already has them', () => {
+    const config = `!##### AAA Config - START #####
+aaa new-model
+!##### AAA Config - END #####`;
+    const result = cleanUpSections(config, 'cli');
+    // Count occurrences of START marker
+    const startCount = (result.match(/AAA Config - START/gi) || []).length;
+    expect(startCount).toBe(1);
+  });
+
+  it('handles empty input', () => {
+    expect(cleanUpSections('', 'cli')).toBe('');
+  });
+
+  it('wraps single section (no dividers) with START/END', () => {
+    const config = `hostname Router1
+interface vlan1`;
+    const result = cleanUpSections(config, 'cli');
+    expect(result).toContain('!##### Full Config - START #####');
+    expect(result).toContain('!##### Full Config - END #####');
+    expect(result).toContain('hostname Router1');
+  });
+
+  it('preserves all original config lines', () => {
+    const config = `!########## ISE Config ##########
+aaa authentication dot1x default group radius
+aaa accounting dot1x default start-stop group radius`;
+    const result = cleanUpSections(config, 'cli');
+    expect(result).toContain('aaa authentication dot1x default group radius');
+    expect(result).toContain('aaa accounting dot1x default start-stop group radius');
   });
 });

@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { Save, FileText, Layers, AlertCircle } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { Save, FileText, Layers, GripVertical, Sparkles } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
-import { parseVariables, parseSections } from '../lib/template-parser.ts';
+import { parseVariables, parseSections, cleanUpSections } from '../lib/template-parser.ts';
 import { VariableDetectionPanel } from './VariableDetectionPanel.tsx';
 import type { VariableDefinition, TemplateSection, ConfigFormat } from '../types/index.ts';
 
@@ -29,6 +29,15 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   );
   const [variableSectionMap, setVariableSectionMap] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
+  const [cleanUpToast, setCleanUpToast] = useState(false);
+
+  // Drag state for sections
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  // Refs for textarea/overlay scroll sync
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -124,12 +133,85 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     setTimeout(() => setSaved(false), 2500);
   };
 
-  // Count variable occurrences for the summary
-  const countOccurrences = (text: string, varName: string): number => {
-    const escaped = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`\\$\\{?${escaped}\\}?`, 'g');
-    return (text.match(regex) || []).length;
-  };
+  // Clean up sections handler
+  const handleCleanUp = useCallback(() => {
+    const cleaned = cleanUpSections(rawText, configFormat);
+    setRawText(cleaned);
+    setSaved(false);
+
+    // Re-parse immediately
+    const parsedVars = parseVariables(cleaned);
+    const parsedSections = parseSections(cleaned, configFormat);
+    setVariables((prev) => {
+      const prevByName = new Map(prev.map((v) => [v.name, v]));
+      return parsedVars.map((pv) => {
+        const existing = prevByName.get(pv.name);
+        if (existing) {
+          return { ...pv, label: existing.label, type: existing.type, description: existing.description, required: existing.required, defaultValue: existing.defaultValue, options: existing.options };
+        }
+        return pv;
+      });
+    });
+    setSections(parsedSections);
+    setVariableSectionMap(buildVariableSectionMap(cleaned, parsedSections));
+
+    // Show toast
+    setCleanUpToast(true);
+    setTimeout(() => setCleanUpToast(false), 3000);
+  }, [rawText, configFormat, buildVariableSectionMap]);
+
+  // Drag-to-reorder handlers for sections
+  const handleDragStart = useCallback((index: number) => {
+    setDragIndex(index);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
+      setSections((prev) => {
+        const next = [...prev];
+        const [moved] = next.splice(dragIndex, 1);
+        next.splice(dragOverIndex, 0, moved);
+        // Update order fields
+        return next.map((s, i) => ({ ...s, order: i }));
+      });
+    }
+    setDragIndex(null);
+    setDragOverIndex(null);
+  }, [dragIndex, dragOverIndex]);
+
+  // Sync scroll between textarea and overlay
+  const handleTextareaScroll = useCallback(() => {
+    if (textareaRef.current && overlayRef.current) {
+      overlayRef.current.scrollTop = textareaRef.current.scrollTop;
+      overlayRef.current.scrollLeft = textareaRef.current.scrollLeft;
+    }
+  }, []);
+
+  // Build highlighted overlay text
+  const highlightedText = useMemo(() => {
+    if (!rawText) return null;
+    // Split by variable patterns, keeping delimiters
+    const parts = rawText.split(/((?<=\s|^)\$\{[A-Za-z_]\w*\}|(?<=\s|^)\$[A-Za-z_]\w*)/gm);
+    const varPattern = /^\$\{?[A-Za-z_]\w*\}?$/;
+    return parts.map((part, i) => {
+      if (varPattern.test(part)) {
+        return (
+          <span key={i} className="bg-amber-500/20 text-transparent rounded-sm border-b border-amber-500/40">
+            {part}
+          </span>
+        );
+      }
+      return <span key={i} className="text-transparent">{part}</span>;
+    });
+  }, [rawText]);
+
+  // Determine if sections are real (not just "Full Config")
+  const hasRealSections = sections.length > 0 && sections[0].name !== 'Full Config';
 
   return (
     <div className="flex flex-col h-full">
@@ -164,6 +246,13 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
         </button>
       </div>
 
+      {/* Clean-up toast notification */}
+      {cleanUpToast && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-md bg-green-600/20 border border-green-600/30 text-green-400 text-[13px] font-medium shadow-lg animate-in fade-in slide-in-from-top-2 duration-300">
+          Sections cleaned up — START/END markers added
+        </div>
+      )}
+
       {/* Body: textarea + side panels */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: textarea */}
@@ -172,112 +261,158 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             Paste Config Template
           </div>
           <div className="flex-1 relative">
+            {/* Highlight overlay */}
+            <div
+              ref={overlayRef}
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full px-5 py-4 font-mono text-[13px] leading-relaxed whitespace-pre-wrap break-words overflow-hidden pointer-events-none z-10"
+            >
+              {highlightedText}
+            </div>
             <textarea
+              ref={textareaRef}
               value={rawText}
               onChange={(e) => handleTextChange(e.target.value)}
+              onScroll={handleTextareaScroll}
               placeholder={`Paste your config template here...\n\nUse $variable_name or \${variable_name} for template variables.\n\nExample:\nhostname $hostname\ninterface vlan95\n ip address $vlan_95_ip_address 255.255.255.0`}
               spellCheck={false}
-              className="absolute inset-0 w-full h-full px-5 py-4 bg-forge-terminal text-slate-200 font-mono text-[13px] leading-relaxed resize-none outline-none placeholder:text-slate-600 border-none"
+              className="absolute inset-0 w-full h-full px-5 py-4 bg-forge-terminal text-slate-200 font-mono text-[13px] leading-relaxed resize-none outline-none placeholder:text-slate-600 border-none relative z-20"
+              style={{ caretColor: '#e2e8f0', background: 'rgba(10, 10, 15, 0.85)' }}
             />
           </div>
-
-          {/* Variable summary below textarea */}
-          {variables.length > 0 && (
-            <div className="px-5 py-3 bg-forge-charcoal border-t border-forge-graphite shrink-0">
-              <div className="text-[11px] font-semibold tracking-wider uppercase text-slate-500 mb-2">
-                Detected in template
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {variables.map((v) => {
-                  const count = countOccurrences(rawText, v.name);
-                  return (
-                    <span
-                      key={v.name}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded bg-forge-obsidian border border-forge-graphite font-mono text-[12px]"
-                    >
-                      <span className="text-forge-amber-dark">$</span>
-                      <span className="text-forge-amber font-medium">{v.name}</span>
-                      <span className="text-slate-600 text-[10px] ml-0.5">{count}x</span>
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Sections panel */}
-          {sections.length > 0 && sections[0].name !== 'Full Config' && (
-            <div className="px-5 py-3 bg-forge-charcoal border-t border-forge-graphite shrink-0">
-              <div className="flex items-center gap-2 mb-2">
-                <Layers size={12} className="text-slate-500" />
-                <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-500">
-                  Detected Sections
-                </span>
-                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold">
-                  {sections.length}
-                </span>
-              </div>
-              <div className="space-y-1">
-                {sections.map((section, i) => {
-                  const lineStart = rawText
-                    .split('\n')
-                    .findIndex((line) => section.template.split('\n')[0] === line);
-                  const lineEnd = lineStart + section.template.split('\n').length - 1;
-                  return (
-                    <div
-                      key={section.id}
-                      className="flex items-center gap-2 px-2.5 py-1.5 rounded bg-forge-obsidian border border-forge-graphite text-[12px]"
-                    >
-                      <FileText size={12} className="text-slate-500 shrink-0" />
-                      <span className="text-slate-300 font-medium truncate flex-1">
-                        {section.name}
-                      </span>
-                      <span className="text-slate-600 text-[11px] shrink-0">
-                        lines {lineStart > -1 ? lineStart + 1 : (i * 10) + 1}-
-                        {lineStart > -1 ? lineEnd + 1 : (i + 1) * 10}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              {/* Guidance text */}
-              <div className="mt-2.5 flex items-start gap-1.5 text-[11px] text-slate-600 leading-relaxed">
-                <AlertCircle size={12} className="shrink-0 mt-0.5" />
-                <span>
-                  Sections are auto-detected from divider patterns. Supported formats:{' '}
-                  <code className="text-slate-500">!########## SECTION NAME ##########</code>,{' '}
-                  <code className="text-slate-500">#### SECTION NAME ####</code>,{' '}
-                  <code className="text-slate-500">{'<!-- SECTION NAME -->'}</code> (XML),{' '}
-                  <code className="text-slate-500"># === SECTION NAME ===</code> (YAML)
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Guidance when no sections detected */}
-          {(sections.length === 0 || (sections.length === 1 && sections[0].name === 'Full Config')) && rawText.trim() && (
-            <div className="px-5 py-3 bg-forge-charcoal border-t border-forge-graphite shrink-0">
-              <div className="flex items-start gap-1.5 text-[11px] text-slate-600 leading-relaxed">
-                <AlertCircle size={12} className="shrink-0 mt-0.5" />
-                <span>
-                  No section dividers detected. To split into sections, add divider comments:{' '}
-                  <code className="text-slate-500">!########## SECTION NAME ##########</code>,{' '}
-                  <code className="text-slate-500">{'<!-- SECTION NAME -->'}</code> (XML), or{' '}
-                  <code className="text-slate-500"># === SECTION NAME ===</code> (YAML)
-                </span>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Right: variable detection panel */}
-        <div className="w-80 min-w-[320px] bg-forge-charcoal shrink-0">
-          <VariableDetectionPanel
-            variables={variables}
-            onChange={setVariables}
-            sectionNames={sections.map((s) => s.name)}
-            variableSectionMap={variableSectionMap}
-          />
+        {/* Right: sections panel + variable detection panel */}
+        <div className="w-80 min-w-[320px] bg-forge-charcoal shrink-0 flex flex-col overflow-hidden">
+          {/* Sections panel — above variables */}
+          <div className="shrink-0 border-b border-forge-graphite">
+            {hasRealSections && (
+              <div className="px-5 py-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Layers size={12} className="text-slate-500" />
+                  <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-500">
+                    Detected Sections
+                  </span>
+                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold">
+                    {sections.length}
+                  </span>
+                  <div className="flex-1" />
+                  <button
+                    onClick={handleCleanUp}
+                    className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-slate-400 hover:text-forge-amber bg-forge-obsidian border border-forge-graphite hover:border-forge-amber/30 transition-colors"
+                    title="Auto-add START/END markers to sections"
+                  >
+                    <Sparkles size={11} />
+                    Clean Up
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  {sections.map((section, i) => {
+                    const lineStart = rawText
+                      .split('\n')
+                      .findIndex((line) => section.template.split('\n')[0] === line);
+                    const lineEnd = lineStart + section.template.split('\n').length - 1;
+                    const isDragging = dragIndex === i;
+                    const isDragOver = dragOverIndex === i;
+                    return (
+                      <div
+                        key={section.id}
+                        draggable
+                        onDragStart={() => handleDragStart(i)}
+                        onDragOver={(e) => handleDragOver(e, i)}
+                        onDragEnd={handleDragEnd}
+                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded bg-forge-obsidian border text-[12px] cursor-grab active:cursor-grabbing transition-all ${
+                          isDragging
+                            ? 'opacity-40 border-forge-amber/40'
+                            : isDragOver
+                              ? 'border-forge-amber/60 bg-forge-amber/5'
+                              : 'border-forge-graphite'
+                        }`}
+                      >
+                        <GripVertical size={12} className="text-slate-600 shrink-0" />
+                        <FileText size={12} className="text-slate-500 shrink-0" />
+                        <span className="text-slate-300 font-medium truncate flex-1">
+                          {section.name}
+                        </span>
+                        <span className="text-slate-600 text-[11px] shrink-0">
+                          lines {lineStart > -1 ? lineStart + 1 : (i * 10) + 1}-
+                          {lineStart > -1 ? lineEnd + 1 : (i + 1) * 10}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Guidance text */}
+                <div className="mt-3 p-2.5 rounded bg-forge-obsidian border border-forge-graphite text-[11px] text-slate-500 leading-relaxed font-mono space-y-1.5">
+                  <div className="text-slate-400 font-sans font-semibold text-[10px] uppercase tracking-wider mb-1.5">Section Format</div>
+                  <div className="pl-2 text-slate-500">
+                    !##### SECTION NAME - START #####<br />
+                    <span className="text-slate-600">{'  '}... config lines ...</span><br />
+                    !##### SECTION NAME - END #####
+                  </div>
+                  <div className="text-slate-400 font-sans font-semibold text-[10px] uppercase tracking-wider mt-2 mb-1.5">Variable Format</div>
+                  <div className="pl-2 text-slate-500">
+                    $variable_name <span className="text-slate-600">or</span> {'${variable_name}'}
+                  </div>
+                  <div className="mt-2 text-slate-600 font-sans text-[11px]">
+                    <span className="text-slate-500">Tip:</span> Click "Clean Up" to auto-add START/END markers to your existing sections.
+                  </div>
+                  <div className="text-slate-600 font-sans text-[11px]">
+                    Legacy DNAC dividers (<code className="text-slate-500">!########## NAME ##########</code>) are also supported.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Clean Up button when no sections detected but text exists */}
+            {!hasRealSections && rawText.trim() && (
+              <div className="px-5 py-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Layers size={12} className="text-slate-500" />
+                  <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-500">
+                    Sections
+                  </span>
+                  <div className="flex-1" />
+                  <button
+                    onClick={handleCleanUp}
+                    className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-slate-400 hover:text-forge-amber bg-forge-obsidian border border-forge-graphite hover:border-forge-amber/30 transition-colors"
+                    title="Auto-add START/END markers"
+                  >
+                    <Sparkles size={11} />
+                    Clean Up
+                  </button>
+                </div>
+                <div className="p-2.5 rounded bg-forge-obsidian border border-forge-graphite text-[11px] text-slate-500 leading-relaxed font-mono space-y-1.5">
+                  <div className="text-slate-400 font-sans font-semibold text-[10px] uppercase tracking-wider mb-1.5">Section Format</div>
+                  <div className="pl-2 text-slate-500">
+                    !##### SECTION NAME - START #####<br />
+                    <span className="text-slate-600">{'  '}... config lines ...</span><br />
+                    !##### SECTION NAME - END #####
+                  </div>
+                  <div className="text-slate-400 font-sans font-semibold text-[10px] uppercase tracking-wider mt-2 mb-1.5">Variable Format</div>
+                  <div className="pl-2 text-slate-500">
+                    $variable_name <span className="text-slate-600">or</span> {'${variable_name}'}
+                  </div>
+                  <div className="mt-2 text-slate-600 font-sans text-[11px]">
+                    <span className="text-slate-500">Tip:</span> Click "Clean Up" to auto-add START/END markers to your existing sections.
+                  </div>
+                  <div className="text-slate-600 font-sans text-[11px]">
+                    Legacy DNAC dividers (<code className="text-slate-500">!########## NAME ##########</code>) are also supported.
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Variable detection panel — below sections */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <VariableDetectionPanel
+              variables={variables}
+              onChange={setVariables}
+              sectionNames={sections.map((s) => s.name)}
+              variableSectionMap={variableSectionMap}
+            />
+          </div>
         </div>
       </div>
     </div>

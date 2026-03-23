@@ -4,6 +4,7 @@ import { storage } from '../lib/storage-service.ts';
 import type {
   ConfigFormat,
   ForgeTree,
+  GeneratedConfig,
   Model,
   Preferences,
   Template,
@@ -58,6 +59,7 @@ interface ForgeStore {
   tree: ForgeTree;
   templates: Record<string, Template>;
   variableValues: Record<string, VariableValues>;
+  generatedConfigs: Record<string, GeneratedConfig>;
   preferences: Preferences;
 
   // Selection
@@ -79,6 +81,11 @@ interface ForgeStore {
   // Variable values
   setVariableValue: (variantId: string, variableName: string, value: string) => void;
   getVariableValues: (variantId: string) => Record<string, string>;
+
+  // Generated configs
+  saveGeneratedConfig: (config: GeneratedConfig) => void;
+  deleteGeneratedConfig: (id: string) => void;
+  getGeneratedConfigs: (modelId: string) => GeneratedConfig[];
 
   // Selection
   setSelectedVariant: (variantId: string | null) => void;
@@ -107,6 +114,7 @@ export const useForgeStore = create<ForgeStore>()(
       tree: emptyTree,
       templates: {},
       variableValues: {},
+      generatedConfigs: {},
       preferences: defaultPreferences,
       selectedVariantId: null,
 
@@ -373,6 +381,30 @@ export const useForgeStore = create<ForgeStore>()(
         return get().variableValues[variantId]?.values ?? {};
       },
 
+      // --- Generated configs ---
+
+      saveGeneratedConfig: (config) => {
+        storage.setItem(`generated_${config.id}`, config);
+        set((state) => ({
+          generatedConfigs: { ...state.generatedConfigs, [config.id]: config },
+        }));
+      },
+
+      deleteGeneratedConfig: (id) => {
+        storage.removeItem(`generated_${id}`);
+        set((state) => {
+          const generatedConfigs = { ...state.generatedConfigs };
+          delete generatedConfigs[id];
+          return { generatedConfigs };
+        });
+      },
+
+      getGeneratedConfigs: (modelId) => {
+        return Object.values(get().generatedConfigs)
+          .filter((c) => c.modelId === modelId)
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      },
+
       // --- Selection ---
 
       setSelectedVariant: (variantId) => {
@@ -414,7 +446,19 @@ export const useForgeStore = create<ForgeStore>()(
         const templates = storage.getItem<Record<string, Template>>('templates', {});
         const variableValues = storage.getItem<Record<string, VariableValues>>('variableValues', {});
         const preferences = storage.getItem<Preferences>('preferences', defaultPreferences);
-        set({ tree, templates, variableValues, preferences });
+
+        // Load individually-stored generated configs
+        const generatedConfigs: Record<string, GeneratedConfig> = {};
+        for (const key of storage.getAllKeys()) {
+          if (key.startsWith('generated_')) {
+            const config = storage.getItem<GeneratedConfig | null>(key, null);
+            if (config) {
+              generatedConfigs[config.id] = config;
+            }
+          }
+        }
+
+        set({ tree, templates, variableValues, generatedConfigs, preferences });
       },
 
       resetAll: () => {
@@ -423,6 +467,7 @@ export const useForgeStore = create<ForgeStore>()(
           tree: emptyTree,
           templates: {},
           variableValues: {},
+          generatedConfigs: {},
           preferences: defaultPreferences,
           selectedVariantId: null,
         });
@@ -433,6 +478,7 @@ export const useForgeStore = create<ForgeStore>()(
           const tree = structuredClone(state.tree);
           const templates = { ...state.templates };
           const variableValues = { ...state.variableValues };
+          const generatedConfigs = { ...state.generatedConfigs };
 
           // Merge templates (new only, don't overwrite existing)
           for (const [id, tmpl] of Object.entries(data.templates)) {
@@ -448,6 +494,16 @@ export const useForgeStore = create<ForgeStore>()(
             }
           }
 
+          // Merge generated configs (new only)
+          if (data.generatedConfigs) {
+            for (const [id, config] of Object.entries(data.generatedConfigs)) {
+              if (!generatedConfigs[id]) {
+                generatedConfigs[id] = config;
+                storage.setItem(`generated_${id}`, config);
+              }
+            }
+          }
+
           // Merge views from the export
           if (data.views) {
             for (const importedView of data.views) {
@@ -460,7 +516,7 @@ export const useForgeStore = create<ForgeStore>()(
             }
           }
 
-          return { tree, templates, variableValues };
+          return { tree, templates, variableValues, generatedConfigs };
         });
       },
 
@@ -471,6 +527,7 @@ export const useForgeStore = create<ForgeStore>()(
           views: state.tree.views,
           templates: state.templates,
           variableValues: state.variableValues,
+          generatedConfigs: state.generatedConfigs,
         };
       },
 

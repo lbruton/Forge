@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { generateConfig } from '../lib/substitution-engine.ts';
 import { VariableForm } from './VariableForm.tsx';
 import { ConfigPreview } from './ConfigPreview.tsx';
 import { SectionTabs } from './SectionTabs.tsx';
-import type { GeneratedConfig } from '../types/index.ts';
+import { SaveGeneratedModal } from './SaveGeneratedModal.tsx';
+import type { GeneratedConfigOutput } from '../types/index.ts';
 
 interface ConfigGeneratorProps {
   onEditTemplate?: () => void;
@@ -20,6 +21,7 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
 
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [debouncedValues, setDebouncedValues] = useState<Record<string, string>>({});
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const found = selectedVariantId ? findVariant(selectedVariantId) : null;
@@ -53,7 +55,7 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
   }, [mergedValues]);
 
   // Generate config from debounced values
-  const generated: GeneratedConfig = useMemo(() => {
+  const generated: GeneratedConfigOutput = useMemo(() => {
     if (!template) return { fullConfig: '', sections: [] };
     return generateConfig(template.sections, debouncedValues);
   }, [template, debouncedValues]);
@@ -83,6 +85,16 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
             {found.vendor.name} &middot; {configFormat.toUpperCase()} format
           </p>
         </div>
+
+        <button
+          onClick={() => setSaveModalOpen(true)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
+            text-forge-amber hover:text-forge-amber-bright bg-transparent hover:bg-forge-amber/10
+            border border-forge-amber/50 rounded transition-colors duration-150"
+        >
+          <Save size={12} />
+          Save to Generated
+        </button>
 
         {onEditTemplate && (
           <button
@@ -124,6 +136,15 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
           </div>
         </div>
       </div>
+      {/* Save Generated modal */}
+      <SaveGeneratedModal
+        isOpen={saveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        variantId={selectedVariantId}
+        fullConfig={generated.fullConfig}
+        sections={generated.sections}
+        variableValues={debouncedValues}
+      />
     </div>
   );
 }

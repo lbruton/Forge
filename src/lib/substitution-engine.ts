@@ -1,4 +1,4 @@
-import type { TemplateSection, GeneratedConfig, GeneratedSection } from '../types/index.ts';
+import type { TemplateSection, GeneratedConfigOutput, GeneratedSection } from '../types/index.ts';
 
 /**
  * Replace $variable and ${variable} placeholders in text with values.
@@ -31,7 +31,7 @@ function substituteVariables(text: string, values: Record<string, string>): stri
 export function generateConfig(
   sections: TemplateSection[],
   values: Record<string, string>,
-): GeneratedConfig {
+): GeneratedConfigOutput {
   if (sections.length === 0) {
     return { fullConfig: '', sections: [] };
   }

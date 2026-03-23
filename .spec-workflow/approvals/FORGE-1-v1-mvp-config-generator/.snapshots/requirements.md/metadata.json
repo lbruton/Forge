@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-1-v1-mvp-config-generator/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-23T20:34:19.792Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774298059789_ggi0f2lpg",
+      "approvalTitle": "Requirements: V1 MVP Config Generator"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-23T20:40:05.906Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774298350949_i8y03kxg1",
+      "approvalTitle": "Requirements: V1 MVP Config Generator"
+    }
+  ]
+}

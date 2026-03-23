@@ -1,0 +1,17 @@
+{
+  "name": "Forge",
+  "short_name": "Forge",
+  "description": "Network config template generator",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F172A",
+  "theme_color": "#F59E0B",
+  "icons": [
+    {
+      "src": "/forge-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

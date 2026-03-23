@@ -1,4 +1,4 @@
-import type { VariableDefinition, VariableType, TemplateSection } from '../types/index.ts';
+import type { ConfigFormat, VariableDefinition, VariableType, TemplateSection } from '../types/index.ts';
 
 const UPPERCASE_SEGMENTS = new Set(['vlan', 'ip', 'snmp', 'vtp', 'id', 'cdp', 'ssh', 'ntp', 'aaa', 'acl', 'dns', 'dhcp', 'nac', 'ise']);
 
@@ -80,10 +80,38 @@ export function parseVariables(text: string): VariableDefinition[] {
   return result;
 }
 
+// START/END marker patterns
+const START_MARKER_RE = /^!#{3,}\s*(.*?)\s*-\s*START\s*#{3,}$/i;
+const END_MARKER_RE = /^!#{3,}\s*(.*?)\s*-\s*END\s*#{3,}$/i;
+
+interface Divider {
+  lineIndex: number;
+  name: string;
+  pattern: string;    // the divider line(s)
+  spanLines: number;  // how many lines the divider occupies
+  endLineIndex?: number; // line index of matching END marker (START/END mode)
+}
+
+/**
+ * Deduplicate section names by appending " (2)", " (3)", etc. for repeats.
+ * Order is always preserved.
+ */
+function deduplicateNames(dividers: Divider[]): void {
+  const counts = new Map<string, number>();
+  for (const d of dividers) {
+    const count = (counts.get(d.name) ?? 0) + 1;
+    counts.set(d.name, count);
+    if (count > 1) {
+      d.name = `${d.name} (${count})`;
+    }
+  }
+}
+
 /**
  * Detect section boundaries from divider comment patterns.
+ * Supports START/END markers, legacy DNAC dividers, and mixed usage.
  */
-export function parseSections(text: string, format: 'cli' | 'xml' | 'json' | 'yaml'): TemplateSection[] {
+export function parseSections(text: string, format: ConfigFormat): TemplateSection[] {
   if (!text) {
     return [{
       id: crypto.randomUUID(),
@@ -105,38 +133,68 @@ export function parseSections(text: string, format: 'cli' | 'xml' | 'json' | 'ya
   }
 
   const lines = text.split('\n');
-
-  interface Divider {
-    lineIndex: number;
-    name: string;
-    pattern: string;    // the divider line(s)
-    spanLines: number;  // how many lines the divider occupies
-  }
-
   const dividers: Divider[] = [];
 
   if (format === 'cli') {
+    // First pass: detect START/END marker pairs
+    const startMarkers: { lineIndex: number; name: string }[] = [];
+    const endMarkers: { lineIndex: number; name: string }[] = [];
+    const usedLines = new Set<number>();
+
     for (let i = 0; i < lines.length; i++) {
+      const startMatch = lines[i].match(START_MARKER_RE);
+      if (startMatch) {
+        startMarkers.push({ lineIndex: i, name: startMatch[1].trim() });
+        usedLines.add(i);
+        continue;
+      }
+      const endMatch = lines[i].match(END_MARKER_RE);
+      if (endMatch) {
+        endMarkers.push({ lineIndex: i, name: endMatch[1].trim() });
+        usedLines.add(i);
+      }
+    }
+
+    // Match START markers with their END markers
+    for (const start of startMarkers) {
+      const matchingEnd = endMarkers.find(
+        (e) => e.name.toLowerCase() === start.name.toLowerCase() && e.lineIndex > start.lineIndex
+      );
+      dividers.push({
+        lineIndex: start.lineIndex,
+        name: start.name,
+        pattern: lines[start.lineIndex],
+        spanLines: 1,
+        endLineIndex: matchingEnd?.lineIndex,
+      });
+      if (matchingEnd) {
+        usedLines.add(matchingEnd.lineIndex);
+      }
+    }
+
+    // Second pass: detect legacy dividers on lines NOT consumed by START/END
+    for (let i = 0; i < lines.length; i++) {
+      if (usedLines.has(i)) continue;
       const line = lines[i];
 
       // Pattern 1: !########## SECTION NAME ########## or ########## SECTION NAME ##########
-      // Also matches #### SECTION NAME #### and ##### SECTION NAME #####
       const inlineMatch = line.match(/^[!]?\s*(#{3,})\s+(.+?)\s+#{3,}\s*$/);
       if (inlineMatch) {
         const name = inlineMatch[2].trim();
+        // Skip if this looks like a START or END marker (already handled)
+        if (/\s*-\s*(START|END)\s*$/i.test(name)) continue;
         dividers.push({ lineIndex: i, name, pattern: line, spanLines: 1 });
+        usedLines.add(i);
         continue;
       }
 
       // Pattern 2: !############################## followed by ! SECTION NAME on next line
-      // Then optionally another !############################## line
       const solidMatch = line.match(/^[!]?\s*#{10,}\s*$/);
-      if (solidMatch && i + 1 < lines.length) {
+      if (solidMatch && i + 1 < lines.length && !usedLines.has(i + 1)) {
         const nextLine = lines[i + 1];
         const nameMatch = nextLine.match(/^!\s+(.+?)\s*$/);
         if (nameMatch) {
           const name = nameMatch[1].trim();
-          // Check if there's a closing hash line
           if (i + 2 < lines.length && /^[!]?\s*#{10,}\s*$/.test(lines[i + 2])) {
             dividers.push({
               lineIndex: i,
@@ -144,6 +202,9 @@ export function parseSections(text: string, format: 'cli' | 'xml' | 'json' | 'ya
               pattern: line + '\n' + nextLine + '\n' + lines[i + 2],
               spanLines: 3,
             });
+            usedLines.add(i);
+            usedLines.add(i + 1);
+            usedLines.add(i + 2);
           } else {
             dividers.push({
               lineIndex: i,
@@ -151,10 +212,15 @@ export function parseSections(text: string, format: 'cli' | 'xml' | 'json' | 'ya
               pattern: line + '\n' + nextLine,
               spanLines: 2,
             });
+            usedLines.add(i);
+            usedLines.add(i + 1);
           }
         }
       }
     }
+
+    // Sort dividers by line index to preserve document order
+    dividers.sort((a, b) => a.lineIndex - b.lineIndex);
   } else if (format === 'xml') {
     for (let i = 0; i < lines.length; i++) {
       const match = lines[i].match(/^<!--\s+(.+?)\s+-->$/);
@@ -182,14 +248,23 @@ export function parseSections(text: string, format: 'cli' | 'xml' | 'json' | 'ya
     }];
   }
 
+  // Deduplicate section names
+  deduplicateNames(dividers);
+
   // Build sections from dividers
   const sections: TemplateSection[] = [];
 
   for (let d = 0; d < dividers.length; d++) {
     const startLine = dividers[d].lineIndex;
-    const endLine = d + 1 < dividers.length ? dividers[d + 1].lineIndex : lines.length;
+    let endLine: number;
 
-    // Section content: from divider start through end
+    if (dividers[d].endLineIndex != null) {
+      // START/END mode: include up to and including the END marker line
+      endLine = dividers[d].endLineIndex! + 1;
+    } else {
+      endLine = d + 1 < dividers.length ? dividers[d + 1].lineIndex : lines.length;
+    }
+
     const sectionLines = lines.slice(startLine, endLine);
     sections.push({
       id: crypto.randomUUID(),
@@ -207,4 +282,52 @@ export function parseSections(text: string, format: 'cli' | 'xml' | 'json' | 'ya
   }
 
   return sections;
+}
+
+/**
+ * Takes raw config text, detects sections, and returns a new string with
+ * START/END markers injected around each section boundary.
+ * Original divider lines are preserved; markers are added around them.
+ * Duplicate section names get sequence numbers applied.
+ */
+export function cleanUpSections(text: string, format: ConfigFormat): string {
+  if (!text) return '';
+
+  // Parse sections to get boundaries
+  const sections = parseSections(text, format);
+
+  // If single "Full Config" section with no divider, wrap the whole thing
+  if (sections.length === 1 && sections[0].dividerPattern === '') {
+    const name = sections[0].name;
+    return `!##### ${name} - START #####\n${text}\n!##### ${name} - END #####`;
+  }
+
+  const result: string[] = [];
+
+  // Check if a line is already a START or END marker
+  const isMarker = (line: string) => START_MARKER_RE.test(line) || END_MARKER_RE.test(line);
+
+  for (let s = 0; s < sections.length; s++) {
+    const section = sections[s];
+    const sectionLines = section.template.split('\n');
+
+    // Inject START marker before the section (unless one already exists)
+    const firstLine = sectionLines[0];
+    if (!isMarker(firstLine)) {
+      result.push(`!##### ${section.name} - START #####`);
+    }
+
+    // Add all section lines
+    for (const line of sectionLines) {
+      result.push(line);
+    }
+
+    // Inject END marker after the section (unless one already exists)
+    const lastLine = sectionLines[sectionLines.length - 1];
+    if (!isMarker(lastLine)) {
+      result.push(`!##### ${section.name} - END #####`);
+    }
+  }
+
+  return result.join('\n');
 }

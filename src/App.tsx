@@ -6,6 +6,7 @@ import { CreateNodeModal, type CreateNodeType, type CreateNodeData } from './com
 import WelcomeScreen from './components/WelcomeScreen.tsx';
 import ConfigGenerator from './components/ConfigGenerator.tsx';
 import TemplateEditor from './components/TemplateEditor.tsx';
+import { GeneratedConfigViewer } from './components/GeneratedConfigViewer.tsx';
 import VaultModal from './components/VaultModal.tsx';
 
 type AppMode = 'generator' | 'editor';
@@ -36,6 +37,7 @@ function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [vaultOpen, setVaultOpen] = useState(false);
   const [vaultInitialTab, setVaultInitialTab] = useState<'export' | 'import'>('export');
+  const [selectedGeneratedConfigId, setSelectedGeneratedConfigId] = useState<string | null>(null);
 
   // Wizard for "Add Template" button
   const [wizard, setWizard] = useState<WizardState | null>(null);
@@ -131,8 +133,26 @@ function App() {
     setVaultOpen(true);
   }, []);
 
+  const handleSelectGeneratedConfig = useCallback((configId: string) => {
+    setSelectedGeneratedConfigId(configId);
+  }, []);
+
+  const handleBackFromViewer = useCallback(() => {
+    setSelectedGeneratedConfigId(null);
+  }, []);
+
   // Determine main content
   const renderMainContent = () => {
+    // Generated config viewer takes priority when a config is selected
+    if (selectedGeneratedConfigId) {
+      return (
+        <GeneratedConfigViewer
+          configId={selectedGeneratedConfigId}
+          onBack={handleBackFromViewer}
+        />
+      );
+    }
+
     if (!hasVariants || !selectedVariantId) {
       return (
         <WelcomeScreen
@@ -229,7 +249,7 @@ function App() {
             w-60 shrink-0
           `}
         >
-          <Sidebar onSwitchToEditor={switchToEditor} />
+          <Sidebar onSwitchToEditor={switchToEditor} onSelectGeneratedConfig={handleSelectGeneratedConfig} />
         </div>
 
         {/* Mobile overlay backdrop */}

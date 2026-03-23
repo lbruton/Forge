@@ -88,9 +88,22 @@ export interface GeneratedSection {
   divider: string;
 }
 
-export interface GeneratedConfig {
+export interface GeneratedConfigOutput {
   fullConfig: string;
   sections: GeneratedSection[];
+}
+
+export interface GeneratedConfig {
+  id: string;
+  name: string;              // e.g., "tulsapipeconswan01"
+  modelId: string;           // parent model
+  sourceVariantId: string;   // which variant was used
+  sourceTemplateId: string;  // template snapshot reference
+  variableValues: Record<string, string>;  // exact values used
+  fullConfig: string;        // final substituted output (may include manual edits)
+  sections: GeneratedSection[];  // per-section output
+  notes: string;             // optional user notes
+  createdAt: string;         // ISO timestamp
 }
 
 // Syntax highlighting
@@ -116,4 +129,5 @@ export interface VaultExportData {
   variants?: Variant[];
   templates: Record<string, Template>;
   variableValues: Record<string, VariableValues>;
+  generatedConfigs?: Record<string, GeneratedConfig>;
 }

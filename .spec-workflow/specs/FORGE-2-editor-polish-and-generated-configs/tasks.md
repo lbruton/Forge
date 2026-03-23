@@ -1,0 +1,82 @@
+# Tasks Document
+
+## References
+
+- **Issues:** FORGE-2, FORGE-3
+- **Spec Path:** `.spec-workflow/specs/FORGE-2-editor-polish-and-generated-configs/`
+
+## File Touch Map
+
+| File / Directory | Action | Scope |
+|-----------------|--------|-------|
+| src/lib/template-parser.ts | MODIFY | START/END markers, duplicate naming, cleanUpSections |
+| src/__tests__/template-parser.test.ts | MODIFY | New tests for START/END and duplicates |
+| src/types/index.ts | MODIFY | Add GeneratedConfig interface, extend VaultExportData |
+| src/store/index.ts | MODIFY | Add generated config CRUD, extend export/import |
+| src/components/TemplateEditor.tsx | MODIFY | Panel reorder, remove chips, add guidance, Clean Up button, variable highlighting |
+| src/components/Sidebar.tsx | MODIFY | Templates/Generated sub-folders, sticky Add View button |
+| src/components/ConfigGenerator.tsx | MODIFY | Add Save to Generated button |
+| src/App.tsx | MODIFY | Route to GeneratedConfigViewer, PWA meta tags |
+| src/components/GeneratedConfigViewer.tsx | CREATE | Read-only view of saved configs |
+| src/components/SaveGeneratedModal.tsx | CREATE | Save modal with name auto-suggest and notes |
+| index.html | MODIFY | Favicon, manifest link |
+| public/manifest.json | CREATE | PWA manifest |
+| public/forge-icon.svg | CREATE | Favicon/PWA icon |
+
+## Implementation Tasks
+
+- [x] 1. Parser enhancements — START/END markers, duplicate naming, cleanUpSections
+  - Modify src/lib/template-parser.ts: add START/END regex patterns to parseSections, deduplicate names with sequence numbers, new cleanUpSections() function
+  - Update src/__tests__/template-parser.test.ts with new tests
+  - **Recommended Agent:** Claude
+  - _Leverage: src/lib/template-parser.ts (existing parser), src/__tests__/template-parser.test.ts (existing tests)_
+  - _Requirements: REQ-1, REQ-2_
+  - _Prompt: Implement the task for spec FORGE-2-editor-polish-and-generated-configs, first run spec-workflow-guide to get the workflow guide then implement the task. Role: Parser Developer | Task: Enhance src/lib/template-parser.ts with three changes. (1) Add START/END marker support to parseSections: detect lines matching the pattern bang-hashes SECTION TITLE - START hashes and bang-hashes SECTION TITLE - END hashes (case insensitive on START/END). When START/END markers are found, use them for section boundaries. When not found, fall back to existing DNAC divider detection (backward compatible). (2) Deduplicate section names: after detecting sections, scan for duplicate names. First occurrence keeps original name, subsequent get " (2)", " (3)" appended. Order is always preserved. (3) New exported function cleanUpSections(text: string, format: ConfigFormat): string — takes raw config text, detects sections using existing logic, then returns a new string with START markers injected before each section boundary and END markers injected before the next section start (or end of file for the last section). The injected format is "!##### SECTION NAME - START #####" and "!##### SECTION NAME - END #####". Update tests: add tests for START/END detection, duplicate naming, cleanUpSections output, and verify all existing V1 tests still pass. Run npx vitest run. | Restrictions: Must be backward compatible — V1 templates without START/END must still parse correctly. Never reorder sections. | Success: All existing tests pass plus new tests for START/END markers, duplicate naming, and cleanUpSections. Mark task [-] before starting, log with log-implementation when done, then mark [x]._
+
+- [x] 2. Types + store — GeneratedConfig data model and CRUD
+  - Add GeneratedConfig interface to src/types/index.ts
+  - Extend VaultExportData with generatedConfigs field
+  - Add store actions: saveGeneratedConfig, deleteGeneratedConfig, getGeneratedConfigs(modelId)
+  - Extend exportData/importData to include generated configs
+  - **Recommended Agent:** Claude
+  - _Leverage: src/types/index.ts, src/store/index.ts_
+  - _Requirements: REQ-6_
+  - _Prompt: Implement the task for spec FORGE-2-editor-polish-and-generated-configs, first run spec-workflow-guide to get the workflow guide then implement the task. Role: State Management Developer | Task: (1) Add GeneratedConfig interface to src/types/index.ts with fields: id (string), name (string), modelId (string), sourceVariantId (string), sourceTemplateId (string), variableValues (Record of string to string), fullConfig (string), sections (GeneratedSection[]), notes (string), createdAt (string). (2) Extend VaultExportData interface with generatedConfigs field (Record of string to GeneratedConfig). (3) In src/store/index.ts add: generatedConfigs state (Record of string to GeneratedConfig), saveGeneratedConfig(config) action that persists to localStorage as forge_generated_ID, deleteGeneratedConfig(id) action, getGeneratedConfigs(modelId) selector that filters by modelId. (4) Extend exportData() to include all generated configs. (5) Extend importData() to merge imported generated configs. Verify TypeScript compiles with npx tsc --noEmit. | Restrictions: Follow existing store patterns. All localStorage via StorageService. Backward compatible — existing V1 data must still load. | Success: Types compile, store actions work, export/import includes generated configs. Mark task [-] before starting, log with log-implementation when done, then mark [x]._
+
+- [x] 3. Template editor polish
+  - Modify src/components/TemplateEditor.tsx: reorder panels (sections above variables), remove duplicate chips, add Clean Up button, add guidance text, variable highlighting
+  - **Recommended Agent:** Claude
+  - _Leverage: src/components/TemplateEditor.tsx, src/lib/template-parser.ts (cleanUpSections)_
+  - _Requirements: REQ-3_
+  - _Prompt: Implement the task for spec FORGE-2-editor-polish-and-generated-configs, first run spec-workflow-guide to get the workflow guide then implement the task. Role: React Frontend Developer | Task: Modify src/components/TemplateEditor.tsx with these changes. (1) REMOVE the "Detected in Template" variable chips section that appears below the textarea — variables are already shown in the right sidebar panel, this is duplicate information. (2) REORDER the right sidebar: move the "Detected Sections" panel ABOVE the "Detected Variables" panel (sections are the higher-level structure). (3) Add a "Clean Up Sections" button above or near the sections panel. When clicked, call cleanUpSections(text, format) from template-parser and replace the textarea content with the cleaned-up text (which has START/END markers injected). Show a toast confirming "Sections cleaned up — START/END markers added." (4) Add drag-to-reorder grips on each section in the sections panel. Use native HTML5 drag and drop (no library). When a section is dragged to a new position, update the order field on all sections. (5) Improve the guidance text at the bottom of the sections panel — replace the current terse format list with a clear, user-friendly instruction block explaining: section format (bang-hashes SECTION NAME - START/END hashes), variable format ($variable_name), and a brief example. (6) Add variable highlighting in the textarea: use a transparent overlay div positioned on top of the textarea that renders the same text but with $variable patterns wrapped in amber-colored spans. Sync the overlay scroll position with the textarea. If this is too complex, fall back to simply bolding/coloring variables in the detection panel more prominently. Read the existing TemplateEditor.tsx first to understand the current structure. | Restrictions: Do not break existing save flow. Keep existing VariableDetectionPanel integration. | Success: No duplicate variable display, sections panel is above variables, Clean Up button injects START/END markers, drag reorder works, guidance text is clear. npm run build passes. Mark task [-] before starting, log with log-implementation when done, then mark [x]._
+
+- [x] 4. Sidebar enhancements — Templates/Generated sub-folders + sticky button
+  - Modify src/components/Sidebar.tsx: Model nodes show Templates + Generated sub-folders, sticky Add View button
+  - **Recommended Agent:** Claude
+  - _Leverage: src/components/Sidebar.tsx, src/store/index.ts (getGeneratedConfigs)_
+  - _Requirements: REQ-4, REQ-6_
+  - _Prompt: Implement the task for spec FORGE-2-editor-polish-and-generated-configs, first run spec-workflow-guide to get the workflow guide then implement the task. Role: React Frontend Developer | Task: Modify src/components/Sidebar.tsx with two changes. (1) SIDEBAR HIERARCHY: Under each Model node, instead of directly listing Variant children, show two sub-folders: "Templates" (folder icon, contains the existing variants) and "Generated" (folder icon, contains saved generated configs from the store via getGeneratedConfigs(modelId)). Each generated config shows its name and a short date (e.g., "03/23"). Clicking a generated config sets a new app mode "viewer" and passes the generated config ID. The Templates sub-folder behaves exactly as variants do today. Use FileCode2 icon for templates, FileCheck icon for generated configs. (2) STICKY BUTTON: Make the "+ Add View" button sticky at the bottom of the sidebar. The tree content should scroll independently (overflow-y-auto on the tree container) while the button stays fixed at the bottom with a subtle top border separator. Read the existing Sidebar.tsx first. | Restrictions: Must not break existing tree CRUD behavior. Generated folder only appears if there are generated configs for that model. | Success: Model nodes show Templates/Generated sub-folders, generated configs are clickable, Add View button is sticky at bottom. npm run build passes. Mark task [-] before starting, log with log-implementation when done, then mark [x]._
+
+- [x] 5. Generated config save + viewer components
+  - Create src/components/SaveGeneratedModal.tsx and src/components/GeneratedConfigViewer.tsx
+  - Modify src/components/ConfigGenerator.tsx to add Save to Generated button
+  - Modify src/App.tsx to route to viewer mode
+  - **Recommended Agent:** Claude
+  - _Leverage: src/components/ConfigGenerator.tsx, src/components/ConfigPreview.tsx, src/components/CopyButton.tsx, src/components/CreateNodeModal.tsx (modal pattern), src/store/index.ts_
+  - _Requirements: REQ-6_
+  - _Prompt: Implement the task for spec FORGE-2-editor-polish-and-generated-configs, first run spec-workflow-guide to get the workflow guide then implement the task. Role: React Frontend Developer | Task: Create two new components and modify two existing ones. (1) NEW SaveGeneratedModal.tsx: Modal with name input (auto-suggested from the current $hostname variable value if available — check variableValues for a key containing "hostname"), notes textarea (optional), Save and Cancel buttons. On save, constructs a GeneratedConfig object and calls store.saveGeneratedConfig(). Styled like CreateNodeModal (Charcoal bg, Steel border, amber CTA, rounded-xl). (2) NEW GeneratedConfigViewer.tsx: Read-only view for a saved generated config. Shows: config name as header, metadata bar (date, source template variant name, notes), then the full config with syntax highlighting reusing ConfigPreview component. Copy and Download buttons at the top. Variable values shown in a collapsible panel (so user can see what values produced this config). Delete button (with confirmation). (3) MODIFY ConfigGenerator.tsx: Add a "Save to Generated" button next to the existing "Edit Template" button. Button uses Save icon from lucide-react, amber secondary style. When clicked, opens SaveGeneratedModal. (4) MODIFY App.tsx: Add a "viewer" mode. When a generated config is selected from the sidebar, render GeneratedConfigViewer with the config ID. Add state for selectedGeneratedConfigId. Read App.tsx, ConfigGenerator.tsx first. | Restrictions: Reuse existing ConfigPreview and CopyButton/DownloadButton — do not recreate. Follow existing modal patterns from CreateNodeModal. | Success: Save to Generated button works end-to-end (fill vars, click save, enter name, saved to sidebar). Generated config viewer shows full config with metadata. npm run build passes. Mark task [-] before starting, log with log-implementation when done, then mark [x]._
+
+- [x] 6. PWA support — favicon + manifest
+  - Add favicon to index.html, create manifest.json, copy icon SVG
+  - **Recommended Agent:** Claude
+  - _Leverage: /Users/lbruton/Devops/Forge/forge-icon.svg (source icon), index.html_
+  - _Requirements: REQ-5_
+  - _Prompt: Implement the task for spec FORGE-2-editor-polish-and-generated-configs, first run spec-workflow-guide to get the workflow guide then implement the task. Role: Frontend Developer | Task: (1) Copy the Forge icon SVG from /Users/lbruton/Devops/Forge/forge-icon.svg to public/forge-icon.svg. (2) Create public/manifest.json with: name "Forge", short_name "Forge", description "Network config template generator", start_url "/", display "standalone", background_color "#0F172A", theme_color "#F59E0B", icons array pointing to forge-icon.svg (any size, purpose any+maskable). (3) Update index.html: add link rel="manifest" href="/manifest.json", add link rel="icon" href="/forge-icon.svg" type="image/svg+xml", add meta name="theme-color" content="#0F172A". | Restrictions: Keep it minimal — SVG icon for all sizes. No PNG generation needed for v1. | Success: Browser tab shows Forge icon, Chrome/Edge offers "Install as App". npm run build passes. Mark task [-] before starting, log with log-implementation when done, then mark [x]._
+
+- [x] 7. Integration testing + build verification
+  - Run full test suite, fix any build errors from parallel agent work
+  - Verify all features work end-to-end
+  - **Recommended Agent:** Claude
+  - _Leverage: All src/ files, requirements.md_
+  - _Requirements: All_
+  - _Prompt: Implement the task for spec FORGE-2-editor-polish-and-generated-configs, first run spec-workflow-guide to get the workflow guide then implement the task. Role: Integration Engineer | Task: (1) Run npm run build — fix ALL TypeScript errors. Multiple agents modified files in parallel so there may be type mismatches, missing imports, or API disagreements between components and the store. (2) Run npm run test — fix any failing tests, ensure all new parser tests pass alongside existing ones. (3) Verify integration: TemplateEditor imports and calls cleanUpSections correctly, Sidebar reads generated configs from store, ConfigGenerator opens SaveGeneratedModal, App.tsx routes to GeneratedConfigViewer, VaultModal exports/imports generated configs. (4) Verify the favicon and manifest are served correctly. (5) Report: final build status, test count, any known issues. | Restrictions: Fix integration issues only — do not rewrite components. If a component has a fundamental issue, note it and make it compile. | Success: npm run build passes with zero errors, npm run test passes all tests, app loads in browser. Mark task [-] before starting, log with log-implementation when done, then mark [x]._
