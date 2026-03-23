@@ -196,7 +196,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const highlightedText = useMemo(() => {
     if (!rawText) return null;
     // Split by variable patterns, keeping delimiters
-    const parts = rawText.split(/((?<=\s|^)\$\{[A-Za-z_]\w*\}|(?<=\s|^)\$[A-Za-z_]\w*)/gm);
+    const parts = rawText.split(/(\$\{[A-Za-z_]\w*\}|\$[A-Za-z_]\w*)/gm);
     const varPattern = /^\$\{?[A-Za-z_]\w*\}?$/;
     return parts.map((part, i) => {
       if (varPattern.test(part)) {
@@ -276,8 +276,8 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
               onScroll={handleTextareaScroll}
               placeholder={`Paste your config template here...\n\nUse $variable_name or \${variable_name} for template variables.\n\nExample:\nhostname $hostname\ninterface vlan95\n ip address $vlan_95_ip_address 255.255.255.0`}
               spellCheck={false}
-              className="absolute inset-0 w-full h-full px-5 py-4 bg-forge-terminal text-slate-200 font-mono text-[13px] leading-relaxed resize-none outline-none placeholder:text-slate-600 border-none relative z-20"
-              style={{ caretColor: '#e2e8f0', background: 'rgba(10, 10, 15, 0.85)' }}
+              className="absolute inset-0 w-full h-full px-5 py-4 text-slate-200 font-mono text-[13px] leading-relaxed resize-none outline-none placeholder:text-slate-600 border-none relative z-20"
+              style={{ caretColor: '#e2e8f0', background: 'rgba(10, 15, 26, 0.75)' }}
             />
           </div>
         </div>
