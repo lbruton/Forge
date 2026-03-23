@@ -28,18 +28,22 @@ export function SaveGeneratedModal({
   const nameRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Auto-suggest name from hostname variable
+  // Auto-suggest name from hostname variable — only on open, not on every variableValues change
+  const variableValuesRef = useRef(variableValues);
+  variableValuesRef.current = variableValues;
+
   useEffect(() => {
     if (isOpen) {
-      const hostnameKey = Object.keys(variableValues).find(
+      const vals = variableValuesRef.current;
+      const hostnameKey = Object.keys(vals).find(
         (k) => k.toLowerCase().includes('hostname'),
       );
-      const suggested = hostnameKey ? variableValues[hostnameKey] : '';
+      const suggested = hostnameKey ? vals[hostnameKey] : '';
       setName(suggested || '');
       setNotes('');
       setTimeout(() => nameRef.current?.focus(), 50);
     }
-  }, [isOpen, variableValues]);
+  }, [isOpen]);
 
   // Escape to close
   useEffect(() => {
@@ -108,7 +112,7 @@ export function SaveGeneratedModal({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., tulsapipeconswan01"
+              placeholder="e.g., switch-01"
               className="w-full px-3 py-2 bg-forge-obsidian border border-forge-graphite rounded-lg text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors"
             />
           </div>
