@@ -1,0 +1,7 @@
+services:
+  forge:
+    build: .
+    container_name: forge
+    restart: unless-stopped
+    ports:
+      - "8070:80"
