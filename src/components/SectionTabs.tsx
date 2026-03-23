@@ -16,24 +16,25 @@ export function SectionTabs({ sections, activeSection, onSelectSection, hostname
   const safeHostname = (hostname || 'config').replace(/[^a-zA-Z0-9_-]/g, '_');
 
   return (
-    <div className="flex items-center gap-1 border-b border-forge-graphite bg-forge-charcoal/50 px-2 overflow-x-auto">
-      {/* All Sections tab */}
-      <button
-        onClick={() => onSelectSection(null)}
-        className={`
-          shrink-0 px-3 py-2 text-xs font-medium transition-colors duration-150 border-b-2
-          ${activeSection === null
-            ? 'border-forge-amber text-forge-amber'
-            : 'border-transparent text-slate-500 hover:text-slate-300'
-          }
-        `}
-      >
-        All Sections
-      </button>
+    <div className="border-b border-forge-graphite bg-forge-charcoal/50 px-2">
+      <div className="flex flex-wrap items-center gap-1">
+        {/* All Sections tab */}
+        <button
+          onClick={() => onSelectSection(null)}
+          className={`
+            px-3 py-2 text-xs font-medium transition-colors duration-150 border-b-2
+            ${activeSection === null
+              ? 'border-forge-amber text-forge-amber'
+              : 'border-transparent text-slate-500 hover:text-slate-300'
+            }
+          `}
+        >
+          All Sections
+        </button>
 
-      {sections.map((section) => (
-        <div key={section.name} className="flex items-center shrink-0">
+        {sections.map((section) => (
           <button
+            key={section.name}
             onClick={() => onSelectSection(section.name)}
             className={`
               px-3 py-2 text-xs font-medium transition-colors duration-150 border-b-2
@@ -45,14 +46,10 @@ export function SectionTabs({ sections, activeSection, onSelectSection, hostname
           >
             {section.name}
           </button>
-        </div>
-      ))}
+        ))}
 
-      {/* Spacer */}
-      <div className="flex-1" />
-
-      {/* Per-section or global copy/download buttons */}
-      <div className="flex items-center gap-1 py-1">
+        {/* Copy/download buttons — always visible */}
+        <div className="flex items-center gap-1 py-1 ml-auto">
         {activeSection === null ? (
           <>
             <CopyButton text={allText} label="Copy" />
@@ -79,6 +76,7 @@ export function SectionTabs({ sections, activeSection, onSelectSection, hostname
             );
           })()
         )}
+        </div>
       </div>
     </div>
   );
