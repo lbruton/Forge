@@ -39,9 +39,21 @@ export function ConfigPreview({ sections, activeSection, configFormat }: ConfigP
   // Build the text to display based on active section filter
   const displayText = useMemo(() => {
     if (activeSection === null) {
-      // All sections
+      // All sections — reconstruct with START/END markers
       return sections
-        .map((s, i) => (i === 0 ? s.content : s.divider + '\n' + s.content))
+        .map((s, i) => {
+          const parts: string[] = [];
+          if (s.divider) {
+            if (i > 0 || s.endDivider) {
+              parts.push(s.divider);
+            }
+          }
+          parts.push(s.content);
+          if (s.endDivider) {
+            parts.push(s.endDivider);
+          }
+          return parts.join('\n');
+        })
         .join('\n');
     }
     const section = sections.find((s) => s.name === activeSection);

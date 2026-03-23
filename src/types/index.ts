@@ -56,6 +56,7 @@ export interface TemplateSection {
   template: string;
   order: number;
   dividerPattern: string;
+  endDividerPattern?: string;
 }
 
 export interface VariableDefinition {
@@ -86,6 +87,7 @@ export interface GeneratedSection {
   name: string;
   content: string;
   divider: string;
+  endDivider?: string;
 }
 
 export interface GeneratedConfigOutput {

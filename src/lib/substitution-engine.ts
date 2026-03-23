@@ -43,12 +43,25 @@ export function generateConfig(
       name: section.name,
       content: substituteVariables(section.template, values),
       divider: section.dividerPattern,
+      endDivider: section.endDividerPattern,
     }));
 
   const fullConfig = generatedSections
     .map((section, index) => {
-      if (index === 0) return section.content;
-      return section.divider + '\n' + section.content;
+      const parts: string[] = [];
+      // Add START divider (for index > 0, or for START/END sections at index 0)
+      if (section.divider) {
+        if (index > 0 || section.endDivider) {
+          parts.push(section.divider);
+        }
+      }
+      // Add content
+      parts.push(section.content);
+      // Add END divider if present (START/END mode)
+      if (section.endDivider) {
+        parts.push(section.endDivider);
+      }
+      return parts.join('\n');
     })
     .join('\n');
 

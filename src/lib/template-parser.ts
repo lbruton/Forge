@@ -259,20 +259,32 @@ export function parseSections(text: string, format: ConfigFormat): TemplateSecti
     let endLine: number;
 
     if (dividers[d].endLineIndex != null) {
-      // START/END mode: include up to and including the END marker line
-      endLine = dividers[d].endLineIndex! + 1;
+      // START/END mode: content is between START and END markers (exclusive)
+      const contentStart = startLine + dividers[d].spanLines;
+      const contentEnd = dividers[d].endLineIndex!;
+      endLine = dividers[d].endLineIndex! + 1; // keep for preamble calc
+      const sectionLines = lines.slice(contentStart, contentEnd);
+      sections.push({
+        id: crypto.randomUUID(),
+        name: dividers[d].name,
+        template: sectionLines.join('\n'),
+        order: d,
+        dividerPattern: dividers[d].pattern,
+        endDividerPattern: lines[dividers[d].endLineIndex!],
+      });
     } else {
       endLine = d + 1 < dividers.length ? dividers[d + 1].lineIndex : lines.length;
+      // For non-START/END dividers, skip the divider lines themselves
+      const contentStart = startLine + dividers[d].spanLines;
+      const sectionLines = lines.slice(contentStart, endLine);
+      sections.push({
+        id: crypto.randomUUID(),
+        name: dividers[d].name,
+        template: sectionLines.join('\n'),
+        order: d,
+        dividerPattern: dividers[d].pattern,
+      });
     }
-
-    const sectionLines = lines.slice(startLine, endLine);
-    sections.push({
-      id: crypto.randomUUID(),
-      name: dividers[d].name,
-      template: sectionLines.join('\n'),
-      order: d,
-      dividerPattern: dividers[d].pattern,
-    });
   }
 
   // If there's content before the first divider, prepend it to the first section

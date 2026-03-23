@@ -195,18 +195,25 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   // Build highlighted overlay text
   const highlightedText = useMemo(() => {
     if (!rawText) return null;
+    // Strip Cisco type-9 password hashes before scanning (same as parseVariables)
+    const sanitized = rawText.replace(/\$\d\$\S+/g, (match) => '_'.repeat(match.length));
     // Split by variable patterns, keeping delimiters
-    const parts = rawText.split(/(\$\{[A-Za-z_]\w*\}|\$[A-Za-z_]\w*)/gm);
+    const parts = sanitized.split(/(\$\{[A-Za-z_]\w*\}|\$[A-Za-z_]\w*)/gm);
     const varPattern = /^\$\{?[A-Za-z_]\w*\}?$/;
+
+    // Reconstruct spans using original text positions
+    let offset = 0;
     return parts.map((part, i) => {
+      const original = rawText.substring(offset, offset + part.length);
+      offset += part.length;
       if (varPattern.test(part)) {
         return (
-          <span key={i} className="bg-amber-500/20 text-transparent rounded-sm border-b border-amber-500/40">
-            {part}
+          <span key={i} className="bg-amber-500/25 text-transparent rounded-sm border-b border-amber-500/40">
+            {original}
           </span>
         );
       }
-      return <span key={i} className="text-transparent">{part}</span>;
+      return <span key={i} className="text-transparent">{original}</span>;
     });
   }, [rawText]);
 
@@ -261,14 +268,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             Paste Config Template
           </div>
           <div className="flex-1 relative">
-            {/* Highlight overlay */}
-            <div
-              ref={overlayRef}
-              aria-hidden="true"
-              className="absolute inset-0 w-full h-full px-5 py-4 font-mono text-[13px] leading-relaxed whitespace-pre-wrap break-words overflow-hidden pointer-events-none z-10"
-            >
-              {highlightedText}
-            </div>
+            {/* Textarea — renders visible text */}
             <textarea
               ref={textareaRef}
               value={rawText}
@@ -276,9 +276,17 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
               onScroll={handleTextareaScroll}
               placeholder={`Paste your config template here...\n\nUse $variable_name or \${variable_name} for template variables.\n\nExample:\nhostname $hostname\ninterface vlan95\n ip address $vlan_95_ip_address 255.255.255.0`}
               spellCheck={false}
-              className="absolute inset-0 w-full h-full px-5 py-4 text-slate-200 font-mono text-[13px] leading-relaxed resize-none outline-none placeholder:text-slate-600 border-none relative z-20"
-              style={{ caretColor: '#e2e8f0', background: 'rgba(10, 15, 26, 0.75)' }}
+              className="absolute inset-0 w-full h-full px-5 py-4 text-slate-200 font-mono text-[13px] leading-relaxed resize-none outline-none placeholder:text-slate-600 border-none relative z-10 bg-forge-obsidian"
+              style={{ caretColor: '#e2e8f0' }}
             />
+            {/* Highlight overlay — above textarea, pointer-events-none, only shows background highlights */}
+            <div
+              ref={overlayRef}
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full px-5 py-4 font-mono text-[13px] leading-relaxed whitespace-pre-wrap break-words overflow-hidden pointer-events-none z-20"
+            >
+              {highlightedText}
+            </div>
           </div>
         </div>
 

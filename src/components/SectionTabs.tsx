@@ -10,7 +10,17 @@ interface SectionTabsProps {
 
 export function SectionTabs({ sections, activeSection, onSelectSection, hostname }: SectionTabsProps) {
   const allText = sections
-    .map((s, i) => (i === 0 ? s.content : s.divider + '\n' + s.content))
+    .map((s, i) => {
+      const parts: string[] = [];
+      if (s.divider && (i > 0 || s.endDivider)) {
+        parts.push(s.divider);
+      }
+      parts.push(s.content);
+      if (s.endDivider) {
+        parts.push(s.endDivider);
+      }
+      return parts.join('\n');
+    })
     .join('\n');
 
   const safeHostname = (hostname || 'config').replace(/[^a-zA-Z0-9_-]/g, '_');
