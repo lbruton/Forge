@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --color-forge-obsidian: #0F172A;
+  --color-forge-charcoal: #1E293B;
+  --color-forge-graphite: #334155;
+  --color-forge-steel: #475569;
+  --color-forge-amber: #F59E0B;
+  --color-forge-amber-bright: #FBBF24;
+  --color-forge-amber-dark: #D97706;
+  --color-forge-ember: #B45309;
+  --color-forge-terminal: #0A0F1A;
+
+  --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+}
+
+:root {
+  --bg-primary: #0F172A;
+  --bg-surface: #1E293B;
+  --bg-elevated: #334155;
+  --bg-terminal: #0A0F1A;
+  --border-default: #475569;
+  --border-subtle: #334155;
+  --text-primary: #E2E8F0;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --accent-primary: #F59E0B;
+  --accent-hover: #FBBF24;
+  --accent-dark: #D97706;
+  --accent-darkest: #B45309;
+  --color-success: #22C55E;
+  --color-error: #EF4444;
+  --color-warning: #EAB308;
+  --color-info: #3B82F6;
+  --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}

@@ -1,0 +1,8 @@
+node_modules
+.git
+.spec-workflow
+.claude
+seed-models
+src/__tests__
+*.md
+.gitignore

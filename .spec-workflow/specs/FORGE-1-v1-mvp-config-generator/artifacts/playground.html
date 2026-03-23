@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge — Interactive Playground</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   FORGE BRAND TOKENS
+   ═══════════════════════════════════════════════ */
+:root {
+  --bg-primary: #0F172A;
+  --bg-surface: #1E293B;
+  --bg-elevated: #334155;
+  --bg-terminal: #0A0F1A;
+  --border-default: #475569;
+  --border-subtle: #334155;
+  --text-primary: #E2E8F0;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --accent-primary: #F59E0B;
+  --accent-hover: #FBBF24;
+  --accent-dark: #D97706;
+  --accent-darkest: #B45309;
+  --color-success: #22C55E;
+  --color-error: #EF4444;
+  --color-warning: #EAB308;
+  --color-info: #3B82F6;
+  --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════
+   MODE TABS (top bar)
+   ═══════════════════════════════════════════════ */
+.mode-tabs {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  display: flex;
+  background: #0A0F1A;
+  border-bottom: 1px solid var(--border-default);
+  padding: 0 16px;
+  align-items: center;
+}
+.mode-tabs button {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  letter-spacing: 0.05em;
+}
+.mode-tabs button:hover { color: var(--text-secondary); }
+.mode-tabs button.active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+.mode-tabs .spacer { flex: 1; }
+.mode-tabs .mode-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 10px 16px;
+  letter-spacing: 0.05em;
+}
+
+/* ═══════════════════════════════════════════════
+   APP SHELL
+   ═══════════════════════════════════════════════ */
+.app-shell {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 41px);
+  margin-top: 41px;
+}
+
+/* ═══════════════════════════════════════════════
+   SIDEBAR
+   ═══════════════════════════════════════════════ */
+.sidebar {
+  width: 260px;
+  min-width: 260px;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+.logo-text-group { display: flex; flex-direction: column; }
+.logo-text {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.2em;
+  color: var(--text-primary);
+}
+.logo-subtitle {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: -2px;
+}
+
+.sidebar-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 0;
+}
+
+.tree-group { margin-bottom: 4px; }
+.tree-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  font-family: var(--font-sans);
+}
+.tree-toggle:hover { color: var(--text-primary); }
+.tree-toggle .arrow {
+  font-size: 10px;
+  transition: transform 0.15s;
+  color: var(--text-muted);
+  width: 12px;
+  text-align: center;
+  display: inline-block;
+}
+.tree-toggle .arrow.open { transform: rotate(90deg); }
+.tree-toggle .icon { font-size: 14px; }
+
+.tree-children {
+  padding-left: 14px;
+  overflow: hidden;
+  transition: max-height 0.2s ease;
+}
+.tree-children.collapsed {
+  max-height: 0 !important;
+  overflow: hidden;
+}
+
+.tree-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 16px 5px 20px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+}
+.tree-item:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+.tree-item.selected {
+  border-left-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: rgba(245, 158, 11, 0.06);
+}
+.tree-item .icon { font-size: 14px; }
+
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+.sidebar-footer button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sidebar-footer button:hover { background: var(--accent-hover); }
+
+/* ═══════════════════════════════════════════════
+   MAIN CONTENT
+   ═══════════════════════════════════════════════ */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════
+   WELCOME SCREEN
+   ═══════════════════════════════════════════════ */
+.welcome-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 40px;
+}
+.welcome-screen .welcome-icon {
+  width: 80px;
+  height: 80px;
+  opacity: 0.5;
+}
+.welcome-screen h2 {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 0.15em;
+  color: var(--text-primary);
+}
+.welcome-screen p {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-style: italic;
+  max-width: 360px;
+  text-align: center;
+}
+.welcome-screen .welcome-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.welcome-screen .welcome-hint kbd {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* ═══════════════════════════════════════════════
+   WORKSPACE (form + preview)
+   ═══════════════════════════════════════════════ */
+.workspace {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.workspace.active { display: flex; }
+
+.workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+.workspace-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.workspace-title h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.workspace-title .variant-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent-primary);
+  background: rgba(245, 158, 11, 0.1);
+  padding: 3px 10px;
+  border-radius: 99px;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+.workspace-actions {
+  display: flex;
+  gap: 8px;
+}
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-secondary:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+.btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: var(--accent-hover); }
+
+.workspace-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════
+   VARIABLE FORM PANEL
+   ═══════════════════════════════════════════════ */
+.form-panel {
+  width: 340px;
+  min-width: 340px;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.form-panel-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.form-panel-header h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.form-panel-header .var-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+.form-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+.form-group {
+  margin-bottom: 16px;
+}
+.form-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.form-group label .var-sigil {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent-primary);
+}
+.form-group input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  outline: none;
+  transition: all 0.15s;
+}
+.form-group input::placeholder { color: var(--text-muted); }
+.form-group input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+}
+.form-group .input-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.form-group.filled input {
+  border-color: var(--accent-dark);
+}
+
+/* ═══════════════════════════════════════════════
+   CONFIG PREVIEW
+   ═══════════════════════════════════════════════ */
+.preview-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-terminal);
+}
+
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  gap: 0;
+  min-height: 40px;
+}
+.section-tab {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.section-tab:hover { color: var(--text-secondary); }
+.section-tab.active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+.preview-toolbar .spacer { flex: 1; }
+.preview-toolbar .copy-all-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.preview-toolbar .copy-all-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.preview-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 16px 0;
+}
+
+.config-section {
+  margin-bottom: 8px;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 20px 4px 60px;
+  background: rgba(30, 41, 59, 0.4);
+  border-left: 3px solid var(--accent-darkest);
+}
+.section-header .section-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-dark);
+  letter-spacing: 0.05em;
+}
+.section-header .copy-section-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.15s;
+}
+.section-header:hover .copy-section-btn { opacity: 1; }
+.section-header .copy-section-btn:hover {
+  border-color: var(--border-default);
+  color: var(--text-secondary);
+}
+
+.config-line {
+  display: flex;
+  align-items: flex-start;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.65;
+  padding: 0 20px 0 0;
+  min-height: 22px;
+}
+.config-line:hover { background: rgba(51, 65, 85, 0.15); }
+.line-number {
+  width: 48px;
+  min-width: 48px;
+  text-align: right;
+  padding-right: 16px;
+  color: var(--text-muted);
+  user-select: none;
+  font-size: 12px;
+  opacity: 0.6;
+}
+.line-content {
+  flex: 1;
+  white-space: pre;
+}
+
+/* Syntax highlighting classes */
+.syn-comment { color: var(--text-muted); font-style: italic; }
+.syn-keyword { color: #7DD3FC; } /* sky-300 */
+.syn-string { color: #86EFAC; } /* green-300 */
+.syn-ip { color: #C4B5FD; } /* violet-300 */
+.syn-number { color: #FCA5A5; } /* red-300 */
+.syn-variable { color: var(--accent-primary); font-weight: 500; background: rgba(245,158,11,0.1); padding: 0 3px; border-radius: 3px; }
+.syn-section-marker { color: var(--accent-dark); font-weight: 600; }
+.syn-banner-text { color: var(--text-muted); }
+
+/* ═══════════════════════════════════════════════
+   TEMPLATE EDITOR MODE
+   ═══════════════════════════════════════════════ */
+.editor-mode {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+.editor-mode.active { display: flex; }
+
+.editor-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.editor-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.editor-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+.editor-input-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-subtle);
+}
+.editor-input-panel .panel-label {
+  padding: 10px 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.editor-input-panel textarea {
+  flex: 1;
+  width: 100%;
+  padding: 16px 20px;
+  background: var(--bg-terminal);
+  border: none;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.65;
+  resize: none;
+  outline: none;
+}
+.editor-input-panel textarea::placeholder { color: var(--text-muted); }
+
+.editor-detected-panel {
+  width: 320px;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+}
+.editor-detected-panel .panel-label {
+  padding: 10px 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.detected-vars {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+.detected-var {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--accent-primary);
+}
+.detected-var .var-dollar { color: var(--accent-dark); }
+.detected-var .occurrence-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+}
+.no-vars-message {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-style: italic;
+  padding: 20px 0;
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════════
+   TOAST
+   ═══════════════════════════════════════════════ */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent-dark);
+  border-radius: var(--radius-md);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 9999;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+.toast .toast-icon { color: var(--color-success); font-size: 16px; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     MODE TABS
+     ═══════════════════════════════════════════════ -->
+<div class="mode-tabs">
+  <button class="active" onclick="switchMode('generator')">CONFIG GENERATOR</button>
+  <button onclick="switchMode('editor')">TEMPLATE EDITOR</button>
+  <div class="spacer"></div>
+  <div class="mode-label">FORGE PLAYGROUND v0.1</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     APP SHELL
+     ═══════════════════════════════════════════════ -->
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <svg class="logo-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="64" height="64" rx="14" fill="#0F172A"/>
+          <path d="M20 44h24v4H20z" fill="#94A3B8"/>
+          <path d="M24 36h16v8H24z" fill="#64748B"/>
+          <path d="M22 32h20l-2 4H24z" fill="#94A3B8"/>
+          <path d="M28 28h8v4h-8z" fill="#475569"/>
+          <circle cx="26" cy="22" r="2" fill="#F59E0B" opacity="0.9"/>
+          <circle cx="32" cy="18" r="2.5" fill="#FBBF24" opacity="0.8"/>
+          <circle cx="38" cy="21" r="1.8" fill="#F59E0B" opacity="0.7"/>
+          <circle cx="30" cy="14" r="1.5" fill="#FBBF24" opacity="0.5"/>
+          <circle cx="35" cy="15" r="1.2" fill="#D97706" opacity="0.6"/>
+        </svg>
+        <div class="logo-text-group">
+          <span class="logo-text">FORGE</span>
+          <span class="logo-subtitle">Config Generator</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-tree" id="sidebarTree"></div>
+
+    <div class="sidebar-footer">
+      <button onclick="showToast('Template import coming in v1!')">
+        <span>+</span> Add Template
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <!-- Generator Mode -->
+    <div id="generatorMode" class="generator-mode" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+      <!-- Welcome screen -->
+      <div class="welcome-screen" id="welcomeScreen">
+        <svg class="welcome-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 44h24v4H20z" fill="#94A3B8" opacity="0.3"/>
+          <path d="M24 36h16v8H24z" fill="#64748B" opacity="0.3"/>
+          <path d="M22 32h20l-2 4H24z" fill="#94A3B8" opacity="0.3"/>
+          <path d="M28 28h8v4h-8z" fill="#475569" opacity="0.3"/>
+          <circle cx="26" cy="22" r="2" fill="#F59E0B" opacity="0.2"/>
+          <circle cx="32" cy="18" r="2.5" fill="#FBBF24" opacity="0.15"/>
+          <circle cx="38" cy="21" r="1.8" fill="#F59E0B" opacity="0.15"/>
+        </svg>
+        <h2>FORGE</h2>
+        <p>The forge is cold. Select a template from the sidebar to light it.</p>
+        <div class="welcome-hint">
+          <span>Or press</span>
+          <kbd>Ctrl+N</kbd>
+          <span>to add a new template</span>
+        </div>
+      </div>
+
+      <!-- Workspace (shown when variant selected) -->
+      <div class="workspace" id="workspace">
+        <div class="workspace-header">
+          <div class="workspace-title">
+            <h2 id="workspaceTitle">—</h2>
+            <span class="variant-badge" id="workspaceBadge">—</span>
+          </div>
+          <div class="workspace-actions">
+            <button class="btn-secondary" onclick="downloadConfig()">
+              <span>&#8595;</span> Download .txt
+            </button>
+            <button class="btn-primary" onclick="copyAll()">
+              <span>&#9776;</span> Copy All
+            </button>
+          </div>
+        </div>
+        <div class="workspace-body">
+          <div class="form-panel">
+            <div class="form-panel-header">
+              <h3>Variables</h3>
+              <span class="var-count" id="varCount">0 vars</span>
+            </div>
+            <div class="form-scroll" id="formScroll"></div>
+          </div>
+          <div class="preview-panel">
+            <div class="preview-toolbar" id="previewToolbar"></div>
+            <div class="preview-scroll" id="previewScroll"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Editor Mode -->
+    <div class="editor-mode" id="editorMode">
+      <div class="editor-header">
+        <h2>Template Editor</h2>
+        <button class="btn-primary" onclick="showToast('Template saved! (demo)')">
+          <span>&#10003;</span> Save Template
+        </button>
+      </div>
+      <div class="editor-body">
+        <div class="editor-input-panel">
+          <div class="panel-label">Paste Config Template</div>
+          <textarea id="editorTextarea" placeholder="Paste your config template here...&#10;&#10;Use $variable_name or ${variable_name} for template variables.&#10;&#10;Example:&#10;hostname $hostname&#10;interface vlan95&#10; ip address $vlan_95_ip_address 255.255.255.0" oninput="detectVariables()"></textarea>
+        </div>
+        <div class="editor-detected-panel">
+          <div class="panel-label">Detected Variables</div>
+          <div class="detected-vars" id="detectedVars">
+            <div class="no-vars-message">Paste a template to detect variables</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon">&#10003;</span>
+  <span id="toastMessage">Copied!</span>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   DATA MODEL
+   ═══════════════════════════════════════════════ */
+
+const TEMPLATE_DATA = {
+  views: [
+    {
+      name: 'Work',
+      icon: '&#128188;',
+      vendors: [
+        {
+          name: 'Cisco',
+          icon: '&#9881;',
+          models: [
+            {
+              name: 'IE3300',
+              variants: [
+                {
+                  id: 'generic-template',
+                  name: 'Generic Template',
+                  variables: {
+                    hostname: { label: 'Hostname', hint: 'Switch hostname (e.g., TULPSW-IE3300-01)', default: 'TULPSW-IE3300-01' },
+                    vlan_95_ip_address: { label: 'VLAN 95 IP Address', hint: 'Management VLAN IP', default: '172.25.95.10' },
+                    vlan_25_ip_address: { label: 'VLAN 25 IP Address', hint: 'Business LAN IP', default: '172.25.25.10' },
+                    vlan_125_ip_address: { label: 'VLAN 125 IP Address', hint: 'Controls LAN IP', default: '172.25.125.10' },
+                    snmp_location: { label: 'SNMP Location', hint: 'Physical location string', default: 'Tulsa Pump Station 01' },
+                    default_gateway: { label: 'Default Gateway', hint: 'Gateway IP address', default: '172.25.95.1' },
+                    accessportrange: { label: 'Access Port Range', hint: 'e.g., gi1/0/1-24', default: 'gi1/0/1-24' },
+                    vtp_domain_name: { label: 'VTP Domain Name', hint: 'VTP domain', default: 'TULSA' }
+                  },
+                  sections: [
+                    {
+                      name: 'Base IOS Config',
+                      lines: [
+                        '!###########################################################',
+                        '!',
+                        '!########## GENERIC IOS CONFIG ##########',
+                        '!',
+                        'service nagle',
+                        'no service pad',
+                        'no service config',
+                        'service tcp-keepalives-in',
+                        'service tcp-keepalives-out',
+                        'service timestamps debug datetime msec localtime show-timezone',
+                        'service timestamps log datetime msec localtime show-timezone',
+                        'service password-encryption',
+                        'service linenumber',
+                        'no ip http server',
+                        'no ip http secure-server',
+                        'no ip http authentication tacacs',
+                        'no ip dhcp snooping information option',
+                        'ip http secure-active-session-modules none',
+                        'ip http active-session-modules none',
+                        '!',
+                        'hostname $hostname',
+                        '!',
+                        'no enable password',
+                        'enable secret 9 $9$Ul64Po8JxM16t0$w6E3BBfxG60Ju2uyQ7l.FCFUFhOpBuScSJmC8vznkMQ',
+                        '!',
+                        'aaa new-model',
+                        '!',
+                        'clock timezone CST -6',
+                        'clock summer-time CDT recurring 2 Sun Mar 2:00 1 Sun Nov 2:00',
+                        '!',
+                        'ip domain name mmplp.net',
+                        'ip name-server 172.25.100.140',
+                        'ip name-server 172.30.100.140',
+                        'ip domain lookup'
+                      ]
+                    },
+                    {
+                      name: 'Interface VLANs',
+                      lines: [
+                        '!',
+                        'interface vlan95',
+                        ' description Network Management LAN',
+                        ' ip address $vlan_95_ip_address 255.255.255.0',
+                        ' no ip redirects',
+                        ' no ip directed-broadcast',
+                        ' no ip unreachables',
+                        ' no ip proxy-arp',
+                        ' no shutdown',
+                        '!',
+                        'interface vlan25',
+                        ' description Business LAN',
+                        ' ip address $vlan_25_ip_address 255.255.255.0',
+                        ' no ip redirects',
+                        ' no ip directed-broadcast',
+                        ' no ip unreachables',
+                        ' no ip proxy-arp',
+                        ' no shutdown',
+                        '!',
+                        'interface vlan125',
+                        ' description Controls LAN',
+                        ' ip address $vlan_125_ip_address 255.255.255.0',
+                        ' no ip redirects',
+                        ' no ip directed-broadcast',
+                        ' no ip unreachables',
+                        ' no ip proxy-arp',
+                        ' no shutdown',
+                        '!',
+                        'ip subnet-zero',
+                        'ip tftp source-interface vlan95',
+                        'no ip source-route'
+                      ]
+                    },
+                    {
+                      name: 'SNMP & Logging',
+                      lines: [
+                        '!',
+                        'no logging console',
+                        'logging buffered 65536 notifications',
+                        'logging host 172.25.102.130',
+                        'logging host 172.25.103.111',
+                        'logging trap notifications',
+                        'logging facility local0',
+                        'logging source-interface vlan95',
+                        '!',
+                        'no snmp-server community public RO',
+                        'no snmp-server community private RW',
+                        'snmp-server community aOR!75Nm7b RO 11',
+                        'snmp-server community Mn1jR5%p$e RW 12',
+                        'snmp-server trap-source vlan95',
+                        'snmp-server packetsize 2048',
+                        'snmp-server tftp-server-list 12',
+                        'snmp-server contact Magellan Networks 918-574-7667',
+                        'snmp-server location $snmp_location',
+                        'snmp-server enable traps'
+                      ]
+                    },
+                    {
+                      name: 'Switch & Access Ports',
+                      lines: [
+                        '!',
+                        '!########## GENERIC IOS SWITCH CONFIG ##########',
+                        '!',
+                        'ip default-gateway $default_gateway',
+                        '!',
+                        'interface Vlan1',
+                        ' no ip address',
+                        ' shutdown',
+                        '!',
+                        'int range $accessportrange',
+                        ' switchport access vlan 25',
+                        ' switchport mode access',
+                        ' authentication control-direction in',
+                        ' authentication event fail action next-method',
+                        ' authentication event server dead action authorize voice',
+                        ' authentication event server alive action reinitialize',
+                        ' authentication host-mode multi-auth',
+                        ' authentication open',
+                        ' authentication order dot1x mab',
+                        ' authentication priority dot1x mab',
+                        ' authentication port-control auto',
+                        ' authentication periodic',
+                        ' authentication timer reauthenticate server',
+                        ' authentication violation restrict',
+                        ' mab',
+                        ' dot1x pae authenticator',
+                        ' dot1x timeout tx-period 10',
+                        ' spanning-tree portfast'
+                      ]
+                    },
+                    {
+                      name: 'VTP & VLANs',
+                      lines: [
+                        '!',
+                        '##### Field VLAN Config #####',
+                        'vtp mode trans',
+                        'vtp version 2',
+                        'vtp domain $vtp_domain_name',
+                        'vtp password 9UBj@w347V',
+                        '!',
+                        'vlan 10',
+                        '  name NAC_UNTRUSTED',
+                        'vlan 20',
+                        '  name WIRELESS',
+                        'vlan 25',
+                        '  name DATA',
+                        'vlan 30',
+                        '  name VOICE',
+                        'vlan 35',
+                        '  name VIDEO',
+                        'vlan 40',
+                        '  name SECURITY',
+                        'vlan 69',
+                        '  name NULL',
+                        'vlan 95',
+                        '  name NetMgmt',
+                        'vlan 125',
+                        '  name CONTROLS',
+                        'vlan 225',
+                        '  name VSAT',
+                        '!',
+                        'ntp server $default_gateway',
+                        '!',
+                        'cdp run'
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      name: 'HomeLab',
+      icon: '&#127968;',
+      vendors: [
+        {
+          name: 'Cisco',
+          icon: '&#9881;',
+          models: [
+            {
+              name: '3560-CX',
+              variants: [
+                {
+                  id: 'home-switch',
+                  name: 'Home Switch',
+                  variables: {
+                    hostname: { label: 'Hostname', hint: 'Switch hostname', default: 'LBRUTON-SW01' },
+                    vlan_95_ip_address: { label: 'VLAN 95 IP Address', hint: 'Management VLAN IP', default: '192.168.95.2' },
+                    vlan_25_ip_address: { label: 'VLAN 25 IP Address', hint: 'Data VLAN IP', default: '192.168.25.2' },
+                    vlan_125_ip_address: { label: 'VLAN 125 IP Address', hint: 'IoT VLAN IP', default: '192.168.125.2' },
+                    snmp_location: { label: 'SNMP Location', hint: 'Physical location', default: 'Home Lab Rack' },
+                    default_gateway: { label: 'Default Gateway', hint: 'Gateway IP', default: '192.168.95.1' },
+                    accessportrange: { label: 'Access Port Range', hint: 'Port range', default: 'gi0/1-8' },
+                    vtp_domain_name: { label: 'VTP Domain Name', hint: 'VTP domain', default: 'HOMELAB' }
+                  },
+                  sections: [
+                    {
+                      name: 'Base Config',
+                      lines: [
+                        '!###########################################################',
+                        '!',
+                        '!########## HOME LAB SWITCH CONFIG ##########',
+                        '!',
+                        'service timestamps debug datetime msec localtime show-timezone',
+                        'service timestamps log datetime msec localtime show-timezone',
+                        'service password-encryption',
+                        'no ip http server',
+                        'no ip http secure-server',
+                        '!',
+                        'hostname $hostname',
+                        '!',
+                        'ip domain name homelab.local',
+                        'ip name-server 192.168.1.1',
+                        'ip domain lookup'
+                      ]
+                    },
+                    {
+                      name: 'Interfaces',
+                      lines: [
+                        '!',
+                        'interface vlan95',
+                        ' description Management',
+                        ' ip address $vlan_95_ip_address 255.255.255.0',
+                        ' no shutdown',
+                        '!',
+                        'interface vlan25',
+                        ' description Data',
+                        ' ip address $vlan_25_ip_address 255.255.255.0',
+                        ' no shutdown',
+                        '!',
+                        'interface vlan125',
+                        ' description IoT',
+                        ' ip address $vlan_125_ip_address 255.255.255.0',
+                        ' no shutdown',
+                        '!',
+                        'ip default-gateway $default_gateway',
+                        '!',
+                        'int range $accessportrange',
+                        ' switchport access vlan 25',
+                        ' switchport mode access',
+                        ' spanning-tree portfast'
+                      ]
+                    },
+                    {
+                      name: 'Services',
+                      lines: [
+                        '!',
+                        'snmp-server location $snmp_location',
+                        'snmp-server enable traps',
+                        '!',
+                        'vtp mode transparent',
+                        'vtp domain $vtp_domain_name',
+                        '!',
+                        'ntp server $default_gateway',
+                        '!',
+                        'line con 0',
+                        ' exec-timeout 10 0',
+                        ' logging synchronous',
+                        '!',
+                        'line vty 0 4',
+                        ' transport input ssh',
+                        ' exec-timeout 30 0',
+                        '!',
+                        'end'
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+/* ═══════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════ */
+let selectedVariant = null;
+let currentValues = {};
+let activeSection = 'all';
+
+/* ═══════════════════════════════════════════════
+   SIDEBAR TREE
+   ═══════════════════════════════════════════════ */
+function buildTree() {
+  const container = document.getElementById('sidebarTree');
+  let html = '';
+
+  TEMPLATE_DATA.views.forEach((view, vi) => {
+    const viewId = `view-${vi}`;
+    html += `<div class="tree-group">`;
+    html += `<button class="tree-toggle" onclick="toggleTree('${viewId}')">
+      <span class="arrow open" id="arrow-${viewId}">&#9654;</span>
+      <span class="icon">${view.icon}</span>
+      ${view.name}
+    </button>`;
+    html += `<div class="tree-children" id="children-${viewId}">`;
+
+    view.vendors.forEach((vendor, vdi) => {
+      const vendorId = `vendor-${vi}-${vdi}`;
+      html += `<div class="tree-group">`;
+      html += `<button class="tree-toggle" onclick="toggleTree('${vendorId}')">
+        <span class="arrow open" id="arrow-${vendorId}">&#9654;</span>
+        <span class="icon">${vendor.icon}</span>
+        ${vendor.name}
+      </button>`;
+      html += `<div class="tree-children" id="children-${vendorId}">`;
+
+      vendor.models.forEach((model, mi) => {
+        const modelId = `model-${vi}-${vdi}-${mi}`;
+        html += `<div class="tree-group">`;
+        html += `<button class="tree-toggle" onclick="toggleTree('${modelId}')">
+          <span class="arrow open" id="arrow-${modelId}">&#9654;</span>
+          <span class="icon">&#128421;</span>
+          ${model.name}
+        </button>`;
+        html += `<div class="tree-children" id="children-${modelId}">`;
+
+        model.variants.forEach(variant => {
+          html += `<div class="tree-item" id="tree-item-${variant.id}" onclick="selectVariant('${variant.id}')">
+            <span class="icon">&#128196;</span>
+            ${variant.name}
+          </div>`;
+        });
+
+        html += `</div></div>`;
+      });
+
+      html += `</div></div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+function toggleTree(id) {
+  const children = document.getElementById('children-' + id);
+  const arrow = document.getElementById('arrow-' + id);
+  if (children.classList.contains('collapsed')) {
+    children.classList.remove('collapsed');
+    arrow.classList.add('open');
+  } else {
+    children.classList.add('collapsed');
+    arrow.classList.remove('open');
+  }
+}
+
+function findVariant(id) {
+  for (const view of TEMPLATE_DATA.views) {
+    for (const vendor of view.vendors) {
+      for (const model of vendor.models) {
+        for (const variant of model.variants) {
+          if (variant.id === id) {
+            return { view: view.name, vendor: vendor.name, model: model.name, variant };
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function selectVariant(id) {
+  // Deselect previous
+  document.querySelectorAll('.tree-item.selected').forEach(el => el.classList.remove('selected'));
+
+  // Select new
+  const item = document.getElementById('tree-item-' + id);
+  if (item) item.classList.add('selected');
+
+  const found = findVariant(id);
+  if (!found) return;
+
+  selectedVariant = found;
+  activeSection = 'all';
+
+  // Initialize variable values from defaults
+  currentValues = {};
+  Object.entries(found.variant.variables).forEach(([key, v]) => {
+    currentValues[key] = v.default || '';
+  });
+
+  // Show workspace
+  document.getElementById('welcomeScreen').style.display = 'none';
+  document.getElementById('workspace').classList.add('active');
+
+  // Update header
+  document.getElementById('workspaceTitle').textContent = `${found.vendor} ${found.model}`;
+  document.getElementById('workspaceBadge').textContent = found.variant.name;
+
+  buildForm();
+  buildSectionTabs();
+  renderPreview();
+}
+
+/* ═══════════════════════════════════════════════
+   VARIABLE FORM
+   ═══════════════════════════════════════════════ */
+function buildForm() {
+  const container = document.getElementById('formScroll');
+  const vars = selectedVariant.variant.variables;
+  const count = Object.keys(vars).length;
+  document.getElementById('varCount').textContent = `${count} vars`;
+
+  let html = '';
+  Object.entries(vars).forEach(([key, v]) => {
+    const filled = currentValues[key] ? ' filled' : '';
+    html += `<div class="form-group${filled}" id="fg-${key}">
+      <label>
+        <span class="var-sigil">$</span>
+        ${v.label}
+      </label>
+      <input
+        type="text"
+        value="${currentValues[key] || ''}"
+        placeholder="${v.hint || key}"
+        oninput="updateVariable('${key}', this.value)"
+      />
+      ${v.hint ? `<div class="input-hint">${v.hint}</div>` : ''}
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function updateVariable(key, value) {
+  currentValues[key] = value;
+  const fg = document.getElementById('fg-' + key);
+  if (fg) {
+    if (value) fg.classList.add('filled');
+    else fg.classList.remove('filled');
+  }
+  renderPreview();
+}
+
+/* ═══════════════════════════════════════════════
+   SECTION TABS
+   ═══════════════════════════════════════════════ */
+function buildSectionTabs() {
+  const toolbar = document.getElementById('previewToolbar');
+  const sections = selectedVariant.variant.sections;
+
+  let html = `<button class="section-tab active" onclick="filterSection('all', this)">All Sections</button>`;
+  sections.forEach((sec, i) => {
+    html += `<button class="section-tab" onclick="filterSection(${i}, this)">${sec.name}</button>`;
+  });
+  html += `<div class="spacer"></div>`;
+  html += `<button class="copy-all-btn" onclick="copyAll()">&#128203; Copy All</button>`;
+
+  toolbar.innerHTML = html;
+}
+
+function filterSection(idx, btn) {
+  activeSection = idx;
+  document.querySelectorAll('.section-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderPreview();
+}
+
+/* ═══════════════════════════════════════════════
+   CONFIG PREVIEW RENDERER
+   ═══════════════════════════════════════════════ */
+
+// Known Cisco IOS keywords for highlighting
+const CISCO_KEYWORDS = new Set([
+  'service', 'no', 'ip', 'hostname', 'enable', 'secret', 'username', 'aaa',
+  'interface', 'description', 'address', 'shutdown', 'switchport', 'access',
+  'mode', 'vlan', 'clock', 'timezone', 'domain', 'name-server', 'logging',
+  'snmp-server', 'community', 'location', 'contact', 'trap-source', 'enable',
+  'traps', 'banner', 'line', 'con', 'vty', 'ntp', 'server', 'crypto',
+  'key', 'generate', 'rsa', 'ssh', 'lldp', 'run', 'cdp', 'spanning-tree',
+  'portfast', 'authentication', 'dot1x', 'mab', 'int', 'range', 'default-gateway',
+  'vtp', 'password', 'name', 'permit', 'deny', 'access-list', 'remark',
+  'tacacs', 'radius', 'group', 'login', 'exec-timeout', 'transport',
+  'preferred', 'input', 'output', 'history', 'size', 'synchronous',
+  'buffered', 'host', 'trap', 'facility', 'source-interface',
+  'packetsize', 'tftp-server-list', 'privilege', 'password-encryption',
+  'linenumber', 'tcp-keepalives-in', 'tcp-keepalives-out', 'timestamps',
+  'debug', 'datetime', 'msec', 'localtime', 'show-timezone', 'log',
+  'http', 'secure-server', 'dhcp', 'snooping', 'information', 'option',
+  'subnet-zero', 'tftp', 'redirects', 'directed-broadcast', 'unreachables',
+  'proxy-arp', 'pad', 'config', 'nagle', 'lookup', 'recurring'
+]);
+
+function highlightLine(raw) {
+  // Substitute variables
+  let line = raw;
+  const varPattern = /\$([a-zA-Z_][a-zA-Z0-9_]*)/g;
+
+  // Check if this is a known variable vs a hash/secret
+  const knownVars = selectedVariant ? Object.keys(selectedVariant.variant.variables) : [];
+
+  // First pass: identify substitutions
+  let parts = [];
+  let lastIndex = 0;
+  let match;
+  const regex = /\$([a-zA-Z_][a-zA-Z0-9_]*)/g;
+
+  // Build substituted line for display
+  let substituted = raw;
+  const substitutions = [];
+
+  // Find all $variable occurrences
+  while ((match = regex.exec(raw)) !== null) {
+    const varName = match[1];
+    if (knownVars.includes(varName) && currentValues[varName]) {
+      substitutions.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        original: match[0],
+        value: currentValues[varName]
+      });
+    }
+  }
+
+  // Build highlighted HTML
+  let result = '';
+  let pos = 0;
+  const fullLine = raw;
+
+  // If it's a comment line
+  if (fullLine.trimStart().startsWith('!') || fullLine.trimStart().startsWith('#')) {
+    // Substitute variables in comments too
+    let commented = escapeHtml(fullLine);
+    substitutions.forEach(sub => {
+      commented = commented.replace(escapeHtml(sub.original), `</span><span class="syn-variable">${escapeHtml(sub.value)}</span><span class="syn-comment">`);
+    });
+    return `<span class="syn-comment">${commented}</span>`;
+  }
+
+  // Process line word by word with variable substitution
+  let processed = fullLine;
+
+  // Replace known variables with placeholder tokens
+  const tokenMap = {};
+  substitutions.forEach((sub, i) => {
+    const token = `\x00VAR${i}\x00`;
+    tokenMap[token] = `<span class="syn-variable">${escapeHtml(sub.value)}</span>`;
+    processed = processed.replace(sub.original, token);
+  });
+
+  // Now highlight the processed line
+  let highlighted = escapeHtml(processed);
+
+  // Restore variable tokens
+  Object.entries(tokenMap).forEach(([token, html]) => {
+    highlighted = highlighted.replace(escapeHtml(token), html);
+  });
+
+  // Highlight IPs: match x.x.x.x patterns
+  highlighted = highlighted.replace(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/g, '<span class="syn-ip">$1</span>');
+
+  // Highlight unfilled variables
+  highlighted = highlighted.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)/g, (m, name) => {
+    if (knownVars.includes(name)) {
+      return `<span class="syn-variable" style="opacity:0.5; background:rgba(239,68,68,0.15); color:#FCA5A5;">$${escapeHtml(name)}</span>`;
+    }
+    return escapeHtml(m);
+  });
+
+  // Highlight first keyword on line
+  const trimmed = fullLine.trimStart();
+  const leadingSpaces = fullLine.length - trimmed.length;
+  const firstWord = trimmed.split(/\s/)[0];
+
+  if (CISCO_KEYWORDS.has(firstWord)) {
+    const idx = highlighted.indexOf(escapeHtml(firstWord));
+    if (idx !== -1 && idx < 40) {
+      highlighted = highlighted.substring(0, idx) +
+        '<span class="syn-keyword">' + escapeHtml(firstWord) + '</span>' +
+        highlighted.substring(idx + escapeHtml(firstWord).length);
+    }
+  }
+
+  return highlighted;
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderPreview() {
+  if (!selectedVariant) return;
+
+  const container = document.getElementById('previewScroll');
+  const sections = selectedVariant.variant.sections;
+  const showSections = activeSection === 'all' ? sections : [sections[activeSection]];
+
+  let html = '';
+  let lineNum = 1;
+
+  showSections.forEach((section, si) => {
+    // Section header
+    html += `<div class="config-section">`;
+    html += `<div class="section-header">
+      <span class="section-name">${escapeHtml(section.name)}</span>
+      <button class="copy-section-btn" onclick="copySection(${sections.indexOf(section)})">&#128203; Copy</button>
+    </div>`;
+
+    section.lines.forEach(line => {
+      const highlighted = highlightLine(line);
+      html += `<div class="config-line">
+        <span class="line-number">${lineNum}</span>
+        <span class="line-content">${highlighted}</span>
+      </div>`;
+      lineNum++;
+    });
+
+    html += `</div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════
+   GET PLAIN TEXT CONFIG
+   ═══════════════════════════════════════════════ */
+function getPlainConfig(sectionIndex) {
+  if (!selectedVariant) return '';
+  const sections = sectionIndex !== undefined
+    ? [selectedVariant.variant.sections[sectionIndex]]
+    : selectedVariant.variant.sections;
+
+  const knownVars = Object.keys(selectedVariant.variant.variables);
+  let lines = [];
+
+  sections.forEach(section => {
+    section.lines.forEach(line => {
+      let processed = line;
+      knownVars.forEach(varName => {
+        if (currentValues[varName]) {
+          processed = processed.replace(new RegExp('\\$' + varName, 'g'), currentValues[varName]);
+        }
+      });
+      lines.push(processed);
+    });
+  });
+
+  return lines.join('\n');
+}
+
+/* ═══════════════════════════════════════════════
+   COPY / DOWNLOAD
+   ═══════════════════════════════════════════════ */
+function copyAll() {
+  const text = getPlainConfig();
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Full config copied to clipboard');
+  }).catch(() => {
+    showToast('Copy failed - check browser permissions');
+  });
+}
+
+function copySection(idx) {
+  const text = getPlainConfig(idx);
+  navigator.clipboard.writeText(text).then(() => {
+    const name = selectedVariant.variant.sections[idx].name;
+    showToast(`"${name}" copied to clipboard`);
+  }).catch(() => {
+    showToast('Copy failed - check browser permissions');
+  });
+}
+
+function downloadConfig() {
+  const text = getPlainConfig();
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${currentValues.hostname || 'config'}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Config downloaded');
+}
+
+/* ═══════════════════════════════════════════════
+   TEMPLATE EDITOR — VARIABLE DETECTION
+   ═══════════════════════════════════════════════ */
+function detectVariables() {
+  const text = document.getElementById('editorTextarea').value;
+  const container = document.getElementById('detectedVars');
+
+  if (!text.trim()) {
+    container.innerHTML = '<div class="no-vars-message">Paste a template to detect variables</div>';
+    return;
+  }
+
+  // Find all $variable and ${variable} patterns
+  const pattern = /\$\{?([a-zA-Z_][a-zA-Z0-9_]*)\}?/g;
+  const counts = {};
+  let match;
+
+  while ((match = pattern.exec(text)) !== null) {
+    const name = match[1];
+    // Skip common false positives (hashes, secrets)
+    if (name.match(/^[0-9]/) || name.length < 3) continue;
+    // Skip known Cisco hash patterns
+    if (['9', 'e', 'w6E3BBfxG60Ju2uyQ7l'].some(p => name.startsWith(p))) continue;
+    counts[name] = (counts[name] || 0) + 1;
+  }
+
+  const vars = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+  if (vars.length === 0) {
+    container.innerHTML = '<div class="no-vars-message">No $variables detected in template</div>';
+    return;
+  }
+
+  container.innerHTML = vars.map(([name, count]) =>
+    `<div class="detected-var">
+      <span class="var-dollar">$</span>${escapeHtml(name)}
+      <span class="occurrence-count">${count}x</span>
+    </div>`
+  ).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   MODE SWITCHING
+   ═══════════════════════════════════════════════ */
+function switchMode(mode) {
+  document.querySelectorAll('.mode-tabs button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  if (mode === 'generator') {
+    document.getElementById('generatorMode').style.display = 'flex';
+    document.getElementById('editorMode').classList.remove('active');
+  } else {
+    document.getElementById('generatorMode').style.display = 'none';
+    document.getElementById('editorMode').classList.add('active');
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   TOAST
+   ═══════════════════════════════════════════════ */
+let toastTimer = null;
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  document.getElementById('toastMessage').textContent = message;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+/* ═══════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════ */
+buildTree();
+
+// Pre-populate editor with sample template text
+document.getElementById('editorTextarea').value = `hostname $hostname
+!
+interface vlan95
+ description Network Management LAN
+ ip address $vlan_95_ip_address 255.255.255.0
+ no ip redirects
+ no shutdown
+!
+interface vlan25
+ description Business LAN
+ ip address $vlan_25_ip_address 255.255.255.0
+ no shutdown
+!
+snmp-server location $snmp_location
+ip default-gateway $default_gateway
+!
+int range $accessportrange
+ switchport access vlan 25
+ switchport mode access
+!
+vtp domain $vtp_domain_name`;
+
+detectVariables();
+</script>
+</body>
+</html>

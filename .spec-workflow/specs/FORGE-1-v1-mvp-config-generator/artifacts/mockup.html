@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge — UI Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   FORGE BRAND TOKENS
+   ═══════════════════════════════════════════════ */
+:root {
+  --bg-primary: #0F172A;
+  --bg-surface: #1E293B;
+  --bg-elevated: #334155;
+  --bg-terminal: #0A0F1A;
+  --border-default: #475569;
+  --border-subtle: #334155;
+  --text-primary: #E2E8F0;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --accent-primary: #F59E0B;
+  --accent-hover: #FBBF24;
+  --accent-dark: #D97706;
+  --accent-darkest: #B45309;
+  --color-success: #22C55E;
+  --color-error: #EF4444;
+  --color-warning: #EAB308;
+  --color-info: #3B82F6;
+  --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════
+   SCREEN TABS (mockup navigation)
+   ═══════════════════════════════════════════════ */
+.mockup-tabs {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  background: #0A0F1A;
+  border-bottom: 1px solid var(--border-default);
+  padding: 0 16px;
+}
+.mockup-tabs button {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  letter-spacing: 0.05em;
+}
+.mockup-tabs button:hover {
+  color: var(--text-secondary);
+}
+.mockup-tabs button.active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+.mockup-tabs .tab-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: auto;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.screen { display: none; height: calc(100vh - 41px); margin-top: 41px; }
+.screen.active { display: flex; }
+
+/* ═══════════════════════════════════════════════
+   APP SHELL — SIDEBAR + MAIN
+   ═══════════════════════════════════════════════ */
+.app-shell {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+/* ═══════════════════════════════════════════════
+   SIDEBAR
+   ═══════════════════════════════════════════════ */
+.sidebar {
+  width: 260px;
+  min-width: 260px;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sidebar-logo .logo-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+.sidebar-logo .logo-text {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.2em;
+  color: var(--text-primary);
+}
+.sidebar-logo .logo-subtitle {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: -2px;
+}
+
+.sidebar-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 0;
+}
+
+.tree-group { margin-bottom: 4px; }
+.tree-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  font-family: var(--font-sans);
+}
+.tree-toggle:hover { color: var(--text-primary); }
+.tree-toggle .arrow {
+  font-size: 10px;
+  transition: transform 0.15s;
+  color: var(--text-muted);
+  width: 12px;
+  text-align: center;
+}
+.tree-toggle .arrow.down { transform: rotate(90deg); }
+.tree-children { padding-left: 14px; }
+
+.tree-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 16px 5px 20px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  position: relative;
+}
+.tree-item:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+.tree-item.selected {
+  border-left-color: var(--accent-primary);
+  background: rgba(245, 158, 11, 0.08);
+  color: var(--text-primary);
+}
+.tree-item .tree-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.tree-item.selected .tree-icon { color: var(--accent-primary); }
+
+.tree-item .dots {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 14px;
+  letter-spacing: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  padding: 0 4px;
+}
+.tree-item:hover .dots { opacity: 1; }
+
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+.sidebar-footer button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sidebar-footer button:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+  border-style: solid;
+}
+
+/* ═══════════════════════════════════════════════
+   MAIN CONTENT
+   ═══════════════════════════════════════════════ */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Content Header */
+.content-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.content-header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+.content-header .breadcrumb {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.content-header .breadcrumb span { color: var(--text-secondary); }
+.content-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ═══════════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════════ */
+.btn {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+}
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+}
+.btn-secondary:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+.btn-sm {
+  font-size: 12px;
+  padding: 5px 10px;
+}
+.btn-icon {
+  padding: 6px;
+  background: transparent;
+  border: 1px solid var(--border-default);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-icon:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+/* ═══════════════════════════════════════════════
+   CONFIG GENERATOR LAYOUT
+   ═══════════════════════════════════════════════ */
+.config-workspace {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Variable Form Panel */
+.var-panel {
+  width: 380px;
+  min-width: 380px;
+  border-right: 1px solid var(--border-subtle);
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--bg-primary);
+}
+.var-panel-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.var-panel-title svg { color: var(--accent-primary); }
+
+.form-group {
+  margin-bottom: 16px;
+}
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+  font-family: var(--font-mono);
+}
+.form-label .required {
+  color: var(--color-error);
+  margin-left: 2px;
+}
+.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-terminal);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: all 0.15s;
+}
+.form-input::placeholder { color: var(--text-muted); }
+.form-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+.form-input.has-value {
+  border-color: var(--border-default);
+}
+.form-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.form-hint.error { color: var(--color-error); }
+
+.interface-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--accent-primary);
+  cursor: pointer;
+  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.form-divider {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: 20px 0;
+}
+
+.var-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.var-count strong { color: var(--accent-primary); }
+
+/* ═══════════════════════════════════════════════
+   CONFIG PREVIEW
+   ═══════════════════════════════════════════════ */
+.preview-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.preview-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.preview-tab {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.preview-tab:hover { color: var(--text-secondary); }
+.preview-tab.active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+.preview-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+  padding: 6px 0;
+  flex-shrink: 0;
+}
+
+.preview-content {
+  flex: 1;
+  overflow: auto;
+  background: var(--bg-terminal);
+  position: relative;
+}
+
+.config-output {
+  display: flex;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 16px 0;
+}
+.line-numbers {
+  padding: 0 12px 0 16px;
+  text-align: right;
+  color: var(--text-muted);
+  user-select: none;
+  border-right: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+.config-lines {
+  padding: 0 16px;
+  white-space: pre;
+  flex: 1;
+  overflow-x: auto;
+}
+
+/* Syntax highlighting classes */
+.kw { color: #7DD3FC; }        /* keywords — sky blue */
+.str { color: #86EFAC; }       /* strings — green */
+.num { color: #C4B5FD; }       /* numbers — violet */
+.comment { color: var(--text-muted); font-style: italic; }
+.ip { color: #A5B4FC; }        /* IP addresses — indigo */
+.var-value { color: var(--accent-primary); font-weight: 500; }
+.var-unset {
+  color: var(--accent-primary);
+  background: rgba(245, 158, 11, 0.12);
+  padding: 0 3px;
+  border-radius: 2px;
+}
+.section-marker {
+  color: var(--accent-dark);
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════
+   WELCOME SCREEN
+   ═══════════════════════════════════════════════ */
+.welcome-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+}
+.welcome-logo {
+  margin-bottom: 32px;
+  opacity: 0.8;
+}
+.welcome-logo .logo-text-large {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 56px;
+  letter-spacing: 0.2em;
+  color: var(--text-primary);
+}
+.welcome-logo .logo-sub {
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.welcome-tagline {
+  font-size: 16px;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-bottom: 40px;
+  max-width: 360px;
+  line-height: 1.6;
+}
+.welcome-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* ═══════════════════════════════════════════════
+   TEMPLATE EDITOR
+   ═══════════════════════════════════════════════ */
+.editor-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+.editor-section {
+  margin-bottom: 24px;
+}
+.editor-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.editor-section-title .badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-primary);
+}
+
+.template-textarea {
+  width: 100%;
+  min-height: 300px;
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  background: var(--bg-terminal);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.template-textarea:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+.detected-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+.detected-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.detected-row:last-child { border-bottom: none; }
+.detected-var {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--accent-primary);
+  min-width: 180px;
+}
+.detected-type {
+  font-size: 12px;
+  padding: 4px 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  outline: none;
+}
+.detected-required {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.detected-required input[type="checkbox"] {
+  accent-color: var(--accent-primary);
+}
+
+.section-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.section-row:last-child { border-bottom: none; }
+.section-name {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+  min-width: 200px;
+}
+.section-lines {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.editor-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════
+   MODAL
+   ═══════════════════════════════════════════════ */
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 15, 26, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  width: 480px;
+  max-height: 80vh;
+  overflow: auto;
+}
+.modal-header {
+  padding: 20px 24px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.modal-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+}
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 20px;
+  padding: 4px;
+  line-height: 1;
+}
+.modal-close:hover { color: var(--text-primary); }
+.modal-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 24px;
+}
+.modal-tab {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+.modal-tab.active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+.modal-body { padding: 24px; }
+.modal-body .form-group { margin-bottom: 16px; }
+.modal-body .form-label {
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+.modal-body .scope-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.scope-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.scope-option:hover { border-color: var(--text-secondary); }
+.scope-option.selected {
+  border-color: var(--accent-primary);
+  background: rgba(245, 158, 11, 0.05);
+}
+.scope-option input[type="radio"] { accent-color: var(--accent-primary); }
+.scope-option label {
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.scope-option .scope-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ═══════════════════════════════════════════════
+   SCROLLBAR STYLING
+   ═══════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-default); }
+
+/* ═══════════════════════════════════════════════
+   UTILITY
+   ═══════════════════════════════════════════════ */
+.flex-col { display: flex; flex-direction: column; }
+.anvil-svg { display: inline-block; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     MOCKUP SCREEN TABS
+     ═══════════════════════════════════════════════ -->
+<nav class="mockup-tabs">
+  <button class="active" onclick="showScreen('generator')">Config Generator</button>
+  <button onclick="showScreen('welcome')">Welcome Screen</button>
+  <button onclick="showScreen('editor')">Template Editor</button>
+  <button onclick="showScreen('vault')">Vault Modal</button>
+  <span class="tab-label">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+    Forge UI Mockup — Task 0.1
+  </span>
+</nav>
+
+<!-- ═══════════════════════════════════════════════
+     SCREEN 1: CONFIG GENERATOR
+     ═══════════════════════════════════════════════ -->
+<div id="screen-generator" class="screen active">
+  <div class="app-shell">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <svg class="logo-icon" width="28" height="28" viewBox="0 0 64 64" fill="none">
+            <!-- Anvil body -->
+            <path d="M12 38h40v6c0 2-1 4-3 4H15c-2 0-3-2-3-4v-6z" fill="#F59E0B"/>
+            <path d="M8 32h48v6H8z" fill="#D97706"/>
+            <path d="M16 26h32v6H16z" fill="#FBBF24"/>
+            <!-- Horn -->
+            <path d="M48 28h8c2 0 3 1 3 3v1c0 2-1 3-3 3h-8" fill="#D97706"/>
+            <!-- Sparks -->
+            <circle cx="28" cy="16" r="2" fill="#FBBF24" opacity="0.9"/>
+            <circle cx="36" cy="12" r="1.5" fill="#F59E0B" opacity="0.7"/>
+            <circle cx="22" cy="13" r="1.5" fill="#FDE68A" opacity="0.6"/>
+            <circle cx="32" cy="8" r="1" fill="#FBBF24" opacity="0.5"/>
+          </svg>
+          <div>
+            <div class="logo-text">FORGE</div>
+            <div class="logo-subtitle">Config Generator</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-tree">
+        <!-- Work View -->
+        <div class="tree-group">
+          <button class="tree-toggle">
+            <span class="arrow down">&#9654;</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+            Work
+          </button>
+          <div class="tree-children">
+            <!-- Cisco -->
+            <div class="tree-group">
+              <button class="tree-toggle">
+                <span class="arrow down">&#9654;</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="6" cy="6" r="1"/><circle cx="6" cy="18" r="1"/></svg>
+                Cisco
+              </button>
+              <div class="tree-children">
+                <!-- IE3300 -->
+                <div class="tree-group">
+                  <button class="tree-toggle">
+                    <span class="arrow down">&#9654;</span>
+                    IE3300
+                  </button>
+                  <div class="tree-children">
+                    <div class="tree-item selected">
+                      <svg class="tree-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                      Generic Template
+                      <span class="dots">&middot;&middot;&middot;</span>
+                    </div>
+                  </div>
+                </div>
+                <!-- C9200L -->
+                <div class="tree-group">
+                  <button class="tree-toggle">
+                    <span class="arrow">&#9654;</span>
+                    C9200L
+                  </button>
+                  <div class="tree-children" style="display:none">
+                    <div class="tree-item">
+                      <svg class="tree-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                      Generic Template
+                      <span class="dots">&middot;&middot;&middot;</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HomeLab View -->
+        <div class="tree-group">
+          <button class="tree-toggle">
+            <span class="arrow down">&#9654;</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+            HomeLab
+          </button>
+          <div class="tree-children">
+            <div class="tree-group">
+              <button class="tree-toggle">
+                <span class="arrow down">&#9654;</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="6" cy="6" r="1"/><circle cx="6" cy="18" r="1"/></svg>
+                Cisco
+              </button>
+              <div class="tree-children">
+                <div class="tree-group">
+                  <button class="tree-toggle">
+                    <span class="arrow down">&#9654;</span>
+                    3560-CX
+                  </button>
+                  <div class="tree-children">
+                    <div class="tree-item">
+                      <svg class="tree-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                      Home Switch
+                      <span class="dots">&middot;&middot;&middot;</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add View
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="content-header">
+        <div>
+          <h1>IE3300 &mdash; Generic Template</h1>
+          <div class="breadcrumb">Work &rsaquo; Cisco &rsaquo; IE3300 &rsaquo; <span>Generic Template</span></div>
+        </div>
+        <div class="content-header-actions">
+          <button class="btn btn-secondary btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit Template
+          </button>
+          <button class="btn btn-secondary btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export .stvault
+          </button>
+        </div>
+      </div>
+
+      <div class="config-workspace">
+        <!-- Variable Form -->
+        <div class="var-panel">
+          <div class="var-panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            Variables
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">$hostname <span class="required">*</span></label>
+            <input class="form-input has-value" type="text" value="SITE01-IE3300-SW01" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">$vlan_95_ip_address <span class="required">*</span></label>
+            <input class="form-input has-value" type="text" value="10.95.1.10" />
+            <div class="form-hint">IPv4 address (e.g., 10.95.1.10)</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">$vlan_25_ip_address <span class="required">*</span></label>
+            <input class="form-input has-value" type="text" value="10.25.1.10" />
+            <div class="form-hint">IPv4 address</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">$vlan_125_ip_address <span class="required">*</span></label>
+            <input class="form-input" type="text" placeholder="e.g., 10.125.1.10" />
+            <div class="form-hint">IPv4 address</div>
+          </div>
+
+          <hr class="form-divider">
+
+          <div class="form-group">
+            <label class="form-label">$snmp_location <span class="required">*</span></label>
+            <input class="form-input has-value" type="text" value="Building A, IDF-2, Rack 4" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">$default_gateway <span class="required">*</span></label>
+            <input class="form-input has-value" type="text" value="10.95.1.1" />
+            <div class="form-hint">IPv4 address</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">$accessportrange</label>
+            <input class="form-input" type="text" placeholder="e.g., Gi1/0/1-24" />
+            <span class="interface-toggle">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+              Interface Builder
+            </span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">$vtp_domain_name</label>
+            <input class="form-input has-value" type="text" value="CORP-NETWORK" />
+          </div>
+
+          <div class="var-count"><strong>5</strong> of <strong>7</strong> variables filled &mdash; <strong>2</strong> remaining</div>
+        </div>
+
+        <!-- Config Preview -->
+        <div class="preview-panel">
+          <div class="preview-tabs">
+            <button class="preview-tab active">All Sections</button>
+            <button class="preview-tab">Generic IOS Config</button>
+            <button class="preview-tab">TACACS</button>
+            <button class="preview-tab">ACL</button>
+            <button class="preview-tab">SNMP</button>
+            <button class="preview-tab">VLANs</button>
+            <div class="preview-actions">
+              <button class="btn btn-secondary btn-sm">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                Copy Section
+              </button>
+              <button class="btn btn-primary btn-sm">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                Copy All
+              </button>
+            </div>
+          </div>
+          <div class="preview-content">
+            <div class="config-output">
+              <div class="line-numbers">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47</div>
+              <div class="config-lines"><span class="comment">! ============================================</span>
+<span class="comment">! Generic IOS Configuration</span>
+<span class="comment">! Model: IE3300 | Generated by Forge</span>
+<span class="comment">! ============================================</span>
+!
+<span class="kw">hostname</span> <span class="var-value">SITE01-IE3300-SW01</span>
+!
+<span class="kw">enable secret</span> 0 $enable_secret
+<span class="kw">service</span> password-encryption
+<span class="kw">service</span> timestamps debug datetime msec localtime
+<span class="kw">service</span> timestamps log datetime msec localtime
+!
+<span class="comment">! ============================================</span>
+<span class="comment">! VTP Configuration</span>
+<span class="comment">! ============================================</span>
+<span class="kw">vtp</span> domain <span class="var-value">CORP-NETWORK</span>
+<span class="kw">vtp</span> mode transparent
+!
+<span class="comment">! ============================================</span>
+<span class="comment">! VLAN Interfaces</span>
+<span class="comment">! ============================================</span>
+<span class="kw">interface</span> Vlan95
+ <span class="kw">description</span> Management VLAN
+ <span class="kw">ip address</span> <span class="var-value">10.95.1.10</span> <span class="ip">255.255.255.0</span>
+ <span class="kw">no shutdown</span>
+!
+<span class="kw">interface</span> Vlan25
+ <span class="kw">description</span> Data VLAN
+ <span class="kw">ip address</span> <span class="var-value">10.25.1.10</span> <span class="ip">255.255.255.0</span>
+ <span class="kw">no shutdown</span>
+!
+<span class="kw">interface</span> Vlan125
+ <span class="kw">description</span> Voice VLAN
+ <span class="kw">ip address</span> <span class="var-unset">$vlan_125_ip_address</span> <span class="ip">255.255.255.0</span>
+ <span class="kw">no shutdown</span>
+!
+<span class="comment">! ============================================</span>
+<span class="comment">! Default Route</span>
+<span class="comment">! ============================================</span>
+<span class="kw">ip default-gateway</span> <span class="var-value">10.95.1.1</span>
+<span class="kw">ip route</span> <span class="ip">0.0.0.0</span> <span class="ip">0.0.0.0</span> <span class="var-value">10.95.1.1</span>
+!
+<span class="comment">! ============================================</span>
+<span class="comment">! SNMP</span>
+<span class="comment">! ============================================</span>
+<span class="kw">snmp-server</span> location <span class="var-value">Building A, IDF-2, Rack 4</span>
+<span class="kw">snmp-server</span> contact netops@company.com
+</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SCREEN 2: WELCOME SCREEN
+     ═══════════════════════════════════════════════ -->
+<div id="screen-welcome" class="screen">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <svg class="logo-icon" width="28" height="28" viewBox="0 0 64 64" fill="none">
+            <path d="M12 38h40v6c0 2-1 4-3 4H15c-2 0-3-2-3-4v-6z" fill="#F59E0B"/>
+            <path d="M8 32h48v6H8z" fill="#D97706"/>
+            <path d="M16 26h32v6H16z" fill="#FBBF24"/>
+            <path d="M48 28h8c2 0 3 1 3 3v1c0 2-1 3-3 3h-8" fill="#D97706"/>
+            <circle cx="28" cy="16" r="2" fill="#FBBF24" opacity="0.9"/>
+            <circle cx="36" cy="12" r="1.5" fill="#F59E0B" opacity="0.7"/>
+            <circle cx="22" cy="13" r="1.5" fill="#FDE68A" opacity="0.6"/>
+            <circle cx="32" cy="8" r="1" fill="#FBBF24" opacity="0.5"/>
+          </svg>
+          <div>
+            <div class="logo-text">FORGE</div>
+            <div class="logo-subtitle">Config Generator</div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-tree" style="flex:1; display: flex; align-items: center; justify-content: center;">
+        <div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 8px; opacity: 0.4"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+          <div>No views yet</div>
+        </div>
+      </div>
+      <div class="sidebar-footer">
+        <button>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add View
+        </button>
+      </div>
+    </aside>
+    <div class="main-content">
+      <div class="welcome-center">
+        <div class="welcome-logo">
+          <svg width="80" height="80" viewBox="0 0 64 64" fill="none">
+            <path d="M12 38h40v6c0 2-1 4-3 4H15c-2 0-3-2-3-4v-6z" fill="#F59E0B"/>
+            <path d="M8 32h48v6H8z" fill="#D97706"/>
+            <path d="M16 26h32v6H16z" fill="#FBBF24"/>
+            <path d="M48 28h8c2 0 3 1 3 3v1c0 2-1 3-3 3h-8" fill="#D97706"/>
+            <circle cx="28" cy="16" r="2" fill="#FBBF24" opacity="0.9"/>
+            <circle cx="36" cy="12" r="1.5" fill="#F59E0B" opacity="0.7"/>
+            <circle cx="22" cy="13" r="1.5" fill="#FDE68A" opacity="0.6"/>
+            <circle cx="32" cy="8" r="1" fill="#FBBF24" opacity="0.5"/>
+            <circle cx="40" cy="14" r="1" fill="#FDE68A" opacity="0.4"/>
+          </svg>
+          <div class="logo-text-large">FORGE</div>
+          <div class="logo-sub">Config Generator</div>
+        </div>
+        <p class="welcome-tagline">The forge is cold. Add a template to light it.</p>
+        <div class="welcome-actions">
+          <button class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Load Sample Template
+          </button>
+          <button class="btn btn-secondary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Import .stvault
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SCREEN 3: TEMPLATE EDITOR
+     ═══════════════════════════════════════════════ -->
+<div id="screen-editor" class="screen">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <svg class="logo-icon" width="28" height="28" viewBox="0 0 64 64" fill="none">
+            <path d="M12 38h40v6c0 2-1 4-3 4H15c-2 0-3-2-3-4v-6z" fill="#F59E0B"/>
+            <path d="M8 32h48v6H8z" fill="#D97706"/>
+            <path d="M16 26h32v6H16z" fill="#FBBF24"/>
+            <path d="M48 28h8c2 0 3 1 3 3v1c0 2-1 3-3 3h-8" fill="#D97706"/>
+            <circle cx="28" cy="16" r="2" fill="#FBBF24" opacity="0.9"/>
+            <circle cx="36" cy="12" r="1.5" fill="#F59E0B" opacity="0.7"/>
+            <circle cx="22" cy="13" r="1.5" fill="#FDE68A" opacity="0.6"/>
+            <circle cx="32" cy="8" r="1" fill="#FBBF24" opacity="0.5"/>
+          </svg>
+          <div>
+            <div class="logo-text">FORGE</div>
+            <div class="logo-subtitle">Config Generator</div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-tree">
+        <div class="tree-group">
+          <button class="tree-toggle">
+            <span class="arrow down">&#9654;</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+            Work
+          </button>
+          <div class="tree-children">
+            <div class="tree-group">
+              <button class="tree-toggle">
+                <span class="arrow down">&#9654;</span>
+                Cisco
+              </button>
+              <div class="tree-children">
+                <div class="tree-group">
+                  <button class="tree-toggle">
+                    <span class="arrow down">&#9654;</span>
+                    IE3300
+                  </button>
+                  <div class="tree-children">
+                    <div class="tree-item selected">
+                      <svg class="tree-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                      Generic Template
+                      <span class="dots">&middot;&middot;&middot;</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-footer">
+        <button>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add View
+        </button>
+      </div>
+    </aside>
+
+    <div class="main-content flex-col">
+      <div class="content-header">
+        <div>
+          <h1>Edit Template &mdash; IE3300 Generic</h1>
+          <div class="breadcrumb">Work &rsaquo; Cisco &rsaquo; IE3300 &rsaquo; <span>Generic Template</span> &rsaquo; Edit</div>
+        </div>
+      </div>
+
+      <div class="editor-area">
+        <div class="editor-section">
+          <div class="editor-section-title">
+            Template Source
+            <span class="badge">Paste or type your config template</span>
+          </div>
+          <textarea class="template-textarea" spellcheck="false">! ============================================
+! Generic IOS Configuration — IE3300
+! ============================================
+!
+hostname $hostname
+!
+enable secret 0 $enable_secret
+service password-encryption
+service timestamps debug datetime msec localtime
+service timestamps log datetime msec localtime
+!
+! ============================================
+! VTP Configuration
+! ============================================
+vtp domain $vtp_domain_name
+vtp mode transparent
+!
+! ============================================
+! VLAN Interfaces
+! ============================================
+interface Vlan95
+ description Management VLAN
+ ip address $vlan_95_ip_address 255.255.255.0
+ no shutdown
+!
+interface Vlan25
+ description Data VLAN
+ ip address $vlan_25_ip_address 255.255.255.0
+ no shutdown
+!
+interface Vlan125
+ description Voice VLAN
+ ip address $vlan_125_ip_address 255.255.255.0
+ no shutdown
+!
+! ============================================
+! Default Route
+! ============================================
+ip default-gateway $default_gateway
+ip route 0.0.0.0 0.0.0.0 $default_gateway
+!
+! ============================================
+! SNMP
+! ============================================
+snmp-server location $snmp_location
+snmp-server contact netops@company.com</textarea>
+        </div>
+
+        <div class="editor-section">
+          <div class="editor-section-title">
+            Detected Variables
+            <span class="badge">7 found</span>
+          </div>
+          <div class="detected-panel">
+            <div class="detected-row">
+              <span class="detected-var">$hostname</span>
+              <select class="detected-type">
+                <option selected>text</option>
+                <option>ip_address</option>
+                <option>number</option>
+                <option>interface_range</option>
+              </select>
+              <label class="detected-required"><input type="checkbox" checked> Required</label>
+            </div>
+            <div class="detected-row">
+              <span class="detected-var">$enable_secret</span>
+              <select class="detected-type">
+                <option selected>text</option>
+                <option>ip_address</option>
+                <option>number</option>
+                <option>interface_range</option>
+              </select>
+              <label class="detected-required"><input type="checkbox" checked> Required</label>
+            </div>
+            <div class="detected-row">
+              <span class="detected-var">$vtp_domain_name</span>
+              <select class="detected-type">
+                <option selected>text</option>
+                <option>ip_address</option>
+                <option>number</option>
+                <option>interface_range</option>
+              </select>
+              <label class="detected-required"><input type="checkbox"> Required</label>
+            </div>
+            <div class="detected-row">
+              <span class="detected-var">$vlan_95_ip_address</span>
+              <select class="detected-type">
+                <option>text</option>
+                <option selected>ip_address</option>
+                <option>number</option>
+                <option>interface_range</option>
+              </select>
+              <label class="detected-required"><input type="checkbox" checked> Required</label>
+            </div>
+            <div class="detected-row">
+              <span class="detected-var">$vlan_25_ip_address</span>
+              <select class="detected-type">
+                <option>text</option>
+                <option selected>ip_address</option>
+                <option>number</option>
+                <option>interface_range</option>
+              </select>
+              <label class="detected-required"><input type="checkbox" checked> Required</label>
+            </div>
+            <div class="detected-row">
+              <span class="detected-var">$vlan_125_ip_address</span>
+              <select class="detected-type">
+                <option>text</option>
+                <option selected>ip_address</option>
+                <option>number</option>
+                <option>interface_range</option>
+              </select>
+              <label class="detected-required"><input type="checkbox" checked> Required</label>
+            </div>
+            <div class="detected-row">
+              <span class="detected-var">$default_gateway</span>
+              <select class="detected-type">
+                <option>text</option>
+                <option selected>ip_address</option>
+                <option>number</option>
+                <option>interface_range</option>
+              </select>
+              <label class="detected-required"><input type="checkbox" checked> Required</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="editor-section">
+          <div class="editor-section-title">
+            Detected Sections
+            <span class="badge">5 sections</span>
+          </div>
+          <div class="detected-panel">
+            <div class="section-row">
+              <span class="section-name">Generic IOS Configuration</span>
+              <span class="section-lines">Lines 1-11</span>
+            </div>
+            <div class="section-row">
+              <span class="section-name">VTP Configuration</span>
+              <span class="section-lines">Lines 13-18</span>
+            </div>
+            <div class="section-row">
+              <span class="section-name">VLAN Interfaces</span>
+              <span class="section-lines">Lines 20-36</span>
+            </div>
+            <div class="section-row">
+              <span class="section-name">Default Route</span>
+              <span class="section-lines">Lines 38-42</span>
+            </div>
+            <div class="section-row">
+              <span class="section-name">SNMP</span>
+              <span class="section-lines">Lines 44-48</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="editor-footer">
+        <button class="btn btn-secondary">Cancel</button>
+        <button class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save Template
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SCREEN 4: VAULT MODAL
+     ═══════════════════════════════════════════════ -->
+<div id="screen-vault" class="screen">
+  <div class="app-shell" style="position: relative;">
+    <!-- Same sidebar + content underneath -->
+    <aside class="sidebar" style="opacity: 0.4; pointer-events: none;">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <svg class="logo-icon" width="28" height="28" viewBox="0 0 64 64" fill="none">
+            <path d="M12 38h40v6c0 2-1 4-3 4H15c-2 0-3-2-3-4v-6z" fill="#F59E0B"/>
+            <path d="M8 32h48v6H8z" fill="#D97706"/>
+            <path d="M16 26h32v6H16z" fill="#FBBF24"/>
+            <path d="M48 28h8c2 0 3 1 3 3v1c0 2-1 3-3 3h-8" fill="#D97706"/>
+          </svg>
+          <div>
+            <div class="logo-text">FORGE</div>
+            <div class="logo-subtitle">Config Generator</div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-tree"></div>
+    </aside>
+    <div class="main-content" style="opacity: 0.4; pointer-events: none; position: relative;">
+      <div class="content-header">
+        <div>
+          <h1>IE3300 &mdash; Generic Template</h1>
+          <div class="breadcrumb">Work &rsaquo; Cisco &rsaquo; IE3300 &rsaquo; <span>Generic Template</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -3px; margin-right: 8px;">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+            </svg>
+            Vault
+          </h2>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-tabs">
+          <button class="modal-tab active" onclick="showVaultTab('export')">Export</button>
+          <button class="modal-tab" onclick="showVaultTab('import')">Import</button>
+        </div>
+
+        <!-- Export Tab -->
+        <div id="vault-export" class="modal-body">
+          <div class="form-group">
+            <label class="form-label" style="font-family: var(--font-sans);">Export Scope</label>
+            <div class="scope-options">
+              <div class="scope-option selected">
+                <input type="radio" name="scope" checked>
+                <div>
+                  <label>Current Variant</label>
+                  <div class="scope-desc">IE3300 / Generic Template only</div>
+                </div>
+              </div>
+              <div class="scope-option">
+                <input type="radio" name="scope">
+                <div>
+                  <label>Entire View</label>
+                  <div class="scope-desc">All models and variants in "Work"</div>
+                </div>
+              </div>
+              <div class="scope-option">
+                <input type="radio" name="scope">
+                <div>
+                  <label>Everything</label>
+                  <div class="scope-desc">All views, models, and variants</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="font-family: var(--font-sans);">Password <span style="color: var(--text-muted); font-weight: 400;">(optional)</span></label>
+            <input class="form-input" type="password" placeholder="Encrypt your vault file" />
+            <div class="form-hint">Leave blank for an unencrypted export</div>
+          </div>
+        </div>
+        <div class="modal-footer" id="vault-export-footer">
+          <button class="btn btn-secondary">Cancel</button>
+          <button class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export .stvault
+          </button>
+        </div>
+
+        <!-- Import Tab (hidden by default) -->
+        <div id="vault-import" class="modal-body" style="display: none;">
+          <div class="form-group">
+            <label class="form-label" style="font-family: var(--font-sans);">Select File</label>
+            <div style="border: 2px dashed var(--border-default); border-radius: var(--radius-md); padding: 32px; text-align: center; cursor: pointer; transition: all 0.15s;">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom: 8px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <div style="font-size: 13px; color: var(--text-secondary);">Drop .stvault file here or <span style="color: var(--accent-primary); text-decoration: underline;">browse</span></div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Accepts .stvault files only</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="font-family: var(--font-sans);">Password <span style="color: var(--text-muted); font-weight: 400;">(if encrypted)</span></label>
+            <input class="form-input" type="password" placeholder="Enter vault password" />
+          </div>
+        </div>
+        <div id="vault-import-footer" class="modal-footer" style="display: none;">
+          <button class="btn btn-secondary">Cancel</button>
+          <button class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Import
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Screen switching
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.mockup-tabs button').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  // Find the right tab button
+  const tabs = document.querySelectorAll('.mockup-tabs button');
+  const names = ['generator', 'welcome', 'editor', 'vault'];
+  const idx = names.indexOf(name);
+  if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
+}
+
+// Vault modal tab switching
+function showVaultTab(tab) {
+  const tabs = document.querySelectorAll('.modal-tab');
+  tabs.forEach(t => t.classList.remove('active'));
+  if (tab === 'export') {
+    tabs[0].classList.add('active');
+    document.getElementById('vault-export').style.display = '';
+    document.getElementById('vault-export-footer').style.display = '';
+    document.getElementById('vault-import').style.display = 'none';
+    document.getElementById('vault-import-footer').style.display = 'none';
+  } else {
+    tabs[1].classList.add('active');
+    document.getElementById('vault-export').style.display = 'none';
+    document.getElementById('vault-export-footer').style.display = 'none';
+    document.getElementById('vault-import').style.display = '';
+    document.getElementById('vault-import-footer').style.display = '';
+  }
+}
+</script>
+</body>
+</html>

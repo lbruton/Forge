@@ -330,9 +330,19 @@ interface Preferences {
 - **Prototype Required:** Yes — multiple data elements, new layout, complex interactions (tree nav, tabbed preview, variable form generation)
 
 ### Prototype Artifacts
-- **Stitch Screen IDs:** (to be filled during Phase 3.5)
-- **Playground File:** (to be filled during Phase 3.5)
+- **Stitch Screen IDs:** N/A (mockup used instead)
+- **Mockup File:** `.spec-workflow/specs/FORGE-1-v1-mvp-config-generator/artifacts/mockup.html`
+- **Playground File:** `.spec-workflow/specs/FORGE-1-v1-mvp-config-generator/artifacts/playground.html`
 - **Reference HTML/Mockup:** `/Users/lbruton/Devops/Forge/forge-brand-showcase.html` — branding reference (colors, typography, component styles)
+- **Visual Approval:** Approved 2026-03-23 with implementation notes (see below)
+
+### Implementation Notes from Visual Approval
+- Fresh app must show welcome screen only — no pre-loaded seed data
+- "Add Template" flow needs a proper modal/wizard: View > Vendor > Model > Variant fields BEFORE the paste textarea
+- Template editor: $variables highlighted in amber/bold — NOT full syntax highlighting (that's only in the preview)
+- Each section tab needs its own copy + download button (not just global copy/download)
+- Export .stvault button needed in header or sidebar — missing from prototype
+- Editor is raw text input; syntax highlighting applies only to the generated config preview
 
 ### Design Constraints
 - **Theme Compatibility:** Dark mode only (per branding guide)
