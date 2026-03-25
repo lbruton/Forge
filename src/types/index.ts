@@ -10,6 +10,7 @@ export interface View {
   id: string;
   name: string;
   vendors: Vendor[];
+  globalVariables?: VariableDefinition[];
   createdAt: string;
   updatedAt: string;
 }
@@ -68,6 +69,13 @@ export interface VariableDefinition {
   options: string[];
   required: boolean;
   description: string;
+  masked?: boolean;
+}
+
+// Parser output — discriminates local ($var) from global (${var}) variables
+export interface ParsedVariables {
+  local: VariableDefinition[];
+  global: string[];
 }
 
 // Runtime state
@@ -104,6 +112,7 @@ export interface GeneratedConfig {
   sourceVariantId: string;   // which variant was used
   sourceTemplateId: string;  // template snapshot reference
   variableValues: Record<string, string>;  // exact values used
+  globalVariableValues?: Record<string, string>;  // global values used at generation time
   fullConfig: string;        // final substituted output (may include manual edits)
   sections: GeneratedSection[];  // per-section output
   notes: string;             // optional user notes
