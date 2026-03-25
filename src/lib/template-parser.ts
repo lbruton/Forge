@@ -80,9 +80,6 @@ export function parseVariables(text: string): VariableDefinition[] {
   return result;
 }
 
-// Legacy inline divider pattern (matches !########## NAME ##########)
-const LEGACY_DIVIDER_RE = /^[!]?\s*#{3,}\s+(.+?)\s+#{3,}\s*$/;
-
 // START/END marker patterns
 const START_MARKER_RE = /^!#{3,}\s*(.*?)\s*-\s*START\s*#{3,}$/i;
 const END_MARKER_RE = /^!#{3,}\s*(.*?)\s*-\s*END\s*#{3,}$/i;
