@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-6-drag-to-sort-variables/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-25T18:43:51.095Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774464231088_k8nl7yp4x",
+      "approvalTitle": "Requirements: FORGE-6 Drag-to-sort variables"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-25T18:45:55.624Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774464231088_k8nl7yp4x",
+      "approvalTitle": "Requirements: FORGE-6 Drag-to-sort variables"
+    }
+  ]
+}

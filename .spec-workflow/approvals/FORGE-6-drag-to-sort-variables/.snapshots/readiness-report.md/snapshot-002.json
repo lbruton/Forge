@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1774465714879_5he2iuksd",
+  "approvalId": "approval_1774465695366_oqieqg1te",
+  "approvalTitle": "Readiness Report: FORGE-6 Drag-to-sort variables",
+  "version": 2,
+  "timestamp": "2026-03-25T19:08:34.879Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Implementation Readiness Report\n- **Spec**: FORGE-6-drag-to-sort-variables\n- **Generated**: 2026-03-25T19:08:00Z\n- **Recommendation**: PASS\n\n## Requirement Coverage (5/5 mapped)\n- REQ-1 (Drag-to-Sort Variable Rows): Task 2 ✓\n- REQ-2 (Order Persistence): Task 1, Task 3 ✓\n- REQ-3 (Order Preserved During Re-parse): Task 3, Task 5 ✓\n- REQ-4 (Generate View Respects Variable Order): Task 1, Task 4, Task 5 ✓\n- REQ-5 (Drag Handle Visual Design): Task 2 ✓\n\n## Design-Task Alignment\n- `customVariableOrder` flag on Template: Task 1 ✓\n- VariableDetectionPanel drag-sort: Task 2 ✓\n- Order-preserving merge in TemplateEditor: Task 3 ✓\n- VariableForm flat vs grouped rendering: Task 4 ✓\n- Unit tests for merge + VariableForm: Task 5 ✓\n\n## Contradictions\n- None found\n\n## Prototype Consistency\n- N/A — design.md declares `Prototype Required: No` (minor element additions matching existing patterns)\n\n## File Touch Map\n- Consistent — all files mentioned in individual tasks match the File Touch Map in tasks.md\n\n## Agent Recommendation\nPASS — All 5 requirements have full task coverage. Design decisions (customVariableOrder flag, order-preserving merge, flat rendering path) are each addressed by dedicated tasks. No contradictions between documents. No prototype needed. Task sequencing is correct (type change first, then UI, then logic, then rendering, then tests). Low-risk implementation with strong prior art in the codebase.\n",
+  "fileStats": {
+    "size": 1449,
+    "lines": 31,
+    "lastModified": "2026-03-25T19:08:07.000Z"
+  },
+  "comments": []
+}

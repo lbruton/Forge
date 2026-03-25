@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import type { VariableDefinition, VariableType } from '../types/index.ts';
-import { Plus, ChevronDown, Trash2, ArrowUpCircle } from 'lucide-react';
+import { Plus, ChevronDown, Trash2, ArrowUpCircle, GripVertical } from 'lucide-react';
 
 interface VariableDetectionPanelProps {
   variables: VariableDefinition[];
@@ -9,6 +9,7 @@ interface VariableDetectionPanelProps {
   variableSectionMap: Record<string, string>;
   hideHeader?: boolean;
   onPromoteToGlobal?: (varName: string) => void;
+  onReorder?: () => void;
 }
 
 const VARIABLE_TYPES: VariableType[] = ['string', 'ip', 'integer', 'dropdown'];
@@ -20,8 +21,37 @@ export function VariableDetectionPanel({
   variableSectionMap,
   hideHeader = false,
   onPromoteToGlobal,
+  onReorder,
 }: VariableDetectionPanelProps) {
   const [expandedVar, setExpandedVar] = useState<string | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const handleDragStart = useCallback((index: number) => {
+    setDragIndex(index);
+  }, []);
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent, index: number) => {
+      e.preventDefault();
+      if (dragIndex !== null && dragIndex !== index) {
+        setDragOverIndex(index);
+      }
+    },
+    [dragIndex],
+  );
+
+  const handleDragEnd = useCallback(() => {
+    if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
+      const reordered = [...variables];
+      const [moved] = reordered.splice(dragIndex, 1);
+      reordered.splice(dragOverIndex, 0, moved);
+      onChange(reordered);
+      onReorder?.();
+    }
+    setDragIndex(null);
+    setDragOverIndex(null);
+  }, [dragIndex, dragOverIndex, variables, onChange, onReorder]);
 
   const updateVariable = (index: number, updates: Partial<VariableDefinition>) => {
     const next = variables.map((v, i) => (i === index ? { ...v, ...updates } : v));
@@ -103,23 +133,32 @@ export function VariableDetectionPanel({
                   return (
                     <div
                       key={`${variable.name}-${index}`}
-                      className="bg-forge-obsidian border border-forge-graphite rounded-md overflow-hidden"
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragEnd={handleDragEnd}
+                      className={`bg-forge-obsidian border border-forge-graphite rounded-md overflow-hidden transition-colors ${
+                        dragIndex === index ? 'opacity-50 !border-amber-500' : ''
+                      } ${dragOverIndex === index ? '!border-green-500 shadow-[0_0_0_2px_rgba(34,197,94,0.2)]' : ''}`}
                     >
                       {/* Collapsed row */}
-                      <button
-                        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-forge-graphite/50 transition-colors"
-                        onClick={() => setExpandedVar(isExpanded ? null : variable.name)}
-                      >
-                        <span className="text-forge-amber-dark font-mono text-[13px]">$</span>
-                        <span className="text-forge-amber font-mono text-[13px] font-medium flex-1 truncate">
-                          {variable.name}
-                        </span>
-                        <span className="text-[11px] text-slate-500 font-sans">{variable.type}</span>
-                        <ChevronDown
-                          size={12}
-                          className={`text-slate-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                        />
-                      </button>
+                      <div className="w-full flex items-center gap-2 px-3 py-2">
+                        <GripVertical size={14} className="text-slate-500 cursor-grab flex-shrink-0" />
+                        <button
+                          className="flex items-center gap-2 flex-1 min-w-0 text-left hover:bg-forge-graphite/50 transition-colors rounded"
+                          onClick={() => setExpandedVar(isExpanded ? null : variable.name)}
+                        >
+                          <span className="text-forge-amber-dark font-mono text-[13px]">$</span>
+                          <span className="text-forge-amber font-mono text-[13px] font-medium flex-1 truncate">
+                            {variable.name}
+                          </span>
+                          <span className="text-[11px] text-slate-500 font-sans">{variable.type}</span>
+                          <ChevronDown
+                            size={12}
+                            className={`text-slate-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                          />
+                        </button>
+                      </div>
 
                       {/* Expanded edit form */}
                       {isExpanded && (

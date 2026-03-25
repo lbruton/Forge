@@ -8,7 +8,7 @@ import type { VariableDefinition, TemplateSection } from '../types/index.ts';
  * Groups variables by the first section they appear in.
  * Variables not found in any section go into an "Other" group.
  */
-function groupVariablesBySection(
+export function groupVariablesBySection(
   variables: VariableDefinition[],
   sections: TemplateSection[],
 ): { sectionName: string; vars: VariableDefinition[] }[] {
@@ -57,6 +57,7 @@ export function VariableForm() {
 
   const groups = useMemo(() => {
     if (!template) return [];
+    if (template.customVariableOrder) return null;
     return groupVariablesBySection(template.variables, template.sections);
   }, [template]);
 
@@ -124,24 +125,45 @@ export function VariableForm() {
         Variables
       </h3>
 
-      {groups.map((group) => (
-        <div key={group.sectionName} className="mb-5">
-          <h4 className="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2 pb-1 border-b border-forge-graphite">
-            {group.sectionName}
-          </h4>
-          {group.vars.map((varDef) => (
-            <VariableInput
-              key={varDef.name}
-              variableDefinition={varDef}
-              value={values[varDef.name] ?? varDef.defaultValue ?? ''}
-              onChange={(val) => setVariableValue(selectedVariantId, varDef.name, val)}
-            />
+      {groups === null ? (
+        // Custom variable order: flat list without section headers
+        template.variables.length > 0 ? (
+          <div className="mb-5">
+            {template.variables.map((varDef) => (
+              <VariableInput
+                key={varDef.name}
+                variableDefinition={varDef}
+                value={values[varDef.name] ?? varDef.defaultValue ?? ''}
+                onChange={(val) => setVariableValue(selectedVariantId, varDef.name, val)}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500 italic">No variables defined in this template.</p>
+        )
+      ) : (
+        // Legacy section-grouped rendering
+        <>
+          {groups.map((group) => (
+            <div key={group.sectionName} className="mb-5">
+              <h4 className="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2 pb-1 border-b border-forge-graphite">
+                {group.sectionName}
+              </h4>
+              {group.vars.map((varDef) => (
+                <VariableInput
+                  key={varDef.name}
+                  variableDefinition={varDef}
+                  value={values[varDef.name] ?? varDef.defaultValue ?? ''}
+                  onChange={(val) => setVariableValue(selectedVariantId, varDef.name, val)}
+                />
+              ))}
+            </div>
           ))}
-        </div>
-      ))}
 
-      {groups.length === 0 && (
-        <p className="text-sm text-slate-500 italic">No variables defined in this template.</p>
+          {groups.length === 0 && (
+            <p className="text-sm text-slate-500 italic">No variables defined in this template.</p>
+          )}
+        </>
       )}
     </div>
   );

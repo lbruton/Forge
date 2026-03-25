@@ -1,0 +1,104 @@
+# Requirements Document
+
+## References
+
+- **Issue:** FORGE-6
+- **Spec Path:** `.spec-workflow/specs/FORGE-6-drag-to-sort-variables/`
+
+## Introduction
+
+Add drag-to-sort capability to the variable list in the template editor's right sidebar (VariableDetectionPanel). The user-defined variable order persists on the template and controls the order variables appear in the Generate view's fill-in form. This allows engineers to arrange the form to match their deployment workflow (e.g., hostname first, then management IP, then VLANs).
+
+## Alignment with Product Vision
+
+From product.md: **"Copy-Paste Optimized"** and **"Engineer-First UX"**. Variable ordering directly supports deployment workflows — engineers fill in variables in a predictable, logical order that matches their mental model of the device config. This reduces friction in the primary config generation workflow.
+
+## Requirements
+
+### Requirement 1: Drag-to-Sort Variable Rows
+
+**User Story:** As a network engineer editing a template, I want to drag variables into my preferred order so that the Generate view form matches my deployment workflow.
+
+#### Acceptance Criteria
+
+1. WHEN a user drags a variable row in the VariableDetectionPanel THEN the system SHALL reorder the variable in the list at the drop position
+2. WHEN a variable is being dragged THEN the system SHALL show visual feedback (reduced opacity on the dragged row, highlighted border on the drop target)
+3. WHEN a drag completes THEN the system SHALL update the template's variable array order immediately
+4. IF the user drops a variable at its original position THEN the system SHALL make no changes (no-op)
+5. WHEN a user drags a variable from one section group to a position in a different section group THEN the system SHALL allow the cross-group reorder
+
+### Requirement 2: Order Persistence
+
+**User Story:** As a network engineer, I want my custom variable order to persist after saving so that I don't have to re-sort variables every time I open a template.
+
+#### Acceptance Criteria
+
+1. WHEN a template with reordered variables is saved THEN the system SHALL persist the variable array in the user-defined order
+2. WHEN a saved template is reopened THEN the system SHALL display variables in the persisted order
+3. WHEN a template is exported via .stvault THEN the system SHALL include the variable order
+4. WHEN a .stvault file is imported THEN the system SHALL restore the variable order from the export
+
+### Requirement 3: Order Preserved During Re-parse
+
+**User Story:** As a network engineer editing template text, I want my custom variable order to be maintained when the parser re-detects variables so that my sorting work isn't lost.
+
+#### Acceptance Criteria
+
+1. WHEN the user edits template text and the parser re-detects variables THEN the system SHALL preserve the order of existing variables
+2. WHEN a new variable is detected from template text changes THEN the system SHALL append the new variable at the end of the existing ordered list
+3. WHEN a variable is removed from template text THEN the system SHALL remove it from the list without disrupting the order of remaining variables
+
+### Requirement 4: Generate View Respects Variable Order
+
+**User Story:** As a network engineer generating a config, I want the variable input form to match the order I set in the editor so that I can fill in variables efficiently.
+
+#### Acceptance Criteria
+
+1. WHEN the Generate view renders variable input fields THEN the system SHALL use the template's variable array order
+2. IF the template has custom variable order THEN the system SHALL render variables in that order, not grouped by section
+3. IF the template has no custom order (legacy templates, never reordered) THEN the system SHALL fall back to the current section-grouped detection order
+
+### Requirement 5: Drag Handle Visual Design
+
+**User Story:** As a user, I want a clear visual affordance showing that variables can be dragged so that the feature is discoverable.
+
+#### Acceptance Criteria
+
+1. WHEN a variable row is rendered THEN the system SHALL display a GripVertical icon as the drag handle
+2. WHEN the user hovers over the drag handle THEN the system SHALL change the cursor to `grab`
+3. WHEN the user is actively dragging THEN the system SHALL change the cursor to `grabbing`
+
+## Open Questions
+
+> **GATE:** All blocking questions must be resolved before this document can be approved.
+
+### Blocking (must resolve before approval)
+
+- [x] ~~Should cross-section-group dragging be supported?~~ — Yes, per issue description: "Reorder should work across section groups"
+- [x] ~~How to handle order during re-parse?~~ — Preserve existing variable positions, append new detections at end (Requirement 3)
+
+### Non-blocking (can defer to Design)
+
+- [ ] Should we add up/down arrow quick-action buttons as an alternative to drag (accessibility)? — GlobalVariablesPage has this pattern
+- [ ] Should the Generate view show a "Custom order" indicator or toggle to switch between custom and section-grouped views?
+
+### Resolved
+
+- [x] ~~Do we need a new `order` field on VariableDefinition?~~ — No, array index position is sufficient. Store already persists array order via `saveTemplate()`.
+- [x] ~~Does the Generate view already respect array order?~~ — VariableForm groups by section. For custom-ordered templates, we need to bypass section grouping and render in flat array order.
+
+## Non-Functional Requirements
+
+### Code Architecture and Modularity
+- **Reuse existing pattern**: Drag-sort implementation must follow the established pattern from GlobalVariablesPage (dragIndex/dragOverIndex state, GripVertical icon, same visual feedback style)
+- **Single Responsibility**: Drag logic stays in VariableDetectionPanel; parent (TemplateEditor) only receives the reordered array via existing `onChange` callback
+- **No new store methods**: Existing `saveTemplate()` already persists the full variable array in order
+
+### Performance
+- Drag interactions must feel instant — no re-render delays during drag-over
+- Variable list of up to 50 variables must drag smoothly
+
+### Usability
+- Drag handle must be visually consistent with section drag handles (GripVertical, same icon size and color)
+- Visual feedback during drag must match the GlobalVariablesPage pattern (opacity change, border highlight)
+- Variable expand/collapse must coexist with drag — expanding a variable to edit should not trigger a drag

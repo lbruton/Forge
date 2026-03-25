@@ -46,6 +46,7 @@ export interface Template {
   id: string;
   sections: TemplateSection[];
   variables: VariableDefinition[];
+  customVariableOrder?: boolean;
   rawSource: string;
   createdAt: string;
   updatedAt: string;

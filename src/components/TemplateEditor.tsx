@@ -6,6 +6,34 @@ import { VariableDetectionPanel } from './VariableDetectionPanel.tsx';
 import { EditorSectionTabs } from './EditorSectionTabs.tsx';
 import type { VariableDefinition, TemplateSection, ConfigFormat } from '../types/index.ts';
 
+/**
+ * Order-preserving merge of parsed variables into an existing array.
+ * - Existing variables keep their position if still present in parsed output
+ * - Metadata (label, type, etc.) from the existing variable is preserved
+ * - Newly detected variables are appended at the end
+ * - Variables no longer in parsed output are removed
+ */
+export function mergeVariablesOrderPreserving(
+  existing: VariableDefinition[],
+  parsed: VariableDefinition[],
+): VariableDefinition[] {
+  const parsedByName = new Map(parsed.map((v) => [v.name, v]));
+  const existingNames = new Set(existing.map((v) => v.name));
+
+  // Keep existing variables that still appear in parsed output, preserving order and metadata
+  const kept = existing
+    .filter((v) => parsedByName.has(v.name))
+    .map((v) => {
+      const pv = parsedByName.get(v.name)!;
+      return { ...pv, label: v.label, type: v.type, description: v.description, required: v.required, defaultValue: v.defaultValue, options: v.options };
+    });
+
+  // Append newly detected variables (in parsed output but not in existing)
+  const added = parsed.filter((v) => !existingNames.has(v.name));
+
+  return [...kept, ...added];
+}
+
 interface TemplateEditorProps {
   variantId?: string | null;
 }
@@ -36,6 +64,9 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const [sectionsCollapsed, setSectionsCollapsed] = useState(false);
   const [globalNames, setGlobalNames] = useState<string[]>([]);
   const [globalVarsCollapsed, setGlobalVarsCollapsed] = useState(false);
+  const [customVariableOrder, setCustomVariableOrder] = useState(
+    existingTemplate?.customVariableOrder ?? false,
+  );
 
   // All global variables from the View (not just detected ones)
   const viewGlobalVariables = useMemo(() => {
@@ -96,18 +127,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
         const parsedVars = parseVariables(text);
         const parsedSections = parseSections(text, configFormat);
 
-        // Merge: keep user edits for existing variables, add new ones
-        setVariables((prev) => {
-          const prevByName = new Map(prev.map((v) => [v.name, v]));
-          return parsedVars.local.map((pv) => {
-            const existing = prevByName.get(pv.name);
-            if (existing) {
-              // Keep user edits to label, type, description, required
-              return { ...pv, label: existing.label, type: existing.type, description: existing.description, required: existing.required, defaultValue: existing.defaultValue, options: existing.options };
-            }
-            return pv;
-          });
-        });
+        setVariables((prev) => mergeVariablesOrderPreserving(prev, parsedVars.local));
 
         setGlobalNames(parsedVars.global);
         setSections(parsedSections);
@@ -151,6 +171,10 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     }
   }, [globalNames, context?.view.id, autoSyncGlobals]);
 
+  const handleVariableReorder = useCallback(() => {
+    setCustomVariableOrder(true);
+  }, []);
+
   // Save template
   const handleSave = () => {
     const templateId = existingTemplate?.id ?? crypto.randomUUID();
@@ -160,6 +184,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
       id: templateId,
       sections,
       variables,
+      customVariableOrder,
       rawSource: rawText,
       createdAt: existingTemplate?.createdAt ?? ts,
       updatedAt: ts,
@@ -178,16 +203,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     // Re-parse immediately
     const parsedVars = parseVariables(cleaned);
     const parsedSections = parseSections(cleaned, configFormat);
-    setVariables((prev) => {
-      const prevByName = new Map(prev.map((v) => [v.name, v]));
-      return parsedVars.local.map((pv) => {
-        const existing = prevByName.get(pv.name);
-        if (existing) {
-          return { ...pv, label: existing.label, type: existing.type, description: existing.description, required: existing.required, defaultValue: existing.defaultValue, options: existing.options };
-        }
-        return pv;
-      });
-    });
+    setVariables((prev) => mergeVariablesOrderPreserving(prev, parsedVars.local));
     setGlobalNames(parsedVars.global);
     setSections(parsedSections);
     setVariableSectionMap(buildVariableSectionMap(cleaned, parsedSections));
@@ -227,16 +243,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
         // Re-parse variables and section map for the rebuilt text
         const parsedVars = parseVariables(rebuilt);
         const parsedSections = parseSections(rebuilt, configFormat);
-        setVariables((prevVars) => {
-          const prevByName = new Map(prevVars.map((v) => [v.name, v]));
-          return parsedVars.local.map((pv) => {
-            const existing = prevByName.get(pv.name);
-            if (existing) {
-              return { ...pv, label: existing.label, type: existing.type, description: existing.description, required: existing.required, defaultValue: existing.defaultValue, options: existing.options };
-            }
-            return pv;
-          });
-        });
+        setVariables((prevVars) => mergeVariablesOrderPreserving(prevVars, parsedVars.local));
         setGlobalNames(parsedVars.global);
         setVariableSectionMap(buildVariableSectionMap(rebuilt, parsedSections));
 
@@ -516,6 +523,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
                 variableSectionMap={variableSectionMap}
                 hideHeader
                 onPromoteToGlobal={handlePromoteVariable}
+                onReorder={handleVariableReorder}
               />
             )}
           </div>
