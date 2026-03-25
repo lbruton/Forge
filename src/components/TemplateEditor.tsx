@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Save, FileText, Layers, GripVertical, Sparkles, ChevronLeft, ChevronRight, ChevronDown, Plus } from 'lucide-react';
+import { Save, FileText, Layers, GripVertical, Sparkles, ChevronLeft, ChevronRight, ChevronDown, Plus, Globe, ArrowUpCircle, ExternalLink } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { parseVariables, parseSections, cleanUpSections, rebuildRawText } from '../lib/template-parser.ts';
 import { VariableDetectionPanel } from './VariableDetectionPanel.tsx';
@@ -11,7 +11,7 @@ interface TemplateEditorProps {
 }
 
 function TemplateEditor({ variantId }: TemplateEditorProps) {
-  const { saveTemplate, findVariant, getConfigFormat, getTemplate, preferences, toggleRightPanel, autoSyncGlobals } = useForgeStore();
+  const { saveTemplate, findVariant, getConfigFormat, getTemplate, preferences, toggleRightPanel, autoSyncGlobals, setSelectedGlobalVariablesViewId } = useForgeStore();
 
   // Resolve variant context
   const context = variantId ? findVariant(variantId) : null;
@@ -35,6 +35,15 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const [variablesCollapsed, setVariablesCollapsed] = useState(false);
   const [sectionsCollapsed, setSectionsCollapsed] = useState(false);
   const [globalNames, setGlobalNames] = useState<string[]>([]);
+  const [globalVarsCollapsed, setGlobalVarsCollapsed] = useState(false);
+
+  // Look up full global variable definitions from the View store
+  const viewGlobalVariables = useMemo(() => {
+    const globals = context?.view.globalVariables ?? [];
+    return globalNames
+      .map((name) => globals.find((g) => g.name === name))
+      .filter((g): g is VariableDefinition => g !== undefined);
+  }, [globalNames, context?.view.globalVariables]);
 
   // Drag state for sections
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -109,6 +118,21 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
       }, 300);
     },
     [configFormat, buildVariableSectionMap],
+  );
+
+  // Promote a local variable to global by converting $varName to ${varName}
+  const handlePromoteVariable = useCallback(
+    (varName: string) => {
+      const escaped = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const promoted = rawText.replace(
+        new RegExp(`(\\$)(?!\\{)(${escaped})\\b`, 'g'),
+        `\${${varName}}`,
+      );
+      if (promoted !== rawText) {
+        handleTextChange(promoted);
+      }
+    },
+    [rawText, handleTextChange],
   );
 
   // Re-parse on initial load if we have existing text
@@ -405,7 +429,60 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
         {/* Right: variables + sections + format footer */}
         {!preferences.rightPanelCollapsed && (
         <div className="w-80 min-w-[320px] bg-forge-charcoal shrink-0 flex flex-col overflow-hidden">
-          {/* Variable detection panel — top, collapsible */}
+          {/* Global variables panel — top, collapsible */}
+          {globalNames.length > 0 && (
+          <div className={`${globalVarsCollapsed ? 'shrink-0' : ''} border-b border-forge-graphite flex flex-col`}>
+            <div className="flex items-center border-b border-forge-graphite shrink-0 bg-forge-charcoal">
+              <button
+                onClick={() => setGlobalVarsCollapsed(!globalVarsCollapsed)}
+                className="flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-green-400 hover:text-green-300 text-left flex-1"
+              >
+                <ChevronDown size={12} className={`transition-transform ${globalVarsCollapsed ? '-rotate-90' : ''}`} />
+                <Globe size={12} />
+                Global Variables
+                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold ml-1">
+                  {globalNames.length}
+                </span>
+              </button>
+            </div>
+            {!globalVarsCollapsed && (
+              <div className="px-5 py-3 space-y-1">
+                {globalNames.map((name) => {
+                  const def = viewGlobalVariables.find((g) => g.name === name);
+                  const value = def?.defaultValue;
+                  return (
+                    <div
+                      key={name}
+                      className="flex items-center gap-2 px-2.5 py-1.5 rounded bg-forge-obsidian border border-green-500/15 border-l-[3px] border-l-green-500"
+                    >
+                      <span className="text-green-400 font-mono text-[12px] font-medium flex-1 truncate">
+                        {name}
+                      </span>
+                      {value ? (
+                        <span className="text-slate-400 font-mono text-[11px] max-w-[100px] truncate">
+                          {value}
+                        </span>
+                      ) : (
+                        <span className="text-amber-400 text-[11px] italic">Not set</span>
+                      )}
+                    </div>
+                  );
+                })}
+                {context?.view.id && (
+                  <button
+                    onClick={() => setSelectedGlobalVariablesViewId(context.view.id)}
+                    className="flex items-center gap-1 text-[11px] text-green-400 hover:text-green-300 mt-2 transition-colors"
+                  >
+                    <ExternalLink size={11} />
+                    Manage Global Variables
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          )}
+
+          {/* Local variable detection panel, collapsible */}
           <div className={`${variablesCollapsed ? 'shrink-0' : 'flex-1 min-h-0'} border-b border-forge-graphite flex flex-col overflow-hidden`}>
             <div className="flex items-center border-b border-forge-graphite shrink-0 bg-forge-charcoal">
               <button
@@ -439,7 +516,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
               </button>
             </div>
             {!variablesCollapsed && (
-              <div className="flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 min-h-0 overflow-y-auto">
                 <VariableDetectionPanel
                   variables={variables}
                   onChange={setVariables}
@@ -447,6 +524,26 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
                   variableSectionMap={variableSectionMap}
                   hideHeader
                 />
+                {variables.length > 0 && (
+                  <div className="px-5 py-2 border-t border-forge-graphite">
+                    <div className="text-[10px] font-semibold tracking-wider uppercase text-slate-600 mb-1.5">
+                      Promote to Global
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {variables.map((v) => (
+                        <button
+                          key={v.name}
+                          onClick={() => handlePromoteVariable(v.name)}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-green-400 bg-forge-obsidian border border-forge-graphite hover:border-green-500/30 hover:bg-green-500/5 transition-colors"
+                          title={`Promote $${v.name} to global \${${v.name}}`}
+                        >
+                          <ArrowUpCircle size={10} />
+                          {v.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
