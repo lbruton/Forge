@@ -271,6 +271,7 @@ export function parseSections(text: string, format: ConfigFormat): TemplateSecti
         order: d,
         dividerPattern: dividers[d].pattern,
         endDividerPattern: lines[dividers[d].endLineIndex!],
+        startLine: dividers[d].lineIndex,
       });
     } else {
       endLine = d + 1 < dividers.length ? dividers[d + 1].lineIndex : lines.length;
@@ -283,6 +284,7 @@ export function parseSections(text: string, format: ConfigFormat): TemplateSecti
         template: sectionLines.join('\n'),
         order: d,
         dividerPattern: dividers[d].pattern,
+        startLine: dividers[d].lineIndex,
       });
     }
   }

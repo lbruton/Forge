@@ -323,6 +323,58 @@ ip route 192.168.1.0 255.255.255.0 10.0.0.2
     expect(sections[0].template).toContain('ip route 0.0.0.0');
     expect(sections[0].template).toContain('ip route 192.168.1.0');
   });
+
+  it('single section has startLine pointing to its divider', () => {
+    const config = `!##### Routing - START #####
+ip route 0.0.0.0 0.0.0.0 10.0.0.1
+!##### Routing - END #####`;
+    const sections = parseSections(config, 'cli');
+    expect(sections).toHaveLength(1);
+    expect(sections[0].startLine).toBe(0);
+  });
+
+  it('multiple sections have correct startLine values', () => {
+    const config = `!##### AAA Config - START #####
+aaa authentication dot1x default group radius
+!##### AAA Config - END #####
+!##### NAC Config - START #####
+dot1x system-auth-control
+!##### NAC Config - END #####`;
+    const sections = parseSections(config, 'cli');
+    expect(sections).toHaveLength(2);
+    expect(sections[0].startLine).toBe(0);
+    expect(sections[1].startLine).toBe(3);
+  });
+
+  it('startLine accounts for content between dividers', () => {
+    const config = `!########## Base Config ##########
+hostname Router1
+service timestamps debug datetime msec
+!
+!########## VLAN Config ##########
+interface vlan1
+ ip address 10.0.0.1 255.255.255.0
+!########## ACL Config ##########
+ip access-list extended DENY_ALL
+ deny ip any any`;
+    const sections = parseSections(config, 'cli');
+    expect(sections).toHaveLength(3);
+    expect(sections[0].startLine).toBe(0);
+    expect(sections[1].startLine).toBe(4);
+    expect(sections[2].startLine).toBe(7);
+  });
+
+  it('startLine is undefined for sections without dividers', () => {
+    const sections = parseSections('hostname Router1', 'cli');
+    expect(sections).toHaveLength(1);
+    expect(sections[0].startLine).toBeUndefined();
+  });
+
+  it('startLine is undefined for empty input', () => {
+    const sections = parseSections('', 'cli');
+    expect(sections).toHaveLength(1);
+    expect(sections[0].startLine).toBeUndefined();
+  });
 });
 
 // ── cleanUpSections ─────────────────────────────────────────────
