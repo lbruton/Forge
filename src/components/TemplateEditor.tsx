@@ -3,6 +3,7 @@ import { Save, FileText, Layers, GripVertical, Sparkles } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { parseVariables, parseSections, cleanUpSections, rebuildRawText } from '../lib/template-parser.ts';
 import { VariableDetectionPanel } from './VariableDetectionPanel.tsx';
+import { EditorSectionTabs } from './EditorSectionTabs.tsx';
 import type { VariableDefinition, TemplateSection, ConfigFormat } from '../types/index.ts';
 
 interface TemplateEditorProps {
@@ -340,6 +341,11 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
           <div className="px-5 py-2.5 text-[11px] font-semibold tracking-widest uppercase text-slate-500 bg-forge-charcoal border-b border-forge-graphite">
             Paste Config Template
           </div>
+          <EditorSectionTabs
+            sections={sections}
+            activeSectionName={activeSectionName}
+            onJumpTo={handleJumpToSection}
+          />
           <div className="flex-1 relative">
             {/* Textarea — renders visible text */}
             <textarea
