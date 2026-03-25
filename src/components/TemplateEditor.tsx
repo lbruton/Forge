@@ -11,7 +11,7 @@ interface TemplateEditorProps {
 }
 
 function TemplateEditor({ variantId }: TemplateEditorProps) {
-  const { saveTemplate, findVariant, getConfigFormat, getTemplate, preferences, toggleRightPanel } = useForgeStore();
+  const { saveTemplate, findVariant, getConfigFormat, getTemplate, preferences, toggleRightPanel, autoSyncGlobals } = useForgeStore();
 
   // Resolve variant context
   const context = variantId ? findVariant(variantId) : null;
@@ -34,6 +34,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const [activeSectionName, setActiveSectionName] = useState<string | null>(null);
   const [variablesCollapsed, setVariablesCollapsed] = useState(false);
   const [sectionsCollapsed, setSectionsCollapsed] = useState(false);
+  const [globalNames, setGlobalNames] = useState<string[]>([]);
 
   // Drag state for sections
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -102,6 +103,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
           });
         });
 
+        setGlobalNames(parsedVars.global);
         setSections(parsedSections);
         setVariableSectionMap(buildVariableSectionMap(text, parsedSections));
       }, 300);
@@ -119,6 +121,14 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     // Only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Sync detected global variable names to the View
+  useEffect(() => {
+    const viewId = context?.view.id;
+    if (viewId && globalNames.length > 0) {
+      autoSyncGlobals(viewId, globalNames);
+    }
+  }, [globalNames, context?.view.id, autoSyncGlobals]);
 
   // Save template
   const handleSave = () => {
@@ -157,6 +167,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
         return pv;
       });
     });
+    setGlobalNames(parsedVars.global);
     setSections(parsedSections);
     setVariableSectionMap(buildVariableSectionMap(cleaned, parsedSections));
 
@@ -205,6 +216,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             return pv;
           });
         });
+        setGlobalNames(parsedVars.global);
         setVariableSectionMap(buildVariableSectionMap(rebuilt, parsedSections));
 
         // Restore cursor position and sync overlay scroll after DOM update
