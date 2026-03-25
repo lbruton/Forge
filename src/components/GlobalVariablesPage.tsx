@@ -1,12 +1,181 @@
+import { useState, useCallback } from 'react';
 import { useForgeStore } from '../store/index.ts';
+import type { VariableDefinition, VariableType } from '../types/index.ts';
+import { Globe, Plus, GripVertical, Eye, EyeOff, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface GlobalVariablesPageProps {
   viewId: string;
 }
 
+const VARIABLE_TYPES: VariableType[] = ['string', 'ip', 'integer', 'dropdown'];
+
+const IPV4_REGEX = /^(\d{1,3}\.){3}\d{1,3}$/;
+
+function isValidIpv4(value: string): boolean {
+  if (!IPV4_REGEX.test(value)) return false;
+  return value.split('.').every((octet) => {
+    const n = parseInt(octet, 10);
+    return n >= 0 && n <= 255;
+  });
+}
+
 export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps) {
-  const tree = useForgeStore((s) => s.tree);
-  const view = tree.views.find((v) => v.id === viewId);
+  const view = useForgeStore((s) => s.tree.views.find((v) => v.id === viewId));
+  const addGlobalVariable = useForgeStore((s) => s.addGlobalVariable);
+  const updateGlobalVariable = useForgeStore((s) => s.updateGlobalVariable);
+  const deleteGlobalVariable = useForgeStore((s) => s.deleteGlobalVariable);
+  const reorderGlobalVariables = useForgeStore((s) => s.reorderGlobalVariables);
+
+  const globalVariables = view?.globalVariables ?? [];
+
+  const [confirmDeleteName, setConfirmDeleteName] = useState<string | null>(null);
+  const [ipErrors, setIpErrors] = useState<Record<string, boolean>>({});
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const handleAdd = useCallback(() => {
+    const existingNames = new Set(globalVariables.map((v) => v.name));
+    let counter = globalVariables.length + 1;
+    let name = `new_global_${counter}`;
+    while (existingNames.has(name)) {
+      counter++;
+      name = `new_global_${counter}`;
+    }
+    const newVar: VariableDefinition = {
+      name,
+      label: name.replace(/[_-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+      type: 'string',
+      defaultValue: '',
+      options: [],
+      required: false,
+      description: '',
+    };
+    addGlobalVariable(viewId, newVar);
+  }, [viewId, globalVariables, addGlobalVariable]);
+
+  const handleUpdate = useCallback(
+    (name: string, updates: Partial<VariableDefinition>) => {
+      updateGlobalVariable(viewId, name, updates);
+    },
+    [viewId, updateGlobalVariable],
+  );
+
+  const handleDelete = useCallback(
+    (name: string) => {
+      deleteGlobalVariable(viewId, name);
+      setConfirmDeleteName(null);
+    },
+    [viewId, deleteGlobalVariable],
+  );
+
+  const handleMoveUp = useCallback(
+    (index: number) => {
+      if (index === 0) return;
+      const names = globalVariables.map((v) => v.name);
+      [names[index - 1], names[index]] = [names[index], names[index - 1]];
+      reorderGlobalVariables(viewId, names);
+    },
+    [viewId, globalVariables, reorderGlobalVariables],
+  );
+
+  const handleMoveDown = useCallback(
+    (index: number) => {
+      if (index >= globalVariables.length - 1) return;
+      const names = globalVariables.map((v) => v.name);
+      [names[index], names[index + 1]] = [names[index + 1], names[index]];
+      reorderGlobalVariables(viewId, names);
+    },
+    [viewId, globalVariables, reorderGlobalVariables],
+  );
+
+  const handleIpBlur = useCallback(
+    (name: string, value: string) => {
+      setIpErrors((prev) => ({
+        ...prev,
+        [name]: value.length > 0 && !isValidIpv4(value),
+      }));
+    },
+    [],
+  );
+
+  const handleDragStart = useCallback((index: number) => {
+    setDragIndex(index);
+  }, []);
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent, index: number) => {
+      e.preventDefault();
+      if (dragIndex !== null && dragIndex !== index) {
+        setDragOverIndex(index);
+      }
+    },
+    [dragIndex],
+  );
+
+  const handleDragEnd = useCallback(() => {
+    if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
+      const names = globalVariables.map((v) => v.name);
+      const [moved] = names.splice(dragIndex, 1);
+      names.splice(dragOverIndex, 0, moved);
+      reorderGlobalVariables(viewId, names);
+    }
+    setDragIndex(null);
+    setDragOverIndex(null);
+  }, [dragIndex, dragOverIndex, globalVariables, viewId, reorderGlobalVariables]);
+
+  const renderValueInput = (variable: VariableDefinition) => {
+    const inputClasses =
+      'w-full px-2.5 py-1.5 bg-slate-950 border border-green-500/30 rounded text-[13px] font-mono text-slate-200 outline-none focus:border-green-500 focus:shadow-[0_0_0_2px_rgba(34,197,94,0.15)] transition-colors';
+
+    if (variable.type === 'dropdown') {
+      return (
+        <select
+          value={variable.defaultValue}
+          onChange={(e) => handleUpdate(variable.name, { defaultValue: e.target.value })}
+          className={`${inputClasses} cursor-pointer`}
+        >
+          <option value="">Select...</option>
+          {variable.options.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    if (variable.type === 'integer') {
+      return (
+        <input
+          type={variable.masked ? 'password' : 'number'}
+          value={variable.defaultValue}
+          onChange={(e) => handleUpdate(variable.name, { defaultValue: e.target.value })}
+          className={inputClasses}
+          placeholder="0"
+        />
+      );
+    }
+
+    return (
+      <>
+        <input
+          type={variable.masked ? 'password' : 'text'}
+          value={variable.defaultValue}
+          onChange={(e) => handleUpdate(variable.name, { defaultValue: e.target.value })}
+          onBlur={
+            variable.type === 'ip'
+              ? () => handleIpBlur(variable.name, variable.defaultValue)
+              : undefined
+          }
+          className={`${inputClasses} ${ipErrors[variable.name] ? '!border-red-500' : ''}`}
+          placeholder={variable.type === 'ip' ? '0.0.0.0' : 'Enter value...'}
+        />
+        {ipErrors[variable.name] && (
+          <p className="text-[11px] text-red-400 mt-0.5">Invalid IPv4 address</p>
+        )}
+      </>
+    );
+  };
 
   if (!view) {
     return (
@@ -16,27 +185,181 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
     );
   }
 
-  const globals = view.globalVariables ?? [];
-
   return (
-    <div className="flex-1 flex flex-col overflow-hidden p-6">
-      <h2 className="text-lg font-semibold text-slate-100 mb-4">
-        Global Variables — {view.name}
-      </h2>
-      {globals.length === 0 ? (
-        <p className="text-sm text-slate-500">
-          No global variables defined for this view yet.
-        </p>
-      ) : (
-        <ul className="space-y-2">
-          {globals.map((gv) => (
-            <li key={gv.name} className="text-sm text-slate-300">
-              <span className="font-mono text-forge-amber">${'{'}${gv.name}{'}'}</span>
-              {gv.description && <span className="ml-2 text-slate-500">— {gv.description}</span>}
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="flex flex-col h-full bg-slate-950">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50 bg-slate-800">
+        <h2 className="text-base font-semibold text-slate-200 flex items-center gap-2.5">
+          <Globe size={20} className="text-green-500" />
+          Global Variables
+          {globalVariables.length > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-green-500/20 text-green-500 text-[11px] font-bold">
+              {globalVariables.length}
+            </span>
+          )}
+        </h2>
+        <button
+          onClick={handleAdd}
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-slate-900 text-[13px] font-semibold rounded-md hover:bg-amber-400 transition-colors"
+        >
+          <Plus size={14} />
+          Add Variable
+        </button>
+      </div>
+
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto px-6 py-6">
+        {globalVariables.length === 0 ? (
+          <div className="text-center py-12 text-slate-500">
+            <Globe size={48} className="mx-auto mb-4 text-slate-600" />
+            <p className="text-[13px] leading-relaxed max-w-[420px] mx-auto">
+              No global variables yet. Use{' '}
+              <code className="font-mono text-green-500 text-xs bg-green-500/10 px-1.5 py-0.5 rounded">
+                {'${variable_name}'}
+              </code>{' '}
+              syntax in your templates to auto-detect globals, or add one manually.
+            </p>
+            <button
+              onClick={handleAdd}
+              className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-slate-900 text-[13px] font-semibold rounded-md hover:bg-amber-400 transition-colors"
+            >
+              <Plus size={14} />
+              Add Variable
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Column headers */}
+            <div className="grid grid-cols-[28px_1fr_180px_100px_36px_200px_36px] gap-2.5 px-4 mb-1.5 text-[10px] font-semibold tracking-widest uppercase text-slate-500">
+              <span />
+              <span>Variable Name</span>
+              <span>Value</span>
+              <span>Type</span>
+              <span />
+              <span>Description</span>
+              <span />
+            </div>
+
+            {/* Variable rows */}
+            <div>
+              {globalVariables.map((variable, index) => (
+                <div
+                  key={variable.name}
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragEnd={handleDragEnd}
+                  className={`grid grid-cols-[28px_1fr_180px_100px_36px_200px_36px] gap-2.5 items-center px-4 py-3 bg-slate-800 border border-slate-700/50 rounded-lg mb-2 transition-colors hover:border-green-500/30 ${
+                    dragIndex === index ? 'opacity-50 !border-green-500' : ''
+                  } ${dragOverIndex === index ? '!border-green-500 shadow-[0_0_0_2px_rgba(34,197,94,0.2)]' : ''}`}
+                >
+                  {/* Grip handle + reorder */}
+                  <div className="flex flex-col items-center gap-0.5">
+                    <GripVertical size={14} className="text-slate-500 cursor-grab" />
+                    <div className="flex flex-col">
+                      <button
+                        onClick={() => handleMoveUp(index)}
+                        disabled={index === 0}
+                        className="text-slate-600 hover:text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed"
+                        title="Move up"
+                      >
+                        <ArrowUp size={10} />
+                      </button>
+                      <button
+                        onClick={() => handleMoveDown(index)}
+                        disabled={index === globalVariables.length - 1}
+                        className="text-slate-600 hover:text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed"
+                        title="Move down"
+                      >
+                        <ArrowDown size={10} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Variable name (editable) */}
+                  <div className="flex items-center gap-0 overflow-hidden">
+                    <span className="text-green-600/70 font-mono text-[13px]">$</span>
+                    <input
+                      type="text"
+                      value={variable.name}
+                      onChange={(e) => {
+                        const newName = e.target.value.replace(/[^a-zA-Z0-9_]/g, '');
+                        if (newName && newName !== variable.name) {
+                          handleUpdate(variable.name, { name: newName });
+                        }
+                      }}
+                      className="bg-transparent text-green-500 font-mono text-[13px] font-medium outline-none border-none w-full"
+                    />
+                  </div>
+
+                  {/* Value input */}
+                  <div>{renderValueInput(variable)}</div>
+
+                  {/* Type selector */}
+                  <select
+                    value={variable.type}
+                    onChange={(e) =>
+                      handleUpdate(variable.name, { type: e.target.value as VariableType })
+                    }
+                    className="px-2.5 py-1.5 bg-slate-950 border border-slate-600 rounded text-[12px] text-slate-400 outline-none cursor-pointer appearance-none"
+                  >
+                    {VARIABLE_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Mask toggle */}
+                  <button
+                    onClick={() => handleUpdate(variable.name, { masked: !variable.masked })}
+                    className={`inline-flex items-center justify-center w-7 h-7 rounded border-none cursor-pointer transition-colors ${
+                      variable.masked
+                        ? 'text-amber-500 bg-slate-700/50'
+                        : 'text-slate-500 bg-transparent hover:bg-slate-700/50 hover:text-slate-400'
+                    }`}
+                    title={variable.masked ? 'Unmask value' : 'Mask value'}
+                  >
+                    {variable.masked ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+
+                  {/* Description */}
+                  <input
+                    type="text"
+                    value={variable.description}
+                    onChange={(e) =>
+                      handleUpdate(variable.name, { description: e.target.value })
+                    }
+                    placeholder="Optional description..."
+                    className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700/50 rounded text-[12px] text-slate-400 outline-none focus:border-slate-500 placeholder:text-slate-600 transition-colors"
+                  />
+
+                  {/* Delete button */}
+                  {confirmDeleteName === variable.name ? (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleDelete(variable.name)}
+                        className="inline-flex items-center justify-center w-7 h-7 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                        title="Confirm delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteName(variable.name)}
+                      className="inline-flex items-center justify-center w-7 h-7 rounded bg-transparent text-slate-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                      title="Delete variable"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
