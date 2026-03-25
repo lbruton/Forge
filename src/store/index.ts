@@ -8,6 +8,7 @@ import type {
   Model,
   Preferences,
   Template,
+  VariableDefinition,
   VariableValues,
   Variant,
   VaultExportData,
@@ -74,6 +75,13 @@ interface ForgeStore {
   updateNode: (nodeType: string, path: Record<string, string>, updates: Record<string, unknown>) => void;
   deleteNode: (nodeType: string, path: Record<string, string>) => void;
 
+  // Global variable actions
+  addGlobalVariable: (viewId: string, variable: VariableDefinition) => void;
+  updateGlobalVariable: (viewId: string, name: string, updates: Partial<VariableDefinition>) => void;
+  deleteGlobalVariable: (viewId: string, name: string) => void;
+  reorderGlobalVariables: (viewId: string, orderedNames: string[]) => void;
+  autoSyncGlobals: (viewId: string, detectedNames: string[]) => void;
+
   // Template actions
   saveTemplate: (template: Template) => void;
   deleteTemplate: (templateId: string) => void;
@@ -128,6 +136,7 @@ export const useForgeStore = create<ForgeStore>()(
           id: uuid(),
           name,
           vendors: [],
+          globalVariables: [],
           createdAt: ts,
           updatedAt: ts,
         };
@@ -342,6 +351,100 @@ export const useForgeStore = create<ForgeStore>()(
         });
       },
 
+      // --- Global variable actions ---
+
+      addGlobalVariable: (viewId, variable) => {
+        const ts = now();
+        set((state) => ({
+          tree: {
+            views: state.tree.views.map((v) =>
+              v.id === viewId
+                ? { ...v, globalVariables: [...(v.globalVariables ?? []), variable], updatedAt: ts }
+                : v,
+            ),
+          },
+        }));
+      },
+
+      updateGlobalVariable: (viewId, name, updates) => {
+        const ts = now();
+        set((state) => ({
+          tree: {
+            views: state.tree.views.map((v) =>
+              v.id === viewId
+                ? {
+                    ...v,
+                    updatedAt: ts,
+                    globalVariables: (v.globalVariables ?? []).map((gv) =>
+                      gv.name === name ? { ...gv, ...updates } : gv,
+                    ),
+                  }
+                : v,
+            ),
+          },
+        }));
+      },
+
+      deleteGlobalVariable: (viewId, name) => {
+        const ts = now();
+        set((state) => ({
+          tree: {
+            views: state.tree.views.map((v) =>
+              v.id === viewId
+                ? {
+                    ...v,
+                    updatedAt: ts,
+                    globalVariables: (v.globalVariables ?? []).filter((gv) => gv.name !== name),
+                  }
+                : v,
+            ),
+          },
+        }));
+      },
+
+      reorderGlobalVariables: (viewId, orderedNames) => {
+        const ts = now();
+        set((state) => ({
+          tree: {
+            views: state.tree.views.map((v) => {
+              if (v.id !== viewId) return v;
+              const globals = v.globalVariables ?? [];
+              const byName = new Map(globals.map((gv) => [gv.name, gv]));
+              const reordered = orderedNames
+                .map((n) => byName.get(n))
+                .filter((gv): gv is VariableDefinition => gv !== undefined);
+              return { ...v, globalVariables: reordered, updatedAt: ts };
+            }),
+          },
+        }));
+      },
+
+      autoSyncGlobals: (viewId, detectedNames) => {
+        const ts = now();
+        set((state) => ({
+          tree: {
+            views: state.tree.views.map((v) => {
+              if (v.id !== viewId) return v;
+              const existing = v.globalVariables ?? [];
+              const existingNames = new Set(existing.map((gv) => gv.name));
+              const newGlobals = detectedNames
+                .filter((n) => !existingNames.has(n))
+                .map((n): VariableDefinition => ({
+                  name: n,
+                  label: n.replace(/[_-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+                  type: 'string',
+                  defaultValue: '',
+                  options: [],
+                  required: false,
+                  description: '',
+                }));
+              if (newGlobals.length === 0) return v;
+              return { ...v, globalVariables: [...existing, ...newGlobals], updatedAt: ts };
+            }),
+          },
+        }));
+      },
+
       // --- Template actions ---
 
       saveTemplate: (template) => {
@@ -521,9 +624,20 @@ export const useForgeStore = create<ForgeStore>()(
               const existingView = tree.views.find((v) => v.id === importedView.id);
               if (!existingView) {
                 tree.views.push(importedView);
+              } else {
+                // Merge globalVariables additively: imported values update existing,
+                // new names added, existing names not in import preserved
+                const importedGlobals = importedView.globalVariables ?? [];
+                if (importedGlobals.length > 0) {
+                  const existing = existingView.globalVariables ?? [];
+                  const existingByName = new Map(existing.map((gv) => [gv.name, gv]));
+                  for (const igv of importedGlobals) {
+                    existingByName.set(igv.name, igv);
+                  }
+                  existingView.globalVariables = Array.from(existingByName.values());
+                  existingView.updatedAt = now();
+                }
               }
-              // If view exists, we don't overwrite — could deep-merge vendors/models
-              // but the spec says "adds new views/vendors/models, doesn't overwrite existing"
             }
           }
 

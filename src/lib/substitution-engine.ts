@@ -6,18 +6,23 @@ import type { TemplateSection, GeneratedConfigOutput, GeneratedSection } from '.
  * Leaves placeholders as-is when value is missing or empty string.
  * Greedy on word chars to match longest variable name first.
  */
-function substituteVariables(text: string, values: Record<string, string>): string {
-  // Handle ${variable} syntax
+function substituteVariables(
+  text: string,
+  localValues: Record<string, string>,
+  globalValues: Record<string, string> = {},
+): string {
+  // Pass 1: resolve ${variable} from globalValues first, then fall back to localValues
   let result = text.replace(/\$\{([a-zA-Z_]\w*)\}/g, (match, name) => {
-    const value = values[name];
-    if (value === undefined || value === '') return match;
-    return value;
+    const globalVal = globalValues[name];
+    if (globalVal !== undefined && globalVal !== '') return globalVal;
+    const localVal = localValues[name];
+    if (localVal !== undefined && localVal !== '') return localVal;
+    return match;
   });
 
-  // Handle $variable syntax — only when $ is followed by a letter or underscore
-  // Uses greedy \w* to match the longest possible variable name
+  // Pass 2: resolve $variable from localValues (existing behavior)
   result = result.replace(/\$([a-zA-Z_]\w*)/g, (match, name) => {
-    const value = values[name];
+    const value = localValues[name];
     if (value === undefined || value === '') return match;
     return value;
   });
@@ -31,6 +36,7 @@ function substituteVariables(text: string, values: Record<string, string>): stri
 export function generateConfig(
   sections: TemplateSection[],
   values: Record<string, string>,
+  globalValues: Record<string, string> = {},
 ): GeneratedConfigOutput {
   if (sections.length === 0) {
     return { fullConfig: '', sections: [] };
@@ -41,7 +47,7 @@ export function generateConfig(
     .sort((a, b) => a.order - b.order)
     .map((section) => ({
       name: section.name,
-      content: substituteVariables(section.template, values),
+      content: substituteVariables(section.template, values, globalValues),
       divider: section.dividerPattern,
       endDivider: section.endDividerPattern,
     }));
