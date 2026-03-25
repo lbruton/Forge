@@ -623,7 +623,11 @@ export const useForgeStore = create<ForgeStore>()(
             for (const importedView of data.views) {
               const existingView = tree.views.find((v) => v.id === importedView.id);
               if (!existingView) {
-                tree.views.push(importedView);
+                // Backward compat: old exports may lack globalVariables
+                tree.views.push({
+                  ...importedView,
+                  globalVariables: importedView.globalVariables ?? [],
+                });
               } else {
                 // Merge globalVariables additively: imported values update existing,
                 // new names added, existing names not in import preserved
