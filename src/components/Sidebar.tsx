@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { FolderOpen, Server, Cpu, FileCode2, FileCheck } from 'lucide-react';
+import { FolderOpen, Server, Cpu, FileCode2, FileCheck, Globe } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { TreeNode } from './TreeNode.tsx';
 import { CreateNodeModal, type CreateNodeType, type CreateNodeData } from './CreateNodeModal.tsx';
@@ -29,6 +29,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig }: SidebarPr
   const {
     tree,
     selectedVariantId,
+    selectedGlobalVariablesViewId,
     getGeneratedConfigs,
     getTemplate,
     addView,
@@ -37,6 +38,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig }: SidebarPr
     addVariant,
     saveTemplate,
     setSelectedVariant,
+    setSelectedGlobalVariablesViewId,
     deleteNode,
     updateNode,
     toggleExpandedNode,
@@ -129,17 +131,19 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig }: SidebarPr
     (id: string) => {
       setSelectedGeneratedConfigId(id);
       setSelectedVariant(null);
+      setSelectedGlobalVariablesViewId(null);
       onSelectGeneratedConfig?.(id);
     },
-    [setSelectedVariant, onSelectGeneratedConfig],
+    [setSelectedVariant, setSelectedGlobalVariablesViewId, onSelectGeneratedConfig],
   );
 
   const handleSelectVariant = useCallback(
     (variantId: string) => {
       setSelectedGeneratedConfigId(null);
+      setSelectedGlobalVariablesViewId(null);
       setSelectedVariant(variantId);
     },
-    [setSelectedVariant],
+    [setSelectedVariant, setSelectedGlobalVariablesViewId],
   );
 
   return (
@@ -171,6 +175,18 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig }: SidebarPr
               onEdit={() => handleEdit('view', { viewId: view.id }, view.name)}
               onDelete={() => handleDelete('view', { viewId: view.id })}
             >
+              <TreeNode
+                id={view.id + '__globals'}
+                label={`Global Variables${(view.globalVariables?.length ?? 0) > 0 ? ` (${view.globalVariables!.length})` : ''}`}
+                icon={<Globe size={14} />}
+                depth={1}
+                hasChildren={false}
+                isSelected={selectedGlobalVariablesViewId === view.id}
+                onSelect={() => {
+                  setSelectedGeneratedConfigId(null);
+                  setSelectedGlobalVariablesViewId(view.id);
+                }}
+              />
               {view.vendors.map((vendor) => (
                 <TreeNode
                   key={vendor.id}

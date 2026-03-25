@@ -66,6 +66,7 @@ interface ForgeStore {
 
   // Selection
   selectedVariantId: string | null;
+  selectedGlobalVariablesViewId: string | null;
 
   // Tree CRUD
   addView: (name: string) => View;
@@ -98,6 +99,7 @@ interface ForgeStore {
 
   // Selection
   setSelectedVariant: (variantId: string | null) => void;
+  setSelectedGlobalVariablesViewId: (viewId: string | null) => void;
 
   // Preferences
   toggleSidebar: () => void;
@@ -127,6 +129,7 @@ export const useForgeStore = create<ForgeStore>()(
       generatedConfigs: {},
       preferences: defaultPreferences,
       selectedVariantId: null,
+      selectedGlobalVariablesViewId: null,
 
       // --- Tree CRUD ---
 
@@ -515,7 +518,15 @@ export const useForgeStore = create<ForgeStore>()(
       setSelectedVariant: (variantId) => {
         set({
           selectedVariantId: variantId,
+          selectedGlobalVariablesViewId: null,
           preferences: { ...get().preferences, lastSelectedVariantId: variantId },
+        });
+      },
+
+      setSelectedGlobalVariablesViewId: (viewId) => {
+        set({
+          selectedGlobalVariablesViewId: viewId,
+          selectedVariantId: viewId ? null : get().selectedVariantId,
         });
       },
 
@@ -584,6 +595,7 @@ export const useForgeStore = create<ForgeStore>()(
           generatedConfigs: {},
           preferences: defaultPreferences,
           selectedVariantId: null,
+          selectedGlobalVariablesViewId: null,
         });
       },
 
