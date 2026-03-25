@@ -49,6 +49,7 @@ const emptyTree: ForgeTree = { views: [] };
 const defaultPreferences: Preferences = {
   lastSelectedVariantId: null,
   sidebarCollapsed: false,
+  rightPanelCollapsed: false,
   expandedNodes: [],
 };
 
@@ -92,6 +93,7 @@ interface ForgeStore {
 
   // Preferences
   toggleSidebar: () => void;
+  toggleRightPanel: () => void;
   toggleExpandedNode: (nodeId: string) => void;
 
   // Bulk operations
@@ -421,6 +423,15 @@ export const useForgeStore = create<ForgeStore>()(
           preferences: {
             ...state.preferences,
             sidebarCollapsed: !state.preferences.sidebarCollapsed,
+          },
+        }));
+      },
+
+      toggleRightPanel: () => {
+        set((state) => ({
+          preferences: {
+            ...state.preferences,
+            rightPanelCollapsed: !state.preferences.rightPanelCollapsed,
           },
         }));
       },
