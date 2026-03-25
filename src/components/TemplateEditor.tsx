@@ -285,16 +285,24 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     if (!rawText) return null;
     // Strip Cisco type-9 password hashes before scanning (same as parseVariables)
     const sanitized = rawText.replace(/\$\d\$\S+/g, (match) => '_'.repeat(match.length));
-    // Split by variable patterns, keeping delimiters
+    // Split by variable patterns, keeping delimiters — braced form captured first
     const parts = sanitized.split(/(\$\{[A-Za-z_]\w*\}|\$[A-Za-z_]\w*)/gm);
-    const varPattern = /^\$\{?[A-Za-z_]\w*\}?$/;
+    const globalVarPattern = /^\$\{[A-Za-z_]\w*\}$/;
+    const localVarPattern = /^\$[A-Za-z_]\w*$/;
 
     // Reconstruct spans using original text positions
     let offset = 0;
     return parts.map((part, i) => {
       const original = rawText.substring(offset, offset + part.length);
       offset += part.length;
-      if (varPattern.test(part)) {
+      if (globalVarPattern.test(part)) {
+        return (
+          <span key={i} className="bg-green-500/25 text-transparent rounded-sm border-b border-green-500/40">
+            {original}
+          </span>
+        );
+      }
+      if (localVarPattern.test(part)) {
         return (
           <span key={i} className="bg-amber-500/25 text-transparent rounded-sm border-b border-amber-500/40">
             {original}

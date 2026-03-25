@@ -47,7 +47,8 @@ const CLI_KEYWORDS = new Set([
 
 const IPV4_RE = /\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/;
 const INTERFACE_NAME_RE = /\b((?:Gi|Te|Fa|Vlan|Lo)\S+)/;
-const VARIABLE_RE = /(\$\{[a-zA-Z_]\w*\}|\$[a-zA-Z_]\w*)/;
+const VARIABLE_GLOBAL_RE = /(\$\{[a-zA-Z_]\w*\})/;
+const VARIABLE_LOCAL_RE = /(\$[a-zA-Z_]\w*)/;
 const NUMBER_RE = /\b(\d+)\b/;
 
 function tokenizeCli(line: string): HighlightToken[] {
@@ -62,7 +63,8 @@ function tokenizeCli(line: string): HighlightToken[] {
   while (remaining.length > 0) {
     const { state, tryMatch } = createMatcher(remaining);
 
-    tryMatch(VARIABLE_RE, 'variable');
+    tryMatch(VARIABLE_GLOBAL_RE, 'variable-global');
+    tryMatch(VARIABLE_LOCAL_RE, 'variable');
     tryMatch(IPV4_RE, 'ip-address');
     tryMatch(INTERFACE_NAME_RE, 'interface-name');
     tryMatch(NUMBER_RE, 'number');
@@ -120,6 +122,8 @@ function tokenizeXml(line: string): HighlightToken[] {
     tryMatch(tagRe, 'tag');
     tryMatch(attrRe, 'attribute');
     tryMatch(stringRe, 'string');
+    tryMatch(VARIABLE_GLOBAL_RE, 'variable-global');
+    tryMatch(VARIABLE_LOCAL_RE, 'variable');
 
     if (state.best === null) {
       if (remaining.length > 0) tokens.push({ text: remaining, className: 'text' });
@@ -161,6 +165,8 @@ function tokenizeJson(line: string): HighlightToken[] {
     tryMatch(numberRe, 'number');
     tryMatch(boolRe, 'boolean');
     tryMatch(punctRe, 'punctuation');
+    tryMatch(VARIABLE_GLOBAL_RE, 'variable-global');
+    tryMatch(VARIABLE_LOCAL_RE, 'variable');
 
     if (state.best === null) {
       if (remaining.length > 0) tokens.push({ text: remaining, className: 'text' });
@@ -208,6 +214,8 @@ function tokenizeYaml(line: string): HighlightToken[] {
     tryMatch(/\b(true|false|null|yes|no)\b/, 'boolean');
     // Inline comment
     tryMatch(/(#.*)$/, 'comment');
+    tryMatch(VARIABLE_GLOBAL_RE, 'variable-global');
+    tryMatch(VARIABLE_LOCAL_RE, 'variable');
 
     if (state.best === null) {
       if (remaining.length > 0) tokens.push({ text: remaining, className: 'text' });
