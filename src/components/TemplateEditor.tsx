@@ -92,7 +92,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
         // Merge: keep user edits for existing variables, add new ones
         setVariables((prev) => {
           const prevByName = new Map(prev.map((v) => [v.name, v]));
-          return parsedVars.map((pv) => {
+          return parsedVars.local.map((pv) => {
             const existing = prevByName.get(pv.name);
             if (existing) {
               // Keep user edits to label, type, description, required
@@ -149,7 +149,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     const parsedSections = parseSections(cleaned, configFormat);
     setVariables((prev) => {
       const prevByName = new Map(prev.map((v) => [v.name, v]));
-      return parsedVars.map((pv) => {
+      return parsedVars.local.map((pv) => {
         const existing = prevByName.get(pv.name);
         if (existing) {
           return { ...pv, label: existing.label, type: existing.type, description: existing.description, required: existing.required, defaultValue: existing.defaultValue, options: existing.options };
@@ -197,7 +197,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
         const parsedSections = parseSections(rebuilt, configFormat);
         setVariables((prevVars) => {
           const prevByName = new Map(prevVars.map((v) => [v.name, v]));
-          return parsedVars.map((pv) => {
+          return parsedVars.local.map((pv) => {
             const existing = prevByName.get(pv.name);
             if (existing) {
               return { ...pv, label: existing.label, type: existing.type, description: existing.description, required: existing.required, defaultValue: existing.defaultValue, options: existing.options };

@@ -65,9 +65,17 @@ no ip http secure-server
 // ── Variable Detection ──────────────────────────────────────────
 
 describe('parseVariables', () => {
-  it('detects all 8 variables from seed config', () => {
-    const vars = parseVariables(seedConfig);
-    const names = vars.map((v) => v.name);
+  it('returns ParsedVariables with local and global arrays', () => {
+    const result = parseVariables(seedConfig);
+    expect(result).toHaveProperty('local');
+    expect(result).toHaveProperty('global');
+    expect(Array.isArray(result.local)).toBe(true);
+    expect(Array.isArray(result.global)).toBe(true);
+  });
+
+  it('detects all 8 bare $var variables as local from seed config', () => {
+    const { local, global: globals } = parseVariables(seedConfig);
+    const names = local.map((v) => v.name);
     expect(names).toContain('hostname');
     expect(names).toContain('vlan_95_ip_address');
     expect(names).toContain('vlan_25_ip_address');
@@ -77,29 +85,30 @@ describe('parseVariables', () => {
     expect(names).toContain('accessportrange');
     expect(names).toContain('vtp_domain_name');
     expect(names).toHaveLength(8);
+    expect(globals).toHaveLength(0);
   });
 
   it('does NOT detect Cisco type-9 passwords ($9$...)', () => {
-    const vars = parseVariables(seedConfig);
-    const names = vars.map((v) => v.name);
-    // No variable starting with 9
+    const { local } = parseVariables(seedConfig);
+    const names = local.map((v) => v.name);
     expect(names.every((n) => !n.startsWith('9'))).toBe(true);
   });
 
   it('does NOT detect $9 as a variable', () => {
-    const vars = parseVariables('enable secret 9 $9$hash');
-    expect(vars).toHaveLength(0);
+    const { local, global: globals } = parseVariables('enable secret 9 $9$hash');
+    expect(local).toHaveLength(0);
+    expect(globals).toHaveLength(0);
   });
 
   it('deduplicates variables (default_gateway appears twice)', () => {
-    const vars = parseVariables(seedConfig);
-    const gatewayOccurrences = vars.filter((v) => v.name === 'default_gateway');
+    const { local } = parseVariables(seedConfig);
+    const gatewayOccurrences = local.filter((v) => v.name === 'default_gateway');
     expect(gatewayOccurrences).toHaveLength(1);
   });
 
   it('infers correct types', () => {
-    const vars = parseVariables(seedConfig);
-    const byName = Object.fromEntries(vars.map((v) => [v.name, v]));
+    const { local } = parseVariables(seedConfig);
+    const byName = Object.fromEntries(local.map((v) => [v.name, v]));
 
     expect(byName['hostname'].type).toBe('string');
     expect(byName['vlan_95_ip_address'].type).toBe('ip');
@@ -112,8 +121,8 @@ describe('parseVariables', () => {
   });
 
   it('generates correct labels', () => {
-    const vars = parseVariables(seedConfig);
-    const byName = Object.fromEntries(vars.map((v) => [v.name, v]));
+    const { local } = parseVariables(seedConfig);
+    const byName = Object.fromEntries(local.map((v) => [v.name, v]));
 
     expect(byName['hostname'].label).toBe('Hostname');
     expect(byName['vlan_95_ip_address'].label).toBe('VLAN 95 IP Address');
@@ -123,30 +132,52 @@ describe('parseVariables', () => {
   });
 
   it('handles empty input', () => {
-    expect(parseVariables('')).toEqual([]);
-    expect(parseVariables(null as unknown as string)).toEqual([]);
-    expect(parseVariables(undefined as unknown as string)).toEqual([]);
+    const empty = { local: [], global: [] };
+    expect(parseVariables('')).toEqual(empty);
+    expect(parseVariables(null as unknown as string)).toEqual(empty);
+    expect(parseVariables(undefined as unknown as string)).toEqual(empty);
   });
 
   it('handles text with no variables', () => {
-    expect(parseVariables('hostname Router1\ninterface vlan1')).toEqual([]);
+    expect(parseVariables('hostname Router1\ninterface vlan1')).toEqual({ local: [], global: [] });
   });
 
-  it('handles ${variable} syntax', () => {
-    const vars = parseVariables('hostname ${my_host}');
-    expect(vars).toHaveLength(1);
-    expect(vars[0].name).toBe('my_host');
+  it('puts ${variable} syntax in global as string name', () => {
+    const { local, global: globals } = parseVariables('hostname ${my_host}');
+    expect(globals).toHaveLength(1);
+    expect(globals[0]).toBe('my_host');
+    expect(local).toHaveLength(0);
+  });
+
+  it('puts bare $variable in local as VariableDefinition', () => {
+    const { local, global: globals } = parseVariables('hostname $my_host');
+    expect(local).toHaveLength(1);
+    expect(local[0].name).toBe('my_host');
+    expect(globals).toHaveLength(0);
+  });
+
+  it('braced form wins when same name appears as both $foo and ${foo}', () => {
+    const { local, global: globals } = parseVariables('$foo ${foo}');
+    expect(globals).toEqual(['foo']);
+    expect(local).toHaveLength(0);
+  });
+
+  it('mixed local and global variables are separated correctly', () => {
+    const { local, global: globals } = parseVariables('$local_var ${global_var}');
+    expect(local).toHaveLength(1);
+    expect(local[0].name).toBe('local_var');
+    expect(globals).toEqual(['global_var']);
   });
 
   it('accessportrange gets range/port description', () => {
-    const vars = parseVariables(seedConfig);
-    const apv = vars.find((v) => v.name === 'accessportrange');
+    const { local } = parseVariables(seedConfig);
+    const apv = local.find((v) => v.name === 'accessportrange');
     expect(apv?.description).toBe('e.g., Gi1/0/1-24');
   });
 
-  it('all variables have required: true and empty defaults', () => {
-    const vars = parseVariables(seedConfig);
-    for (const v of vars) {
+  it('all local variables have required: true and empty defaults', () => {
+    const { local } = parseVariables(seedConfig);
+    for (const v of local) {
       expect(v.required).toBe(true);
       expect(v.defaultValue).toBe('');
       expect(v.options).toEqual([]);

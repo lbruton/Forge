@@ -1,4 +1,6 @@
-import type { ConfigFormat, VariableDefinition, VariableType, TemplateSection } from '../types/index.ts';
+import type { ConfigFormat, ParsedVariables, VariableDefinition, VariableType, TemplateSection } from '../types/index.ts';
+
+export type { ParsedVariables } from '../types/index.ts';
 
 const UPPERCASE_SEGMENTS = new Set(['vlan', 'ip', 'snmp', 'vtp', 'id', 'cdp', 'ssh', 'ntp', 'aaa', 'acl', 'dns', 'dhcp', 'nac', 'ise']);
 
@@ -42,10 +44,13 @@ function inferType(name: string): { type: VariableType; description: string } {
 /**
  * Scan text for $variable and ${variable} patterns.
  * Does NOT match Cisco type-9 password literals ($9$...).
- * Returns deduplicated VariableDefinition array.
+ * Braced ${var} matches are treated as global (view-scoped) variables.
+ * Bare $var matches are treated as local (template-scoped) variables.
+ * If the same name appears in both forms, the braced form wins (global only).
+ * Returns deduplicated ParsedVariables with local and global arrays.
  */
-export function parseVariables(text: string): VariableDefinition[] {
-  if (!text) return [];
+export function parseVariables(text: string): ParsedVariables {
+  if (!text) return { local: [], global: [] };
 
   // Strip Cisco type-9 password hashes ($9$...), type-7 (7 XXXX), and
   // SNMP community strings that contain $ before scanning for variables.
@@ -56,28 +61,43 @@ export function parseVariables(text: string): VariableDefinition[] {
   // The $ must be preceded by whitespace or start-of-line to avoid matching
   // embedded $ in passwords, community strings, etc.
   const regex = /(?<=\s|^)\$\{([A-Za-z_]\w*)\}|(?<=\s|^)\$([A-Za-z_]\w*)/gm;
-  const seen = new Set<string>();
-  const result: VariableDefinition[] = [];
+  const globalNames = new Set<string>();
+  const localNames = new Set<string>();
+  const localDefs: VariableDefinition[] = [];
 
   let match: RegExpExecArray | null;
   while ((match = regex.exec(sanitized)) !== null) {
-    const name = match[1] || match[2];
-    if (seen.has(name)) continue;
-    seen.add(name);
+    const bracedName = match[1];
+    const bareName = match[2];
 
-    const { type, description } = inferType(name);
-    result.push({
-      name,
-      label: toLabel(name),
-      type,
-      defaultValue: '',
-      options: [],
-      required: true,
-      description,
-    });
+    if (bracedName) {
+      // Braced ${var} → global
+      globalNames.add(bracedName);
+    } else if (bareName) {
+      // Bare $var → local (tentatively)
+      if (!localNames.has(bareName)) {
+        localNames.add(bareName);
+        const { type, description } = inferType(bareName);
+        localDefs.push({
+          name: bareName,
+          label: toLabel(bareName),
+          type,
+          defaultValue: '',
+          options: [],
+          required: true,
+          description,
+        });
+      }
+    }
   }
 
-  return result;
+  // If a name appears in both global and local, global wins — remove from local
+  const filteredLocal = localDefs.filter((v) => !globalNames.has(v.name));
+
+  return {
+    local: filteredLocal,
+    global: Array.from(globalNames),
+  };
 }
 
 // START/END marker patterns
