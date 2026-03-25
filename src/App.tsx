@@ -8,6 +8,7 @@ import ConfigGenerator from './components/ConfigGenerator.tsx';
 import TemplateEditor from './components/TemplateEditor.tsx';
 import { GeneratedConfigViewer } from './components/GeneratedConfigViewer.tsx';
 import VaultModal from './components/VaultModal.tsx';
+import GlobalVariablesPage from './components/GlobalVariablesPage.tsx';
 
 type AppMode = 'generator' | 'editor';
 
@@ -22,6 +23,7 @@ function App() {
   const {
     tree,
     selectedVariantId,
+    selectedGlobalVariablesViewId,
     preferences,
     toggleSidebar,
     addView,
@@ -151,6 +153,11 @@ function App() {
           onBack={handleBackFromViewer}
         />
       );
+    }
+
+    // Global variables page when a view's global variables node is selected
+    if (selectedGlobalVariablesViewId) {
+      return <GlobalVariablesPage viewId={selectedGlobalVariablesViewId} />;
     }
 
     if (!hasVariants || !selectedVariantId) {
