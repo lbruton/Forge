@@ -30,6 +30,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const [variableSectionMap, setVariableSectionMap] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [cleanUpToast, setCleanUpToast] = useState(false);
+  const [activeSectionName, setActiveSectionName] = useState<string | null>(null);
 
   // Drag state for sections
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -40,6 +41,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cursorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Build variable-to-section mapping
   const buildVariableSectionMap = useCallback(
@@ -228,6 +230,41 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     }
   }, []);
 
+  // Jump to a section in the textarea
+  const handleJumpToSection = useCallback((section: TemplateSection) => {
+    if (!textareaRef.current) return;
+    const ta = textareaRef.current;
+    const computedLineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 26.4;
+    const lineIndex = section.startLine ?? rawText.split('\n').findIndex((line) => section.template.split('\n')[0] === line);
+    if (lineIndex < 0) return;
+    const scrollTop = lineIndex * computedLineHeight;
+    ta.scrollTop = scrollTop;
+    if (overlayRef.current) overlayRef.current.scrollTop = scrollTop;
+    setActiveSectionName(section.name);
+  }, [rawText]);
+
+  // Detect which section the cursor is in (debounced)
+  const detectCursorSection = useCallback(() => {
+    if (cursorDebounceRef.current) clearTimeout(cursorDebounceRef.current);
+    cursorDebounceRef.current = setTimeout(() => {
+      if (!textareaRef.current || sections.length === 0) return;
+      const pos = textareaRef.current.selectionStart;
+      const cursorLine = rawText.substring(0, pos).split('\n').length - 1;
+
+      // Walk sections in reverse order to find the one containing the cursor
+      let found: string | null = null;
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const s = sections[i];
+        const sLine = s.startLine ?? rawText.split('\n').findIndex((line) => s.template.split('\n')[0] === line);
+        if (sLine >= 0 && cursorLine >= sLine) {
+          found = s.name;
+          break;
+        }
+      }
+      setActiveSectionName(found);
+    }, 150);
+  }, [sections, rawText]);
+
   // Build highlighted overlay text
   const highlightedText = useMemo(() => {
     if (!rawText) return null;
@@ -310,6 +347,8 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
               value={rawText}
               onChange={(e) => handleTextChange(e.target.value)}
               onScroll={handleTextareaScroll}
+              onMouseUp={detectCursorSection}
+              onKeyUp={detectCursorSection}
               placeholder={`Paste your config template here...\n\nUse $variable_name or \${variable_name} for template variables.\n\nExample:\nhostname $hostname\ninterface vlan95\n ip address $vlan_95_ip_address 255.255.255.0`}
               spellCheck={false}
               className="absolute inset-0 w-full h-full px-5 py-4 text-slate-200 font-mono text-[13px] leading-relaxed resize-none outline-none placeholder:text-slate-600 border-none relative z-10 bg-forge-obsidian"
@@ -358,6 +397,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
                     const lineEnd = lineStart + section.template.split('\n').length - 1;
                     const isDragging = dragIndex === i;
                     const isDragOver = dragOverIndex === i;
+                    const isActive = activeSectionName === section.name;
                     return (
                       <div
                         key={section.id}
@@ -365,12 +405,15 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
                         onDragStart={() => handleDragStart(i)}
                         onDragOver={(e) => handleDragOver(e, i)}
                         onDragEnd={handleDragEnd}
-                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded bg-forge-obsidian border text-[12px] cursor-grab active:cursor-grabbing transition-all ${
+                        onClick={() => handleJumpToSection(section)}
+                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded bg-forge-obsidian border text-[12px] cursor-pointer active:cursor-grabbing transition-all ${
                           isDragging
                             ? 'opacity-40 border-forge-amber/40'
                             : isDragOver
                               ? 'border-forge-amber/60 bg-forge-amber/5'
-                              : 'border-forge-graphite'
+                              : isActive
+                                ? 'border-amber-500 bg-amber-500/10'
+                                : 'border-forge-graphite'
                         }`}
                       >
                         <GripVertical size={12} className="text-slate-600 shrink-0" />
