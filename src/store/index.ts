@@ -424,12 +424,18 @@ export const useForgeStore = create<ForgeStore>()(
 
       autoSyncGlobals: (viewId, detectedNames) => {
         const ts = now();
+        const detected = new Set(detectedNames);
         set((state) => ({
           tree: {
             views: state.tree.views.map((v) => {
               if (v.id !== viewId) return v;
               const existing = v.globalVariables ?? [];
               const existingNames = new Set(existing.map((gv) => gv.name));
+              // Remove stale auto-added globals (no value, no description) that are no longer detected
+              const kept = existing.filter((gv) =>
+                detected.has(gv.name) || gv.defaultValue || gv.description
+              );
+              // Add newly detected globals
               const newGlobals = detectedNames
                 .filter((n) => !existingNames.has(n))
                 .map((n): VariableDefinition => ({
@@ -441,8 +447,8 @@ export const useForgeStore = create<ForgeStore>()(
                   required: false,
                   description: '',
                 }));
-              if (newGlobals.length === 0) return v;
-              return { ...v, globalVariables: [...existing, ...newGlobals], updatedAt: ts };
+              if (newGlobals.length === 0 && kept.length === existing.length) return v;
+              return { ...v, globalVariables: [...kept, ...newGlobals], updatedAt: ts };
             }),
           },
         }));
