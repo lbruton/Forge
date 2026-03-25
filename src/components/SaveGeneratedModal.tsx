@@ -10,6 +10,7 @@ interface SaveGeneratedModalProps {
   fullConfig: string;
   sections: GeneratedSection[];
   variableValues: Record<string, string>;
+  globalVariableValues?: Record<string, string>;
 }
 
 export function SaveGeneratedModal({
@@ -19,6 +20,7 @@ export function SaveGeneratedModal({
   fullConfig,
   sections,
   variableValues,
+  globalVariableValues,
 }: SaveGeneratedModalProps) {
   const findVariant = useForgeStore((s) => s.findVariant);
   const saveGeneratedConfig = useForgeStore((s) => s.saveGeneratedConfig);
@@ -71,6 +73,9 @@ export function SaveGeneratedModal({
       sourceVariantId: variantId,
       sourceTemplateId: found.variant.templateId,
       variableValues,
+      globalVariableValues: globalVariableValues && Object.keys(globalVariableValues).length > 0
+        ? globalVariableValues
+        : undefined,
       fullConfig,
       sections,
       notes: notes.trim(),

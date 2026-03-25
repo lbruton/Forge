@@ -27,6 +27,16 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
   const found = selectedVariantId ? findVariant(selectedVariantId) : null;
   const template = found ? templates[found.variant.templateId] : undefined;
   const configFormat = selectedVariantId ? getConfigFormat(selectedVariantId) : 'cli';
+  const globalVariables = found?.view.globalVariables ?? [];
+
+  // Build global values map from view's globalVariables
+  const globalValues = useMemo(() => {
+    const gv: Record<string, string> = {};
+    for (const g of globalVariables) {
+      gv[g.name] = g.defaultValue;
+    }
+    return gv;
+  }, [globalVariables]);
 
   // Current variable values from store
   const currentValues = selectedVariantId
@@ -57,8 +67,8 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
   // Generate config from debounced values
   const generated: GeneratedConfigOutput = useMemo(() => {
     if (!template) return { fullConfig: '', sections: [] };
-    return generateConfig(template.sections, debouncedValues);
-  }, [template, debouncedValues]);
+    return generateConfig(template.sections, debouncedValues, globalValues);
+  }, [template, debouncedValues, globalValues]);
 
   // Derive hostname from variable values for download filenames
   const hostname = debouncedValues['hostname'] || debouncedValues['HOSTNAME'] || 'config';
@@ -144,6 +154,7 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
         fullConfig={generated.fullConfig}
         sections={generated.sections}
         variableValues={debouncedValues}
+        globalVariableValues={globalValues}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ArrowLeft, ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronRight, Globe, Trash2 } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { ConfigPreview } from './ConfigPreview.tsx';
 import { CopyButton, DownloadButton } from './CopyButton.tsx';
@@ -16,6 +16,7 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
   const deleteGeneratedConfig = useForgeStore((s) => s.deleteGeneratedConfig);
 
   const [variablesExpanded, setVariablesExpanded] = useState(false);
+  const [globalsExpanded, setGlobalsExpanded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const config = generatedConfigs[configId];
@@ -49,6 +50,9 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
     : 'Source variant unavailable';
 
   const variableEntries = Object.entries(config.variableValues);
+  const globalEntries = config.globalVariableValues
+    ? Object.entries(config.globalVariableValues)
+    : [];
 
   const handleDelete = () => {
     deleteGeneratedConfig(config.id);
@@ -124,6 +128,32 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
           <p className="text-xs text-slate-500 mt-2 italic">{config.notes}</p>
         )}
       </div>
+
+      {/* Global variable values collapsible */}
+      {globalEntries.length > 0 && (
+        <div className="shrink-0 border-b border-forge-graphite">
+          <button
+            onClick={() => setGlobalsExpanded(!globalsExpanded)}
+            className="w-full flex items-center gap-2 px-4 py-2 text-xs font-medium text-emerald-500/80 hover:text-emerald-400 transition-colors"
+          >
+            <Globe size={12} />
+            {globalsExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            Global Variable Values ({globalEntries.length})
+          </button>
+          {globalsExpanded && (
+            <div className="px-4 pb-3">
+              <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
+                {globalEntries.map(([key, value]) => (
+                  <div key={key} className="contents">
+                    <span className="text-emerald-500 font-mono">${'{' + key + '}'}</span>
+                    <span className="text-slate-300 font-mono truncate">{value || <span className="text-slate-600 italic">empty</span>}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Variable values collapsible */}
       {variableEntries.length > 0 && (
