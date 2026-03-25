@@ -1,6 +1,3 @@
-const QUOTA_LIMIT = 5 * 1024 * 1024; // 5MB
-const QUOTA_THRESHOLD = 0.8;
-
 export class StorageService {
   private prefix = 'forge_';
 
@@ -38,23 +35,6 @@ export class StorageService {
       }
     }
     return keys;
-  }
-
-  getUsage(): number {
-    let bytes = 0;
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith(this.prefix)) {
-        const value = localStorage.getItem(key) ?? '';
-        // Each char is 2 bytes in UTF-16
-        bytes += (key.length + value.length) * 2;
-      }
-    }
-    return bytes;
-  }
-
-  isNearQuota(): boolean {
-    return this.getUsage() >= QUOTA_LIMIT * QUOTA_THRESHOLD;
   }
 
   clear(): void {
