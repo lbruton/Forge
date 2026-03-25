@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Save, FileText, Layers, GripVertical, Sparkles } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
-import { parseVariables, parseSections, cleanUpSections } from '../lib/template-parser.ts';
+import { parseVariables, parseSections, cleanUpSections, rebuildRawText } from '../lib/template-parser.ts';
 import { VariableDetectionPanel } from './VariableDetectionPanel.tsx';
 import type { VariableDefinition, TemplateSection, ConfigFormat } from '../types/index.ts';
 
@@ -172,17 +172,53 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
 
   const handleDragEnd = useCallback(() => {
     if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
+      // Save cursor position before state updates
+      const selStart = textareaRef.current?.selectionStart ?? 0;
+      const selEnd = textareaRef.current?.selectionEnd ?? 0;
+
       setSections((prev) => {
         const next = [...prev];
         const [moved] = next.splice(dragIndex, 1);
         next.splice(dragOverIndex, 0, moved);
-        // Update order fields
-        return next.map((s, i) => ({ ...s, order: i }));
+        const reordered = next.map((s, i) => ({ ...s, order: i }));
+
+        // Rebuild rawText to match the new section order
+        const rebuilt = rebuildRawText(reordered, rawText);
+        setRawText(rebuilt);
+        setSaved(false);
+
+        // Re-parse variables and section map for the rebuilt text
+        const parsedVars = parseVariables(rebuilt);
+        const parsedSections = parseSections(rebuilt, configFormat);
+        setVariables((prevVars) => {
+          const prevByName = new Map(prevVars.map((v) => [v.name, v]));
+          return parsedVars.map((pv) => {
+            const existing = prevByName.get(pv.name);
+            if (existing) {
+              return { ...pv, label: existing.label, type: existing.type, description: existing.description, required: existing.required, defaultValue: existing.defaultValue, options: existing.options };
+            }
+            return pv;
+          });
+        });
+        setVariableSectionMap(buildVariableSectionMap(rebuilt, parsedSections));
+
+        // Restore cursor position and sync overlay scroll after DOM update
+        requestAnimationFrame(() => {
+          if (textareaRef.current) {
+            textareaRef.current.selectionStart = selStart;
+            textareaRef.current.selectionEnd = selEnd;
+          }
+          if (overlayRef.current && textareaRef.current) {
+            overlayRef.current.scrollTop = textareaRef.current.scrollTop;
+          }
+        });
+
+        return parsedSections;
       });
     }
     setDragIndex(null);
     setDragOverIndex(null);
-  }, [dragIndex, dragOverIndex]);
+  }, [dragIndex, dragOverIndex, rawText, configFormat, buildVariableSectionMap]);
 
   // Sync scroll between textarea and overlay
   const handleTextareaScroll = useCallback(() => {
