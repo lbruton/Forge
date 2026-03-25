@@ -169,6 +169,30 @@ describe('parseVariables', () => {
     expect(globals).toEqual(['global_var']);
   });
 
+  it('global-only text returns all in global, local empty', () => {
+    const { local, global: globals } = parseVariables('${enable_password} ${ntp_server}');
+    expect(local).toHaveLength(0);
+    expect(globals).toContain('enable_password');
+    expect(globals).toContain('ntp_server');
+    expect(globals).toHaveLength(2);
+  });
+
+  it('local-only text returns all in local, global empty', () => {
+    const { local, global: globals } = parseVariables('$hostname $mgmt_ip');
+    expect(local).toHaveLength(2);
+    expect(local.map((v) => v.name)).toContain('hostname');
+    expect(local.map((v) => v.name)).toContain('mgmt_ip');
+    expect(globals).toHaveLength(0);
+  });
+
+  it('type-9 hashes do not pollute local or global arrays', () => {
+    const text = '$hostname\nenable secret 9 $9$hashvalue\n${ntp_server}';
+    const { local, global: globals } = parseVariables(text);
+    expect(local).toHaveLength(1);
+    expect(local[0].name).toBe('hostname');
+    expect(globals).toEqual(['ntp_server']);
+  });
+
   it('accessportrange gets range/port description', () => {
     const { local } = parseVariables(seedConfig);
     const apv = local.find((v) => v.name === 'accessportrange');

@@ -123,6 +123,53 @@ describe('generateConfig', () => {
     expect(result.sections[0].content).toBe('name CORE01 alias CORE01');
   });
 
+  it('resolves ${var} from globalValues parameter', () => {
+    const sections = [
+      makeSection({ template: 'ntp server ${ntp_server}\nhostname $hostname' }),
+    ];
+    const result = generateConfig(sections, { hostname: 'SWITCH01' }, { ntp_server: '10.0.0.1' });
+
+    expect(result.sections[0].content).toBe('ntp server 10.0.0.1\nhostname SWITCH01');
+  });
+
+  it('backward compat: works without globalValues parameter', () => {
+    const sections = [makeSection({ template: 'hostname $hostname' })];
+    const result = generateConfig(sections, { hostname: 'SWITCH01' });
+
+    expect(result.sections[0].content).toBe('hostname SWITCH01');
+  });
+
+  it('resolves only global values when no local values match', () => {
+    const sections = [
+      makeSection({ template: 'ntp server ${ntp_server}\nenable secret ${enable_password}' }),
+    ];
+    const result = generateConfig(sections, {}, { ntp_server: '10.0.0.1', enable_password: 'secret123' });
+
+    expect(result.sections[0].content).toBe('ntp server 10.0.0.1\nenable secret secret123');
+  });
+
+  it('leaves unfilled ${var} as-is when no global or local value provided', () => {
+    const sections = [
+      makeSection({ template: 'ntp server ${ntp_server}\nhostname $hostname' }),
+    ];
+    const result = generateConfig(sections, {}, {});
+
+    expect(result.sections[0].content).toBe('ntp server ${ntp_server}\nhostname $hostname');
+  });
+
+  it('${var} resolved from globalValues takes priority over localValues', () => {
+    const sections = [
+      makeSection({ template: 'server ${shared_var}' }),
+    ];
+    const result = generateConfig(
+      sections,
+      { shared_var: 'local_value' },
+      { shared_var: 'global_value' },
+    );
+
+    expect(result.sections[0].content).toBe('server global_value');
+  });
+
   it('matches longest variable name (greedy word chars)', () => {
     const sections = [
       makeSection({ template: 'ip address $vlan_95_ip_address\nvlan $vlan' }),
