@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { VariableDefinition, VariableType } from '../types/index.ts';
-import { Plus, ChevronDown, Trash2 } from 'lucide-react';
+import { Plus, ChevronDown, Trash2, ArrowUpCircle } from 'lucide-react';
 
 interface VariableDetectionPanelProps {
   variables: VariableDefinition[];
@@ -8,6 +8,7 @@ interface VariableDetectionPanelProps {
   sectionNames: string[];
   variableSectionMap: Record<string, string>;
   hideHeader?: boolean;
+  onPromoteToGlobal?: (varName: string) => void;
 }
 
 const VARIABLE_TYPES: VariableType[] = ['string', 'ip', 'integer', 'dropdown'];
@@ -18,6 +19,7 @@ export function VariableDetectionPanel({
   sectionNames,
   variableSectionMap,
   hideHeader = false,
+  onPromoteToGlobal,
 }: VariableDetectionPanelProps) {
   const [expandedVar, setExpandedVar] = useState<string | null>(null);
 
@@ -169,7 +171,7 @@ export function VariableDetectionPanel({
                             />
                           </div>
 
-                          {/* Required toggle + Delete */}
+                          {/* Required toggle + Promote + Delete */}
                           <div className="flex items-center justify-between pt-1">
                             <label className="flex items-center gap-2 cursor-pointer">
                               <input
@@ -180,13 +182,24 @@ export function VariableDetectionPanel({
                               />
                               <span className="text-[12px] text-slate-400">Required</span>
                             </label>
-                            <button
-                              onClick={() => removeVariable(index)}
-                              className="p-1 rounded text-slate-600 hover:text-red-400 hover:bg-forge-graphite transition-colors"
-                              title="Remove variable"
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              {onPromoteToGlobal && (
+                                <button
+                                  onClick={() => onPromoteToGlobal(variable.name)}
+                                  className="p-1 rounded text-slate-600 hover:text-green-400 hover:bg-green-500/10 transition-colors"
+                                  title={`Promote $${variable.name} to global \${${variable.name}}`}
+                                >
+                                  <ArrowUpCircle size={14} />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => removeVariable(index)}
+                                className="p-1 rounded text-slate-600 hover:text-red-400 hover:bg-forge-graphite transition-colors"
+                                title="Remove variable"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       )}

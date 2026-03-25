@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Save, FileText, Layers, GripVertical, Sparkles, ChevronLeft, ChevronRight, ChevronDown, Plus, Globe, ArrowUpCircle, ExternalLink } from 'lucide-react';
+import { Save, FileText, Layers, GripVertical, Sparkles, ChevronLeft, ChevronRight, ChevronDown, Plus, Globe, ExternalLink } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { parseVariables, parseSections, cleanUpSections, rebuildRawText } from '../lib/template-parser.ts';
 import { VariableDetectionPanel } from './VariableDetectionPanel.tsx';
@@ -37,13 +37,10 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const [globalNames, setGlobalNames] = useState<string[]>([]);
   const [globalVarsCollapsed, setGlobalVarsCollapsed] = useState(false);
 
-  // Look up full global variable definitions from the View store
+  // All global variables from the View (not just detected ones)
   const viewGlobalVariables = useMemo(() => {
-    const globals = context?.view.globalVariables ?? [];
-    return globalNames
-      .map((name) => globals.find((g) => g.name === name))
-      .filter((g): g is VariableDefinition => g !== undefined);
-  }, [globalNames, context?.view.globalVariables]);
+    return context?.view.globalVariables ?? [];
+  }, [context?.view.globalVariables]);
 
   // Drag state for sections
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -426,48 +423,44 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
           {preferences.rightPanelCollapsed ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
         </button>
 
-        {/* Right: variables + sections + format footer */}
+        {/* Right: variables + sections */}
         {!preferences.rightPanelCollapsed && (
-        <div className="w-80 min-w-[320px] bg-forge-charcoal shrink-0 flex flex-col overflow-hidden">
-          {/* Global variables panel — top, collapsible */}
-          {globalNames.length > 0 && (
-          <div className={`${globalVarsCollapsed ? 'shrink-0' : ''} border-b border-forge-graphite flex flex-col`}>
-            <div className="flex items-center border-b border-forge-graphite shrink-0 bg-forge-charcoal">
-              <button
-                onClick={() => setGlobalVarsCollapsed(!globalVarsCollapsed)}
-                className="flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-green-400 hover:text-green-300 text-left flex-1"
-              >
-                <ChevronDown size={12} className={`transition-transform ${globalVarsCollapsed ? '-rotate-90' : ''}`} />
-                <Globe size={12} />
-                Global Variables
-                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold ml-1">
-                  {globalNames.length}
-                </span>
-              </button>
-            </div>
+        <div className="w-80 min-w-[320px] bg-forge-charcoal shrink-0 flex flex-col overflow-y-auto">
+          {/* Global variables panel — top, collapsible, always visible when View has globals */}
+          {viewGlobalVariables.length > 0 && (
+          <div className="shrink-0 border-b border-forge-graphite">
+            <button
+              onClick={() => setGlobalVarsCollapsed(!globalVarsCollapsed)}
+              className="w-full flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-green-400 hover:text-green-300 text-left"
+            >
+              <ChevronDown size={12} className={`transition-transform ${globalVarsCollapsed ? '-rotate-90' : ''}`} />
+              <Globe size={12} />
+              Global Variables
+              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold ml-1">
+                {viewGlobalVariables.length}
+              </span>
+            </button>
             {!globalVarsCollapsed && (
-              <div className="px-5 py-3 space-y-1">
-                {globalNames.map((name) => {
-                  const def = viewGlobalVariables.find((g) => g.name === name);
-                  const value = def?.defaultValue;
-                  return (
-                    <div
-                      key={name}
-                      className="flex items-center gap-2 px-2.5 py-1.5 rounded bg-forge-obsidian border border-green-500/15 border-l-[3px] border-l-green-500"
-                    >
-                      <span className="text-green-400 font-mono text-[12px] font-medium flex-1 truncate">
-                        {name}
+              <div className="px-5 py-3 space-y-1 border-t border-forge-graphite">
+                {viewGlobalVariables.map((gv) => (
+                  <div
+                    key={gv.name}
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded bg-forge-obsidian border border-green-500/15 border-l-[3px] border-l-green-500 ${
+                      globalNames.includes(gv.name) ? '' : 'opacity-50'
+                    }`}
+                  >
+                    <span className="text-green-400 font-mono text-[12px] font-medium flex-1 truncate">
+                      {gv.name}
+                    </span>
+                    {gv.defaultValue ? (
+                      <span className="text-slate-400 font-mono text-[11px] max-w-[100px] truncate">
+                        {gv.masked ? '••••••••' : gv.defaultValue}
                       </span>
-                      {value ? (
-                        <span className="text-slate-400 font-mono text-[11px] max-w-[100px] truncate">
-                          {value}
-                        </span>
-                      ) : (
-                        <span className="text-amber-400 text-[11px] italic">Not set</span>
-                      )}
-                    </div>
-                  );
-                })}
+                    ) : (
+                      <span className="text-amber-400 text-[11px] italic">Not set</span>
+                    )}
+                  </div>
+                ))}
                 {context?.view.id && (
                   <button
                     onClick={() => setSelectedGlobalVariablesViewId(context.view.id)}
@@ -483,8 +476,8 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
           )}
 
           {/* Local variable detection panel, collapsible */}
-          <div className={`${variablesCollapsed ? 'shrink-0' : 'flex-1 min-h-0'} border-b border-forge-graphite flex flex-col overflow-hidden`}>
-            <div className="flex items-center border-b border-forge-graphite shrink-0 bg-forge-charcoal">
+          <div className="shrink-0 border-b border-forge-graphite">
+            <div className="flex items-center shrink-0">
               <button
                 onClick={() => setVariablesCollapsed(!variablesCollapsed)}
                 className="flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-slate-500 hover:text-slate-400 text-left flex-1"
@@ -516,44 +509,23 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
               </button>
             </div>
             {!variablesCollapsed && (
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                <VariableDetectionPanel
-                  variables={variables}
-                  onChange={setVariables}
-                  sectionNames={sections.map((s) => s.name)}
-                  variableSectionMap={variableSectionMap}
-                  hideHeader
-                />
-                {variables.length > 0 && (
-                  <div className="px-5 py-2 border-t border-forge-graphite">
-                    <div className="text-[10px] font-semibold tracking-wider uppercase text-slate-600 mb-1.5">
-                      Promote to Global
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {variables.map((v) => (
-                        <button
-                          key={v.name}
-                          onClick={() => handlePromoteVariable(v.name)}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-green-400 bg-forge-obsidian border border-forge-graphite hover:border-green-500/30 hover:bg-green-500/5 transition-colors"
-                          title={`Promote $${v.name} to global \${${v.name}}`}
-                        >
-                          <ArrowUpCircle size={10} />
-                          {v.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <VariableDetectionPanel
+                variables={variables}
+                onChange={setVariables}
+                sectionNames={sections.map((s) => s.name)}
+                variableSectionMap={variableSectionMap}
+                hideHeader
+                onPromoteToGlobal={handlePromoteVariable}
+              />
             )}
           </div>
 
-          {/* Sections panel — middle, collapsible */}
-          <div className={`${sectionsCollapsed ? 'shrink-0' : 'flex-1 min-h-0'} border-b border-forge-graphite flex flex-col overflow-hidden`}>
+          {/* Sections panel, collapsible */}
+          <div className="shrink-0 border-b border-forge-graphite">
             <div className="flex items-center shrink-0">
               <button
                 onClick={() => setSectionsCollapsed(!sectionsCollapsed)}
-                className="flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-slate-500 hover:text-slate-400 bg-forge-charcoal text-left flex-1"
+                className="flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-slate-500 hover:text-slate-400 text-left flex-1"
               >
                 <ChevronDown size={12} className={`transition-transform ${sectionsCollapsed ? '-rotate-90' : ''}`} />
                 <Layers size={12} />
@@ -576,7 +548,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
               )}
             </div>
             {!sectionsCollapsed && hasRealSections && (
-              <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-3">
+              <div className="px-5 pb-3">
                 <div className="space-y-1">
                   {sections.map((section, i) => {
                     const lineStart = rawText
@@ -620,29 +592,20 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
               </div>
             )}
           </div>
-
-          {/* Format reference footer — always visible */}
-          <div className="shrink-0 px-4 py-3 space-y-2">
-            <div className="p-2.5 rounded bg-forge-obsidian border border-forge-graphite text-[11px] text-slate-500 leading-relaxed font-mono">
-              <div className="text-slate-400 font-sans font-semibold text-[10px] uppercase tracking-wider mb-1.5">Section Format</div>
-              <div className="pl-2 text-slate-500">
-                !##### NAME - START #####<br />
-                <span className="text-slate-600">{'  '}... config lines ...</span><br />
-                !##### NAME - END #####
-              </div>
-            </div>
-            <div className="p-2.5 rounded bg-forge-obsidian border border-forge-graphite text-[11px] text-slate-500 leading-relaxed font-mono">
-              <div className="text-slate-400 font-sans font-semibold text-[10px] uppercase tracking-wider mb-1.5">Variable Format</div>
-              <div className="pl-2 text-slate-500">
-                $variable_name <span className="text-slate-600">or</span> {'${variable_name}'}
-              </div>
-              <div className="mt-1.5 text-slate-600 font-sans text-[10px]">
-                Legacy DNAC dividers also supported.
-              </div>
-            </div>
-          </div>
         </div>
         )}
+      </div>
+
+      {/* Format reference footer — below editor */}
+      <div className="shrink-0 flex gap-3 px-4 py-2 border-t border-forge-graphite bg-forge-charcoal">
+        <div className="flex-1 p-2 rounded bg-forge-obsidian border border-forge-graphite text-[10px] text-slate-500 leading-relaxed font-mono">
+          <span className="text-slate-400 font-sans font-semibold uppercase tracking-wider">Section: </span>
+          !##### NAME - START ##### <span className="text-slate-600">...</span> !##### NAME - END #####
+        </div>
+        <div className="flex-1 p-2 rounded bg-forge-obsidian border border-forge-graphite text-[10px] text-slate-500 leading-relaxed font-mono">
+          <span className="text-slate-400 font-sans font-semibold uppercase tracking-wider">Variables: </span>
+          <span className="text-amber-500/70">$variable_name</span> <span className="text-slate-600">or</span> <span className="text-green-500/70">{'${variable_name}'}</span>
+        </div>
       </div>
     </div>
   );
