@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Plus, ArrowUpDown, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useForgeStore } from './store/index.ts';
 import { Sidebar } from './components/Sidebar.tsx';
@@ -9,6 +9,7 @@ import TemplateEditor from './components/TemplateEditor.tsx';
 import { GeneratedConfigViewer } from './components/GeneratedConfigViewer.tsx';
 import VaultModal from './components/VaultModal.tsx';
 import GlobalVariablesPage from './components/GlobalVariablesPage.tsx';
+import { UnsavedChangesModal } from './components/UnsavedChangesModal.tsx';
 
 type AppMode = 'generator' | 'editor';
 
@@ -32,7 +33,11 @@ function App() {
     addVariant,
     saveTemplate,
     setSelectedVariant,
+    setSelectedGlobalVariablesViewId,
     toggleExpandedNode,
+    editorDirty,
+    pendingSaveCallback,
+    setEditorDirty,
   } = useForgeStore();
 
   const [mode, setMode] = useState<AppMode>('generator');
@@ -43,6 +48,45 @@ function App() {
 
   // Wizard for "Add Template" button
   const [wizard, setWizard] = useState<WizardState | null>(null);
+
+  // Navigation guard state
+  const [pendingNavAction, setPendingNavAction] = useState<(() => void) | null>(null);
+
+  const guardNavigation = useCallback((action: () => void) => {
+    if (editorDirty && mode === 'editor') {
+      setPendingNavAction(() => action);
+    } else {
+      action();
+    }
+  }, [editorDirty, mode]);
+
+  // Modal handlers for unsaved changes
+  const handleSaveAndContinue = useCallback(() => {
+    pendingSaveCallback?.();
+    pendingNavAction?.();
+    setPendingNavAction(null);
+  }, [pendingSaveCallback, pendingNavAction]);
+
+  const handleDiscard = useCallback(() => {
+    setEditorDirty(false);
+    pendingNavAction?.();
+    setPendingNavAction(null);
+  }, [pendingNavAction, setEditorDirty]);
+
+  const handleCancelNav = useCallback(() => {
+    setPendingNavAction(null);
+  }, []);
+
+  // Warn on tab/window close when editor has unsaved changes
+  useEffect(() => {
+    if (!editorDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [editorDirty]);
 
   const hasVariants = tree.views.some((v) =>
     v.vendors.some((vn) => vn.models.some((m) => m.variants.length > 0)),
@@ -136,12 +180,27 @@ function App() {
   }, []);
 
   const handleSelectGeneratedConfig = useCallback((configId: string) => {
-    setSelectedGeneratedConfigId(configId);
-  }, []);
+    guardNavigation(() => {
+      setSelectedGeneratedConfigId(configId);
+      setSelectedVariant(null);
+      setSelectedGlobalVariablesViewId(null);
+    });
+  }, [guardNavigation, setSelectedVariant, setSelectedGlobalVariablesViewId]);
 
   const handleBackFromViewer = useCallback(() => {
     setSelectedGeneratedConfigId(null);
   }, []);
+
+  const handleSelectVariant = useCallback((variantId: string) => {
+    guardNavigation(() => {
+      setSelectedGlobalVariablesViewId(null);
+      setSelectedVariant(variantId);
+    });
+  }, [guardNavigation, setSelectedVariant, setSelectedGlobalVariablesViewId]);
+
+  const handleSelectGlobalVariables = useCallback((viewId: string) => {
+    guardNavigation(() => setSelectedGlobalVariablesViewId(viewId));
+  }, [guardNavigation, setSelectedGlobalVariablesViewId]);
 
   // Determine main content
   const renderMainContent = () => {
@@ -205,7 +264,7 @@ function App() {
         {selectedVariantId && (
           <div className="hidden sm:flex items-center gap-1 mr-4">
             <button
-              onClick={() => setMode('generator')}
+              onClick={() => guardNavigation(() => setMode('generator'))}
               className={`px-3 py-1.5 text-xs font-mono font-medium tracking-wider rounded transition-colors ${
                 mode === 'generator'
                   ? 'text-forge-amber border-b-2 border-forge-amber'
@@ -255,7 +314,12 @@ function App() {
               w-60 shrink-0
             `}
           >
-            <Sidebar onSwitchToEditor={switchToEditor} onSelectGeneratedConfig={handleSelectGeneratedConfig} />
+            <Sidebar
+              onSwitchToEditor={switchToEditor}
+              onSelectGeneratedConfig={handleSelectGeneratedConfig}
+              onSelectVariant={handleSelectVariant}
+              onSelectGlobalVariables={handleSelectGlobalVariables}
+            />
           </div>
         )}
 
@@ -298,6 +362,14 @@ function App() {
         isOpen={vaultOpen}
         onClose={() => setVaultOpen(false)}
         initialTab={vaultInitialTab}
+      />
+
+      {/* Unsaved changes confirmation */}
+      <UnsavedChangesModal
+        open={pendingNavAction !== null}
+        onSave={handleSaveAndContinue}
+        onDiscard={handleDiscard}
+        onCancel={handleCancelNav}
       />
     </div>
   );

@@ -112,6 +112,12 @@ interface ForgeStore {
   importData: (data: VaultExportData) => void;
   exportData: (scope?: Record<string, string>) => VaultExportData;
 
+  // Editor dirty state (runtime-only, not persisted)
+  editorDirty: boolean;
+  pendingSaveCallback: (() => void) | null;
+  setEditorDirty: (dirty: boolean) => void;
+  setPendingSaveCallback: (cb: (() => void) | null) => void;
+
   // Helpers
   findVariant: (variantId: string) => { view: View; vendor: Vendor; model: Model; variant: Variant } | null;
   getConfigFormat: (variantId: string) => ConfigFormat;
@@ -130,6 +136,12 @@ export const useForgeStore = create<ForgeStore>()(
       preferences: defaultPreferences,
       selectedVariantId: null,
       selectedGlobalVariablesViewId: null,
+
+      // Editor dirty state (runtime-only, not persisted)
+      editorDirty: false,
+      pendingSaveCallback: null,
+      setEditorDirty: (dirty) => set({ editorDirty: dirty }),
+      setPendingSaveCallback: (cb) => set({ pendingSaveCallback: cb }),
 
       // --- Tree CRUD ---
 
@@ -704,6 +716,11 @@ export const useForgeStore = create<ForgeStore>()(
     {
       name: 'forge-store',
       storage: createJSONStorage(() => forgeStorage),
+      partialize: (state) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { editorDirty, pendingSaveCallback, setEditorDirty, setPendingSaveCallback, ...rest } = state;
+        return rest;
+      },
     },
   ),
 );

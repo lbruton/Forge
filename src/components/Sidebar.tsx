@@ -14,6 +14,8 @@ interface ModalContext {
 interface SidebarProps {
   onSwitchToEditor?: () => void;
   onSelectGeneratedConfig?: (id: string) => void;
+  onSelectVariant?: (variantId: string) => void;
+  onSelectGlobalVariables?: (viewId: string) => void;
 }
 
 function formatShortDate(iso: string): string {
@@ -25,7 +27,7 @@ function truncateName(name: string, max = 12): string {
   return name.length > max ? name.slice(0, max) + '...' : name;
 }
 
-export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig }: SidebarProps) {
+export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVariant, onSelectGlobalVariables }: SidebarProps) {
   const {
     tree,
     selectedVariantId,
@@ -129,10 +131,13 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig }: SidebarPr
 
   const handleSelectGeneratedConfig = useCallback(
     (id: string) => {
-      setSelectedGeneratedConfigId(id);
-      setSelectedVariant(null);
-      setSelectedGlobalVariablesViewId(null);
-      onSelectGeneratedConfig?.(id);
+      if (onSelectGeneratedConfig) {
+        onSelectGeneratedConfig(id);
+      } else {
+        setSelectedGeneratedConfigId(id);
+        setSelectedVariant(null);
+        setSelectedGlobalVariablesViewId(null);
+      }
     },
     [setSelectedVariant, setSelectedGlobalVariablesViewId, onSelectGeneratedConfig],
   );
@@ -140,10 +145,14 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig }: SidebarPr
   const handleSelectVariant = useCallback(
     (variantId: string) => {
       setSelectedGeneratedConfigId(null);
-      setSelectedGlobalVariablesViewId(null);
-      setSelectedVariant(variantId);
+      if (onSelectVariant) {
+        onSelectVariant(variantId);
+      } else {
+        setSelectedGlobalVariablesViewId(null);
+        setSelectedVariant(variantId);
+      }
     },
-    [setSelectedVariant, setSelectedGlobalVariablesViewId],
+    [setSelectedVariant, setSelectedGlobalVariablesViewId, onSelectVariant],
   );
 
   return (
@@ -184,7 +193,11 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig }: SidebarPr
                 isSelected={selectedGlobalVariablesViewId === view.id}
                 onSelect={() => {
                   setSelectedGeneratedConfigId(null);
-                  setSelectedGlobalVariablesViewId(view.id);
+                  if (onSelectGlobalVariables) {
+                    onSelectGlobalVariables(view.id);
+                  } else {
+                    setSelectedGlobalVariablesViewId(view.id);
+                  }
                 }}
               />
               {view.vendors.map((vendor) => (

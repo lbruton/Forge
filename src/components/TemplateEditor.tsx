@@ -39,7 +39,7 @@ interface TemplateEditorProps {
 }
 
 function TemplateEditor({ variantId }: TemplateEditorProps) {
-  const { saveTemplate, findVariant, getConfigFormat, getTemplate, preferences, toggleRightPanel, autoSyncGlobals, setSelectedGlobalVariablesViewId } = useForgeStore();
+  const { saveTemplate, findVariant, getConfigFormat, getTemplate, preferences, toggleRightPanel, autoSyncGlobals, setSelectedGlobalVariablesViewId, setEditorDirty, setPendingSaveCallback } = useForgeStore();
 
   // Resolve variant context
   const context = variantId ? findVariant(variantId) : null;
@@ -121,6 +121,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     (text: string) => {
       setRawText(text);
       setSaved(false);
+      setEditorDirty(true);
 
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
@@ -134,7 +135,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
         setVariableSectionMap(buildVariableSectionMap(text, parsedSections));
       }, 300);
     },
-    [configFormat, buildVariableSectionMap],
+    [configFormat, buildVariableSectionMap, setEditorDirty],
   );
 
   // Promote a local variable to global by converting $varName to ${varName}
@@ -171,12 +172,22 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     }
   }, [globalNames, context?.view.id, autoSyncGlobals]);
 
+  // Register save callback for unsaved-changes guard
+  useEffect(() => {
+    setPendingSaveCallback(() => handleSave);
+    return () => {
+      setPendingSaveCallback(null);
+      setEditorDirty(false);
+    };
+  }, [handleSave, setPendingSaveCallback, setEditorDirty]);
+
   const handleVariableReorder = useCallback(() => {
     setCustomVariableOrder(true);
-  }, []);
+    setEditorDirty(true);
+  }, [setEditorDirty]);
 
   // Save template
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     const templateId = existingTemplate?.id ?? crypto.randomUUID();
     const ts = new Date().toISOString();
 
@@ -190,15 +201,17 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
       updatedAt: ts,
     });
 
+    setEditorDirty(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
-  };
+  }, [existingTemplate, sections, variables, customVariableOrder, rawText, saveTemplate, setEditorDirty]);
 
   // Clean up sections handler
   const handleCleanUp = useCallback(() => {
     const cleaned = cleanUpSections(rawText, configFormat);
     setRawText(cleaned);
     setSaved(false);
+    setEditorDirty(true);
 
     // Re-parse immediately
     const parsedVars = parseVariables(cleaned);
@@ -211,7 +224,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     // Show toast
     setCleanUpToast(true);
     setTimeout(() => setCleanUpToast(false), 3000);
-  }, [rawText, configFormat, buildVariableSectionMap]);
+  }, [rawText, configFormat, buildVariableSectionMap, setEditorDirty]);
 
   // Drag-to-reorder handlers for sections
   const handleDragStart = useCallback((index: number) => {
@@ -228,6 +241,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
       // Save cursor position before state updates
       const selStart = textareaRef.current?.selectionStart ?? 0;
       const selEnd = textareaRef.current?.selectionEnd ?? 0;
+      setEditorDirty(true);
 
       setSections((prev) => {
         const next = [...prev];
@@ -263,7 +277,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     }
     setDragIndex(null);
     setDragOverIndex(null);
-  }, [dragIndex, dragOverIndex, rawText, configFormat, buildVariableSectionMap]);
+  }, [dragIndex, dragOverIndex, rawText, configFormat, buildVariableSectionMap, setEditorDirty]);
 
   // Sync scroll between textarea and overlay
   const handleTextareaScroll = useCallback(() => {
@@ -507,6 +521,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
                     description: '',
                   };
                   setVariables([...variables, newVar]);
+                  setEditorDirty(true);
                   if (variablesCollapsed) setVariablesCollapsed(false);
                 }}
                 className="p-1 mr-3 rounded text-slate-500 hover:text-forge-amber hover:bg-forge-graphite transition-colors shrink-0"
@@ -518,7 +533,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             {!variablesCollapsed && (
               <VariableDetectionPanel
                 variables={variables}
-                onChange={setVariables}
+                onChange={(vars) => { setVariables(vars); setEditorDirty(true); }}
                 sectionNames={sections.map((s) => s.name)}
                 variableSectionMap={variableSectionMap}
                 hideHeader

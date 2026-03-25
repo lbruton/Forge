@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-10-unsaved-changes-warning/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-25T19:43:17.575Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774467797569_lg27ikjum",
+      "approvalTitle": "Requirements: FORGE-10 Unsaved changes warning"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-25T19:46:38.006Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774467797569_lg27ikjum",
+      "approvalTitle": "Requirements: FORGE-10 Unsaved changes warning"
+    }
+  ]
+}
