@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useForgeStore } from '../store/index.ts';
 import type { VariableDefinition, VariableType } from '../types/index.ts';
 import { Globe, Plus, GripVertical, Eye, EyeOff, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
@@ -32,6 +32,10 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
   const [ipErrors, setIpErrors] = useState<Record<string, boolean>>({});
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  // Local editing state for variable names — committed to store on blur
+  const [editingNames, setEditingNames] = useState<Record<string, string>>({});
+  const editingNamesRef = useRef(editingNames);
+  editingNamesRef.current = editingNames;
 
   const handleAdd = useCallback(() => {
     const existingNames = new Set(globalVariables.map((v) => v.name));
@@ -276,16 +280,37 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                     </div>
                   </div>
 
-                  {/* Variable name (editable) */}
+                  {/* Variable name (editable — local state, committed on blur) */}
                   <div className="flex items-center gap-0 overflow-hidden">
                     <span className="text-green-600/70 font-mono text-[13px]">$</span>
                     <input
                       type="text"
-                      value={variable.name}
+                      value={editingNames[variable.name] ?? variable.name}
                       onChange={(e) => {
-                        const newName = e.target.value.replace(/[^a-zA-Z0-9_]/g, '');
+                        const sanitized = e.target.value.replace(/[^a-zA-Z0-9_]/g, '');
+                        setEditingNames((prev) => ({ ...prev, [variable.name]: sanitized }));
+                      }}
+                      onBlur={() => {
+                        const newName = editingNames[variable.name];
                         if (newName && newName !== variable.name) {
                           handleUpdate(variable.name, { name: newName });
+                        }
+                        setEditingNames((prev) => {
+                          const next = { ...prev };
+                          delete next[variable.name];
+                          return next;
+                        });
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          (e.target as HTMLInputElement).blur();
+                        } else if (e.key === 'Escape') {
+                          setEditingNames((prev) => {
+                            const next = { ...prev };
+                            delete next[variable.name];
+                            return next;
+                          });
+                          (e.target as HTMLInputElement).blur();
                         }
                       }}
                       className="bg-transparent text-green-500 font-mono text-[13px] font-medium outline-none border-none w-full"
