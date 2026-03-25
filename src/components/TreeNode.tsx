@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type ReactNode } from 'react';
-import { ChevronRight, Plus, MoreVertical } from 'lucide-react';
+import { ChevronRight, Plus, MoreVertical, Copy } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 
 interface TreeNodeProps {
@@ -12,6 +12,7 @@ interface TreeNodeProps {
   onSelect?: () => void;
   onAdd?: () => void;
   onEdit?: () => void;
+  onDuplicate?: () => void;
   onDelete?: () => void;
   children?: ReactNode;
 }
@@ -26,6 +27,7 @@ export function TreeNode({
   onSelect,
   onAdd,
   onEdit,
+  onDuplicate,
   onDelete,
   children,
 }: TreeNodeProps) {
@@ -103,7 +105,7 @@ export function TreeNode({
           </button>
         )}
 
-        {hovered && (onEdit || onDelete) && (
+        {hovered && (onEdit || onDuplicate || onDelete) && (
           <button
             onClick={handleDotsClick}
             className="shrink-0 p-0.5 rounded text-slate-500 hover:text-slate-300 hover:bg-forge-graphite transition-colors"
@@ -129,6 +131,18 @@ export function TreeNode({
               }}
             >
               Edit
+            </button>
+          )}
+          {onDuplicate && (
+            <button
+              className="w-full text-left px-3 py-1.5 text-[13px] text-slate-300 hover:bg-forge-graphite hover:text-slate-100 transition-colors flex items-center gap-2"
+              onClick={() => {
+                setContextMenuOpen(false);
+                onDuplicate();
+              }}
+            >
+              <Copy size={12} />
+              Duplicate
             </button>
           )}
           {onDelete && (

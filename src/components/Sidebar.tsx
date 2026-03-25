@@ -30,6 +30,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig }: SidebarPr
     tree,
     selectedVariantId,
     getGeneratedConfigs,
+    getTemplate,
     addView,
     addVendor,
     addModel,
@@ -217,6 +218,17 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig }: SidebarPr
                               isSelected={selectedVariantId === variant.id && selectedGeneratedConfigId === null}
                               onSelect={() => handleSelectVariant(variant.id)}
                               onEdit={() => handleEdit('variant', { viewId: view.id, vendorId: vendor.id, modelId: model.id, variantId: variant.id }, variant.name)}
+                              onDuplicate={() => {
+                                const source = getTemplate(variant.templateId);
+                                if (!source) return;
+                                const clone = structuredClone(source);
+                                clone.id = crypto.randomUUID();
+                                const now = new Date().toISOString();
+                                clone.createdAt = now;
+                                clone.updatedAt = now;
+                                saveTemplate(clone);
+                                addVariant(view.id, vendor.id, model.id, `${variant.name} (copy)`, clone.id);
+                              }}
                               onDelete={() => handleDelete('variant', { viewId: view.id, vendorId: vendor.id, modelId: model.id, variantId: variant.id })}
                             />
                           ))}

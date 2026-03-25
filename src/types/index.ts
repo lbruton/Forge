@@ -57,6 +57,7 @@ export interface TemplateSection {
   order: number;
   dividerPattern: string;
   endDividerPattern?: string;
+  startLine?: number;
 }
 
 export interface VariableDefinition {
@@ -79,6 +80,7 @@ export interface VariableValues {
 export interface Preferences {
   lastSelectedVariantId: string | null;
   sidebarCollapsed: boolean;
+  rightPanelCollapsed: boolean;
   expandedNodes: string[];
 }
 

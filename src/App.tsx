@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Plus, ArrowUpDown, Menu, X } from 'lucide-react';
+import { Plus, ArrowUpDown, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useForgeStore } from './store/index.ts';
 import { Sidebar } from './components/Sidebar.tsx';
 import { CreateNodeModal, type CreateNodeType, type CreateNodeData } from './components/CreateNodeModal.tsx';
@@ -241,16 +241,25 @@ function App() {
       {/* Body: sidebar + main */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar — 240px on desktop, overlay on mobile */}
-        <div
-          className={`
-            ${preferences.sidebarCollapsed && !mobileMenuOpen ? 'hidden' : ''}
-            md:block
-            ${mobileMenuOpen ? 'fixed inset-0 top-12 z-40 md:relative md:inset-auto' : ''}
-            w-60 shrink-0
-          `}
+        {(!preferences.sidebarCollapsed || mobileMenuOpen) && (
+          <div
+            className={`
+              ${mobileMenuOpen ? 'fixed inset-0 top-12 z-40 md:relative md:inset-auto' : 'hidden md:block'}
+              w-60 shrink-0
+            `}
+          >
+            <Sidebar onSwitchToEditor={switchToEditor} onSelectGeneratedConfig={handleSelectGeneratedConfig} />
+          </div>
+        )}
+
+        {/* Desktop sidebar collapse toggle */}
+        <button
+          onClick={toggleSidebar}
+          className="hidden md:flex items-center justify-center w-5 shrink-0 bg-forge-charcoal border-r border-forge-graphite text-slate-500 hover:text-slate-300 hover:bg-forge-graphite"
+          title={preferences.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          <Sidebar onSwitchToEditor={switchToEditor} onSelectGeneratedConfig={handleSelectGeneratedConfig} />
-        </div>
+          {preferences.sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
 
         {/* Mobile overlay backdrop */}
         {mobileMenuOpen && (

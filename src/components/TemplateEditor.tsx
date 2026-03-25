@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Save, FileText, Layers, GripVertical, Sparkles } from 'lucide-react';
+import { Save, FileText, Layers, GripVertical, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
-import { parseVariables, parseSections, cleanUpSections } from '../lib/template-parser.ts';
+import { parseVariables, parseSections, cleanUpSections, rebuildRawText } from '../lib/template-parser.ts';
 import { VariableDetectionPanel } from './VariableDetectionPanel.tsx';
+import { EditorSectionTabs } from './EditorSectionTabs.tsx';
 import type { VariableDefinition, TemplateSection, ConfigFormat } from '../types/index.ts';
 
 interface TemplateEditorProps {
@@ -10,7 +11,7 @@ interface TemplateEditorProps {
 }
 
 function TemplateEditor({ variantId }: TemplateEditorProps) {
-  const { saveTemplate, findVariant, getConfigFormat, getTemplate } = useForgeStore();
+  const { saveTemplate, findVariant, getConfigFormat, getTemplate, preferences, toggleRightPanel } = useForgeStore();
 
   // Resolve variant context
   const context = variantId ? findVariant(variantId) : null;
@@ -30,6 +31,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const [variableSectionMap, setVariableSectionMap] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [cleanUpToast, setCleanUpToast] = useState(false);
+  const [activeSectionName, setActiveSectionName] = useState<string | null>(null);
 
   // Drag state for sections
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -40,6 +42,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cursorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Build variable-to-section mapping
   const buildVariableSectionMap = useCallback(
@@ -172,17 +175,53 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
 
   const handleDragEnd = useCallback(() => {
     if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
+      // Save cursor position before state updates
+      const selStart = textareaRef.current?.selectionStart ?? 0;
+      const selEnd = textareaRef.current?.selectionEnd ?? 0;
+
       setSections((prev) => {
         const next = [...prev];
         const [moved] = next.splice(dragIndex, 1);
         next.splice(dragOverIndex, 0, moved);
-        // Update order fields
-        return next.map((s, i) => ({ ...s, order: i }));
+        const reordered = next.map((s, i) => ({ ...s, order: i }));
+
+        // Rebuild rawText to match the new section order
+        const rebuilt = rebuildRawText(reordered, rawText);
+        setRawText(rebuilt);
+        setSaved(false);
+
+        // Re-parse variables and section map for the rebuilt text
+        const parsedVars = parseVariables(rebuilt);
+        const parsedSections = parseSections(rebuilt, configFormat);
+        setVariables((prevVars) => {
+          const prevByName = new Map(prevVars.map((v) => [v.name, v]));
+          return parsedVars.map((pv) => {
+            const existing = prevByName.get(pv.name);
+            if (existing) {
+              return { ...pv, label: existing.label, type: existing.type, description: existing.description, required: existing.required, defaultValue: existing.defaultValue, options: existing.options };
+            }
+            return pv;
+          });
+        });
+        setVariableSectionMap(buildVariableSectionMap(rebuilt, parsedSections));
+
+        // Restore cursor position and sync overlay scroll after DOM update
+        requestAnimationFrame(() => {
+          if (textareaRef.current) {
+            textareaRef.current.selectionStart = selStart;
+            textareaRef.current.selectionEnd = selEnd;
+          }
+          if (overlayRef.current && textareaRef.current) {
+            overlayRef.current.scrollTop = textareaRef.current.scrollTop;
+          }
+        });
+
+        return parsedSections;
       });
     }
     setDragIndex(null);
     setDragOverIndex(null);
-  }, [dragIndex, dragOverIndex]);
+  }, [dragIndex, dragOverIndex, rawText, configFormat, buildVariableSectionMap]);
 
   // Sync scroll between textarea and overlay
   const handleTextareaScroll = useCallback(() => {
@@ -191,6 +230,41 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
       overlayRef.current.scrollLeft = textareaRef.current.scrollLeft;
     }
   }, []);
+
+  // Jump to a section in the textarea
+  const handleJumpToSection = useCallback((section: TemplateSection) => {
+    if (!textareaRef.current) return;
+    const ta = textareaRef.current;
+    const computedLineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 26.4;
+    const lineIndex = section.startLine ?? rawText.split('\n').findIndex((line) => section.template.split('\n')[0] === line);
+    if (lineIndex < 0) return;
+    const scrollTop = lineIndex * computedLineHeight;
+    ta.scrollTop = scrollTop;
+    if (overlayRef.current) overlayRef.current.scrollTop = scrollTop;
+    setActiveSectionName(section.name);
+  }, [rawText]);
+
+  // Detect which section the cursor is in (debounced)
+  const detectCursorSection = useCallback(() => {
+    if (cursorDebounceRef.current) clearTimeout(cursorDebounceRef.current);
+    cursorDebounceRef.current = setTimeout(() => {
+      if (!textareaRef.current || sections.length === 0) return;
+      const pos = textareaRef.current.selectionStart;
+      const cursorLine = rawText.substring(0, pos).split('\n').length - 1;
+
+      // Walk sections in reverse order to find the one containing the cursor
+      let found: string | null = null;
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const s = sections[i];
+        const sLine = s.startLine ?? rawText.split('\n').findIndex((line) => s.template.split('\n')[0] === line);
+        if (sLine >= 0 && cursorLine >= sLine) {
+          found = s.name;
+          break;
+        }
+      }
+      setActiveSectionName(found);
+    }, 150);
+  }, [sections, rawText]);
 
   // Build highlighted overlay text
   const highlightedText = useMemo(() => {
@@ -267,6 +341,11 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
           <div className="px-5 py-2.5 text-[11px] font-semibold tracking-widest uppercase text-slate-500 bg-forge-charcoal border-b border-forge-graphite">
             Paste Config Template
           </div>
+          <EditorSectionTabs
+            sections={sections}
+            activeSectionName={activeSectionName}
+            onJumpTo={handleJumpToSection}
+          />
           <div className="flex-1 relative">
             {/* Textarea — renders visible text */}
             <textarea
@@ -274,6 +353,8 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
               value={rawText}
               onChange={(e) => handleTextChange(e.target.value)}
               onScroll={handleTextareaScroll}
+              onMouseUp={detectCursorSection}
+              onKeyUp={detectCursorSection}
               placeholder={`Paste your config template here...\n\nUse $variable_name or \${variable_name} for template variables.\n\nExample:\nhostname $hostname\ninterface vlan95\n ip address $vlan_95_ip_address 255.255.255.0`}
               spellCheck={false}
               className="absolute inset-0 w-full h-full px-5 py-4 text-slate-200 font-mono text-[13px] leading-relaxed resize-none outline-none placeholder:text-slate-600 border-none relative z-10 bg-forge-obsidian"
@@ -290,7 +371,17 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
           </div>
         </div>
 
+        {/* Right panel collapse toggle */}
+        <button
+          onClick={toggleRightPanel}
+          className="hidden md:flex items-center justify-center w-5 shrink-0 bg-forge-charcoal border-l border-forge-graphite text-slate-500 hover:text-slate-300 hover:bg-forge-graphite"
+          title={preferences.rightPanelCollapsed ? 'Expand panel' : 'Collapse panel'}
+        >
+          {preferences.rightPanelCollapsed ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+        </button>
+
         {/* Right: sections panel + variable detection panel */}
+        {!preferences.rightPanelCollapsed && (
         <div className="w-80 min-w-[320px] bg-forge-charcoal shrink-0 flex flex-col overflow-hidden">
           {/* Sections panel — above variables */}
           <div className="shrink-0 border-b border-forge-graphite">
@@ -322,6 +413,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
                     const lineEnd = lineStart + section.template.split('\n').length - 1;
                     const isDragging = dragIndex === i;
                     const isDragOver = dragOverIndex === i;
+                    const isActive = activeSectionName === section.name;
                     return (
                       <div
                         key={section.id}
@@ -329,12 +421,15 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
                         onDragStart={() => handleDragStart(i)}
                         onDragOver={(e) => handleDragOver(e, i)}
                         onDragEnd={handleDragEnd}
-                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded bg-forge-obsidian border text-[12px] cursor-grab active:cursor-grabbing transition-all ${
+                        onClick={() => handleJumpToSection(section)}
+                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded bg-forge-obsidian border text-[12px] cursor-pointer active:cursor-grabbing transition-all ${
                           isDragging
                             ? 'opacity-40 border-forge-amber/40'
                             : isDragOver
                               ? 'border-forge-amber/60 bg-forge-amber/5'
-                              : 'border-forge-graphite'
+                              : isActive
+                                ? 'border-amber-500 bg-amber-500/10'
+                                : 'border-forge-graphite'
                         }`}
                       >
                         <GripVertical size={12} className="text-slate-600 shrink-0" />
@@ -422,6 +517,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             />
           </div>
         </div>
+        )}
       </div>
     </div>
   );
