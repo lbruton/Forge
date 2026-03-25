@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Save, FileText, Layers, GripVertical, Sparkles } from 'lucide-react';
+import { Save, FileText, Layers, GripVertical, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { parseVariables, parseSections, cleanUpSections, rebuildRawText } from '../lib/template-parser.ts';
 import { VariableDetectionPanel } from './VariableDetectionPanel.tsx';
@@ -11,7 +11,7 @@ interface TemplateEditorProps {
 }
 
 function TemplateEditor({ variantId }: TemplateEditorProps) {
-  const { saveTemplate, findVariant, getConfigFormat, getTemplate } = useForgeStore();
+  const { saveTemplate, findVariant, getConfigFormat, getTemplate, preferences, toggleRightPanel } = useForgeStore();
 
   // Resolve variant context
   const context = variantId ? findVariant(variantId) : null;
@@ -371,7 +371,17 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
           </div>
         </div>
 
+        {/* Right panel collapse toggle */}
+        <button
+          onClick={toggleRightPanel}
+          className="hidden md:flex items-center justify-center w-5 shrink-0 bg-forge-charcoal border-l border-forge-graphite text-slate-500 hover:text-slate-300 hover:bg-forge-graphite"
+          title={preferences.rightPanelCollapsed ? 'Expand panel' : 'Collapse panel'}
+        >
+          {preferences.rightPanelCollapsed ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+        </button>
+
         {/* Right: sections panel + variable detection panel */}
+        {!preferences.rightPanelCollapsed && (
         <div className="w-80 min-w-[320px] bg-forge-charcoal shrink-0 flex flex-col overflow-hidden">
           {/* Sections panel — above variables */}
           <div className="shrink-0 border-b border-forge-graphite">
@@ -507,6 +517,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             />
           </div>
         </div>
+        )}
       </div>
     </div>
   );
