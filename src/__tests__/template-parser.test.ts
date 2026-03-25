@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { parseVariables, parseSections, cleanUpSections } from '../lib/template-parser.ts';
+import { parseVariables, parseSections, cleanUpSections, rebuildRawText } from '../lib/template-parser.ts';
+import type { TemplateSection } from '../types/index.ts';
 
 // Inline seed config for tests (representative Cisco IOS-style template)
 const seedConfig = `!########## GENERIC IOS CONFIG ##########
@@ -440,5 +441,174 @@ aaa accounting dot1x default start-stop group radius`;
     const result = cleanUpSections(config, 'cli');
     expect(result).toContain('aaa authentication dot1x default group radius');
     expect(result).toContain('aaa accounting dot1x default start-stop group radius');
+  });
+});
+
+// ── rebuildRawText ──────────────────────────────────────────────
+
+// Helper to build a TemplateSection for testing
+function makeTestSection(
+  overrides: Partial<TemplateSection> & Pick<TemplateSection, 'id' | 'name' | 'dividerPattern'>,
+): TemplateSection {
+  return {
+    id: overrides.id,
+    name: overrides.name,
+    template: overrides.template ?? '',
+    order: overrides.order ?? 0,
+    dividerPattern: overrides.dividerPattern,
+    endDividerPattern: overrides.endDividerPattern,
+    startLine: overrides.startLine,
+  };
+}
+
+describe('rebuildRawText', () => {
+  const twoSectionConfig = `!##### AAA Config - START #####
+aaa authentication dot1x default group radius
+aaa accounting dot1x default start-stop group radius
+!##### AAA Config - END #####
+!##### NAC Config - START #####
+dot1x system-auth-control
+dot1x critical eapol
+!##### NAC Config - END #####`;
+
+  const sectionA = makeTestSection({
+    id: 'sec-aaa',
+    name: 'AAA Config',
+    dividerPattern: '!##### AAA Config - START #####',
+    endDividerPattern: '!##### AAA Config - END #####',
+    startLine: 0,
+  });
+
+  const sectionB = makeTestSection({
+    id: 'sec-nac',
+    name: 'NAC Config',
+    dividerPattern: '!##### NAC Config - START #####',
+    endDividerPattern: '!##### NAC Config - END #####',
+    startLine: 4,
+  });
+
+  it('reorders two sections correctly', () => {
+    // Original order: AAA, NAC. Request: NAC, AAA.
+    const result = rebuildRawText([sectionB, sectionA], twoSectionConfig);
+    const lines = result.split('\n');
+
+    // NAC block should come before AAA block
+    const nacStartIdx = lines.findIndex((l) => l.includes('NAC Config - START'));
+    const aaaStartIdx = lines.findIndex((l) => l.includes('AAA Config - START'));
+    expect(nacStartIdx).toBeLessThan(aaaStartIdx);
+
+    // Both blocks present
+    expect(result).toContain('aaa authentication dot1x default group radius');
+    expect(result).toContain('dot1x system-auth-control');
+  });
+
+  it('preserves line count after reorder', () => {
+    const result = rebuildRawText([sectionB, sectionA], twoSectionConfig);
+    const originalLineCount = twoSectionConfig.split('\n').length;
+    const resultLineCount = result.split('\n').length;
+    expect(resultLineCount).toBe(originalLineCount);
+  });
+
+  it('preserves preamble and postamble text', () => {
+    const configWithPreambleAndPostamble = `! Global preamble
+service timestamps debug datetime msec
+!##### AAA Config - START #####
+aaa new-model
+!##### AAA Config - END #####
+!##### VTP Config - START #####
+vtp domain CORP
+!##### VTP Config - END #####
+! Final line - postamble`;
+
+    const secAAA = makeTestSection({
+      id: 'sec-aaa-2',
+      name: 'AAA Config',
+      dividerPattern: '!##### AAA Config - START #####',
+      endDividerPattern: '!##### AAA Config - END #####',
+      startLine: 2,
+    });
+
+    const secVTP = makeTestSection({
+      id: 'sec-vtp',
+      name: 'VTP Config',
+      dividerPattern: '!##### VTP Config - START #####',
+      endDividerPattern: '!##### VTP Config - END #####',
+      startLine: 5,
+    });
+
+    // Reorder: VTP first, then AAA
+    const result = rebuildRawText([secVTP, secAAA], configWithPreambleAndPostamble);
+
+    // Preamble preserved at the start
+    expect(result.startsWith('! Global preamble\nservice timestamps debug datetime msec')).toBe(true);
+
+    // Postamble preserved at the end
+    expect(result.endsWith('! Final line - postamble')).toBe(true);
+
+    // Content still present
+    expect(result).toContain('aaa new-model');
+    expect(result).toContain('vtp domain CORP');
+  });
+
+  it('works without startLine (fallback to divider pattern matching)', () => {
+    const secANoLine = makeTestSection({
+      id: 'sec-aaa',
+      name: 'AAA Config',
+      dividerPattern: '!##### AAA Config - START #####',
+      endDividerPattern: '!##### AAA Config - END #####',
+      // no startLine
+    });
+
+    const secBNoLine = makeTestSection({
+      id: 'sec-nac',
+      name: 'NAC Config',
+      dividerPattern: '!##### NAC Config - START #####',
+      endDividerPattern: '!##### NAC Config - END #####',
+      // no startLine
+    });
+
+    const result = rebuildRawText([secBNoLine, secANoLine], twoSectionConfig);
+    const lines = result.split('\n');
+    const nacIdx = lines.findIndex((l) => l.includes('NAC Config - START'));
+    const aaaIdx = lines.findIndex((l) => l.includes('AAA Config - START'));
+    expect(nacIdx).toBeLessThan(aaaIdx);
+  });
+
+  it('handles sections without END dividers (legacy style)', () => {
+    const legacyConfig = `!########## ISE Config ##########
+aaa authentication dot1x default group radius
+!########## VTP Config ##########
+vtp domain CORP`;
+
+    const secISE = makeTestSection({
+      id: 'sec-ise',
+      name: 'ISE Config',
+      dividerPattern: '!########## ISE Config ##########',
+      startLine: 0,
+    });
+
+    const secVTP = makeTestSection({
+      id: 'sec-vtp',
+      name: 'VTP Config',
+      dividerPattern: '!########## VTP Config ##########',
+      startLine: 2,
+    });
+
+    // Reorder: VTP first, then ISE
+    const result = rebuildRawText([secVTP, secISE], legacyConfig);
+    const lines = result.split('\n');
+    const vtpIdx = lines.findIndex((l) => l.includes('VTP Config'));
+    const iseIdx = lines.findIndex((l) => l.includes('ISE Config'));
+    expect(vtpIdx).toBeLessThan(iseIdx);
+    expect(result).toContain('aaa authentication dot1x default group radius');
+    expect(result).toContain('vtp domain CORP');
+  });
+
+  it('returns rawText unchanged when sections array is empty', () => {
+    expect(rebuildRawText([], twoSectionConfig)).toBe(twoSectionConfig);
+  });
+
+  it('returns empty string for empty rawText', () => {
+    expect(rebuildRawText([sectionA], '')).toBe('');
   });
 });

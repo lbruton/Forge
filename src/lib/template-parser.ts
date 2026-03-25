@@ -80,6 +80,9 @@ export function parseVariables(text: string): VariableDefinition[] {
   return result;
 }
 
+// Legacy inline divider pattern (matches !########## NAME ##########)
+const LEGACY_DIVIDER_RE = /^[!]?\s*#{3,}\s+(.+?)\s+#{3,}\s*$/;
+
 // START/END marker patterns
 const START_MARKER_RE = /^!#{3,}\s*(.*?)\s*-\s*START\s*#{3,}$/i;
 const END_MARKER_RE = /^!#{3,}\s*(.*?)\s*-\s*END\s*#{3,}$/i;
@@ -360,4 +363,116 @@ export function cleanUpSections(text: string, format: ConfigFormat): string {
   }
 
   return result.join('\n');
+}
+
+/**
+ * Locate a section's start line in the rawText lines array.
+ * Uses startLine property if available, otherwise searches for the
+ * divider pattern by string match.
+ */
+function findSectionStart(section: TemplateSection, lines: string[]): number {
+  if (section.startLine != null && section.startLine >= 0 && section.startLine < lines.length) {
+    return section.startLine;
+  }
+
+  // Fallback: search for the divider pattern in the lines
+  const patternFirstLine = section.dividerPattern.split('\n')[0];
+  if (!patternFirstLine) return -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i] === patternFirstLine) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+/**
+ * Given sections in a desired order and the current rawText, extracts each
+ * section's text block (from its START divider through its END divider or
+ * next section) and concatenates them in the new order.
+ *
+ * Text before the first section (preamble) and after the last section
+ * (postamble) in the original rawText is preserved in place.
+ */
+export function rebuildRawText(sections: TemplateSection[], rawText: string): string {
+  if (!rawText || sections.length === 0) return rawText || '';
+
+  const lines = rawText.split('\n');
+
+  // Build a list of section ranges: [startLineIndex, endLineIndex) for each section
+  // in their ORIGINAL document order so we can extract text blocks.
+  interface SectionRange {
+    section: TemplateSection;
+    from: number; // inclusive (first line of divider)
+    to: number;   // exclusive
+  }
+
+  // First, find all section start positions
+  const starts: { section: TemplateSection; from: number }[] = [];
+  for (const sec of sections) {
+    const from = findSectionStart(sec, lines);
+    if (from >= 0) {
+      starts.push({ section: sec, from });
+    }
+  }
+
+  if (starts.length === 0) return rawText;
+
+  // Sort by document position to determine boundaries
+  const byPosition = [...starts].sort((a, b) => a.from - b.from);
+
+  // Determine end of each section block
+  const ranges: SectionRange[] = [];
+  for (let i = 0; i < byPosition.length; i++) {
+    const entry = byPosition[i];
+    let to: number;
+
+    if (entry.section.endDividerPattern) {
+      // Has an END marker — find it
+      const endPattern = entry.section.endDividerPattern;
+      let endIdx = -1;
+      for (let j = entry.from + 1; j < lines.length; j++) {
+        if (lines[j] === endPattern) {
+          endIdx = j;
+          break;
+        }
+      }
+      to = endIdx >= 0 ? endIdx + 1 : (i + 1 < byPosition.length ? byPosition[i + 1].from : lines.length);
+    } else {
+      // No END marker — runs to next section start or EOF
+      to = i + 1 < byPosition.length ? byPosition[i + 1].from : lines.length;
+    }
+
+    ranges.push({ section: entry.section, from: entry.from, to });
+  }
+
+  // Identify preamble (text before first section in original order)
+  const firstFrom = byPosition[0].from;
+  const preamble = firstFrom > 0 ? lines.slice(0, firstFrom).join('\n') : '';
+
+  // Identify postamble (text after last section in original order)
+  const lastTo = Math.max(...ranges.map((r) => r.to));
+  const postamble = lastTo < lines.length ? lines.slice(lastTo).join('\n') : '';
+
+  // Build a lookup from section id to its extracted text block
+  const blockMap = new Map<string, string>();
+  for (const range of ranges) {
+    blockMap.set(range.section.id, lines.slice(range.from, range.to).join('\n'));
+  }
+
+  // Reassemble in the desired order (sections array order)
+  const parts: string[] = [];
+  if (preamble) parts.push(preamble);
+
+  for (const sec of sections) {
+    const block = blockMap.get(sec.id);
+    if (block != null) {
+      parts.push(block);
+    }
+  }
+
+  if (postamble) parts.push(postamble);
+
+  return parts.join('\n');
 }
