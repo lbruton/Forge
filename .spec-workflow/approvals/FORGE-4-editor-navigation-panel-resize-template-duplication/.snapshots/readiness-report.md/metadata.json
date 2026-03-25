@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-4-editor-navigation-panel-resize-template-duplication/readiness-report.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-25T01:40:57.207Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774402857203_xcn9ogxns",
+      "approvalTitle": "Readiness Report: FORGE-4 — PASS (6/6 requirements, 9/9 design elements mapped)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-25T01:41:21.157Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774402857203_xcn9ogxns",
+      "approvalTitle": "Readiness Report: FORGE-4 — PASS (6/6 requirements, 9/9 design elements mapped)"
+    }
+  ]
+}

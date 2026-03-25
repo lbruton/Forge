@@ -1,0 +1,30 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-4-editor-navigation-panel-resize-template-duplication/requirements.md",
+  "currentVersion": 3,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-25T01:26:31.415Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774401991409_5pt3crv1r",
+      "approvalTitle": "Requirements: FORGE-4 Editor Navigation, Panel Resize, Template Duplication"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-25T01:33:54.457Z",
+      "trigger": "revision_requested",
+      "approvalId": "approval_1774401991409_5pt3crv1r",
+      "approvalTitle": "Requirements: FORGE-4 Editor Navigation, Panel Resize, Template Duplication"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-03-25T01:34:30.524Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774402467434_bgbscu7a6",
+      "approvalTitle": "Requirements (revised): FORGE-4 Editor Navigation, Panel Resize, Template Duplication"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-5-global-variables-view-scoped-var/design.md",
+  "currentVersion": 3,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-25T03:04:42.303Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774407882296_m90arutbp",
+      "approvalTitle": "Design: FORGE-5 Global Variables (View-scoped)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-25T03:09:16.017Z",
+      "trigger": "revision_requested",
+      "approvalId": "approval_1774407882296_m90arutbp",
+      "approvalTitle": "Design: FORGE-5 Global Variables (View-scoped)"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-03-25T03:35:20.603Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774408225436_lsoaqows0",
+      "approvalTitle": "Design: FORGE-5 Global Variables (View-scoped) [rev 2]"
+    }
+  ]
+}
