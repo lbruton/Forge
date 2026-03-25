@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Save, FileText, Layers, GripVertical, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Save, FileText, Layers, GripVertical, Sparkles, ChevronLeft, ChevronRight, ChevronDown, Plus } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { parseVariables, parseSections, cleanUpSections, rebuildRawText } from '../lib/template-parser.ts';
 import { VariableDetectionPanel } from './VariableDetectionPanel.tsx';
@@ -32,6 +32,8 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const [saved, setSaved] = useState(false);
   const [cleanUpToast, setCleanUpToast] = useState(false);
   const [activeSectionName, setActiveSectionName] = useState<string | null>(null);
+  const [variablesCollapsed, setVariablesCollapsed] = useState(false);
+  const [sectionsCollapsed, setSectionsCollapsed] = useState(false);
 
   // Drag state for sections
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -380,31 +382,84 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
           {preferences.rightPanelCollapsed ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
         </button>
 
-        {/* Right: sections panel + variable detection panel */}
+        {/* Right: variables + sections + format footer */}
         {!preferences.rightPanelCollapsed && (
         <div className="w-80 min-w-[320px] bg-forge-charcoal shrink-0 flex flex-col overflow-hidden">
-          {/* Sections panel — above variables */}
-          <div className="shrink-0 border-b border-forge-graphite">
-            {hasRealSections && (
-              <div className="px-5 py-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <Layers size={12} className="text-slate-500" />
-                  <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-500">
-                    Detected Sections
-                  </span>
-                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold">
+          {/* Variable detection panel — top, collapsible */}
+          <div className={`${variablesCollapsed ? 'shrink-0' : 'flex-1 min-h-0'} border-b border-forge-graphite flex flex-col overflow-hidden`}>
+            <div className="flex items-center border-b border-forge-graphite shrink-0 bg-forge-charcoal">
+              <button
+                onClick={() => setVariablesCollapsed(!variablesCollapsed)}
+                className="flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-slate-500 hover:text-slate-400 text-left flex-1"
+              >
+                <ChevronDown size={12} className={`transition-transform ${variablesCollapsed ? '-rotate-90' : ''}`} />
+                Detected Variables
+                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-forge-amber/20 text-forge-amber text-[10px] font-bold ml-1">
+                  {variables.length}
+                </span>
+              </button>
+              <button
+                onClick={() => {
+                  const newVar: VariableDefinition = {
+                    name: `new_variable_${variables.length + 1}`,
+                    label: `New Variable ${variables.length + 1}`,
+                    type: 'string',
+                    defaultValue: '',
+                    options: [],
+                    required: true,
+                    description: '',
+                  };
+                  setVariables([...variables, newVar]);
+                  if (variablesCollapsed) setVariablesCollapsed(false);
+                }}
+                className="p-1 mr-3 rounded text-slate-500 hover:text-forge-amber hover:bg-forge-graphite transition-colors shrink-0"
+                title="Add variable manually"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+            {!variablesCollapsed && (
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <VariableDetectionPanel
+                  variables={variables}
+                  onChange={setVariables}
+                  sectionNames={sections.map((s) => s.name)}
+                  variableSectionMap={variableSectionMap}
+                  hideHeader
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Sections panel — middle, collapsible */}
+          <div className={`${sectionsCollapsed ? 'shrink-0' : 'flex-1 min-h-0'} border-b border-forge-graphite flex flex-col overflow-hidden`}>
+            <div className="flex items-center shrink-0">
+              <button
+                onClick={() => setSectionsCollapsed(!sectionsCollapsed)}
+                className="flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-slate-500 hover:text-slate-400 bg-forge-charcoal text-left flex-1"
+              >
+                <ChevronDown size={12} className={`transition-transform ${sectionsCollapsed ? '-rotate-90' : ''}`} />
+                <Layers size={12} />
+                Detected Sections
+                {hasRealSections && (
+                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold ml-1">
                     {sections.length}
                   </span>
-                  <div className="flex-1" />
-                  <button
-                    onClick={handleCleanUp}
-                    className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-slate-400 hover:text-forge-amber bg-forge-obsidian border border-forge-graphite hover:border-forge-amber/30 transition-colors"
-                    title="Auto-add START/END markers to sections"
-                  >
-                    <Sparkles size={11} />
-                    Clean Up
-                  </button>
-                </div>
+                )}
+              </button>
+              {rawText.trim() && (
+                <button
+                  onClick={handleCleanUp}
+                  className="flex items-center gap-1 px-2 py-1 mr-3 rounded text-[11px] font-medium text-slate-400 hover:text-forge-amber bg-forge-obsidian border border-forge-graphite hover:border-forge-amber/30 transition-colors shrink-0"
+                  title="Auto-add START/END markers to sections"
+                >
+                  <Sparkles size={11} />
+                  Clean Up
+                </button>
+              )}
+            </div>
+            {!sectionsCollapsed && hasRealSections && (
+              <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-3">
                 <div className="space-y-1">
                   {sections.map((section, i) => {
                     const lineStart = rawText
@@ -445,76 +500,29 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
                     );
                   })}
                 </div>
-                {/* Guidance text */}
-                <div className="mt-3 p-2.5 rounded bg-forge-obsidian border border-forge-graphite text-[11px] text-slate-500 leading-relaxed font-mono space-y-1.5">
-                  <div className="text-slate-400 font-sans font-semibold text-[10px] uppercase tracking-wider mb-1.5">Section Format</div>
-                  <div className="pl-2 text-slate-500">
-                    !##### SECTION NAME - START #####<br />
-                    <span className="text-slate-600">{'  '}... config lines ...</span><br />
-                    !##### SECTION NAME - END #####
-                  </div>
-                  <div className="text-slate-400 font-sans font-semibold text-[10px] uppercase tracking-wider mt-2 mb-1.5">Variable Format</div>
-                  <div className="pl-2 text-slate-500">
-                    $variable_name <span className="text-slate-600">or</span> {'${variable_name}'}
-                  </div>
-                  <div className="mt-2 text-slate-600 font-sans text-[11px]">
-                    <span className="text-slate-500">Tip:</span> Click "Clean Up" to auto-add START/END markers to your existing sections.
-                  </div>
-                  <div className="text-slate-600 font-sans text-[11px]">
-                    Legacy DNAC dividers (<code className="text-slate-500">!########## NAME ##########</code>) are also supported.
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Clean Up button when no sections detected but text exists */}
-            {!hasRealSections && rawText.trim() && (
-              <div className="px-5 py-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <Layers size={12} className="text-slate-500" />
-                  <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-500">
-                    Sections
-                  </span>
-                  <div className="flex-1" />
-                  <button
-                    onClick={handleCleanUp}
-                    className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-slate-400 hover:text-forge-amber bg-forge-obsidian border border-forge-graphite hover:border-forge-amber/30 transition-colors"
-                    title="Auto-add START/END markers"
-                  >
-                    <Sparkles size={11} />
-                    Clean Up
-                  </button>
-                </div>
-                <div className="p-2.5 rounded bg-forge-obsidian border border-forge-graphite text-[11px] text-slate-500 leading-relaxed font-mono space-y-1.5">
-                  <div className="text-slate-400 font-sans font-semibold text-[10px] uppercase tracking-wider mb-1.5">Section Format</div>
-                  <div className="pl-2 text-slate-500">
-                    !##### SECTION NAME - START #####<br />
-                    <span className="text-slate-600">{'  '}... config lines ...</span><br />
-                    !##### SECTION NAME - END #####
-                  </div>
-                  <div className="text-slate-400 font-sans font-semibold text-[10px] uppercase tracking-wider mt-2 mb-1.5">Variable Format</div>
-                  <div className="pl-2 text-slate-500">
-                    $variable_name <span className="text-slate-600">or</span> {'${variable_name}'}
-                  </div>
-                  <div className="mt-2 text-slate-600 font-sans text-[11px]">
-                    <span className="text-slate-500">Tip:</span> Click "Clean Up" to auto-add START/END markers to your existing sections.
-                  </div>
-                  <div className="text-slate-600 font-sans text-[11px]">
-                    Legacy DNAC dividers (<code className="text-slate-500">!########## NAME ##########</code>) are also supported.
-                  </div>
-                </div>
               </div>
             )}
           </div>
 
-          {/* Variable detection panel — below sections */}
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <VariableDetectionPanel
-              variables={variables}
-              onChange={setVariables}
-              sectionNames={sections.map((s) => s.name)}
-              variableSectionMap={variableSectionMap}
-            />
+          {/* Format reference footer — always visible */}
+          <div className="shrink-0 px-4 py-3 space-y-2">
+            <div className="p-2.5 rounded bg-forge-obsidian border border-forge-graphite text-[11px] text-slate-500 leading-relaxed font-mono">
+              <div className="text-slate-400 font-sans font-semibold text-[10px] uppercase tracking-wider mb-1.5">Section Format</div>
+              <div className="pl-2 text-slate-500">
+                !##### NAME - START #####<br />
+                <span className="text-slate-600">{'  '}... config lines ...</span><br />
+                !##### NAME - END #####
+              </div>
+            </div>
+            <div className="p-2.5 rounded bg-forge-obsidian border border-forge-graphite text-[11px] text-slate-500 leading-relaxed font-mono">
+              <div className="text-slate-400 font-sans font-semibold text-[10px] uppercase tracking-wider mb-1.5">Variable Format</div>
+              <div className="pl-2 text-slate-500">
+                $variable_name <span className="text-slate-600">or</span> {'${variable_name}'}
+              </div>
+              <div className="mt-1.5 text-slate-600 font-sans text-[10px]">
+                Legacy DNAC dividers also supported.
+              </div>
+            </div>
           </div>
         </div>
         )}

@@ -7,6 +7,7 @@ interface VariableDetectionPanelProps {
   onChange: (variables: VariableDefinition[]) => void;
   sectionNames: string[];
   variableSectionMap: Record<string, string>;
+  hideHeader?: boolean;
 }
 
 const VARIABLE_TYPES: VariableType[] = ['string', 'ip', 'integer', 'dropdown'];
@@ -16,6 +17,7 @@ export function VariableDetectionPanel({
   onChange,
   sectionNames,
   variableSectionMap,
+  hideHeader = false,
 }: VariableDetectionPanelProps) {
   const [expandedVar, setExpandedVar] = useState<string | null>(null);
 
@@ -59,6 +61,7 @@ export function VariableDetectionPanel({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
+      {!hideHeader && (
       <div className="px-5 py-2.5 text-[11px] font-semibold tracking-widest uppercase text-slate-500 border-b border-forge-graphite flex items-center justify-between">
         <span>
           Detected Variables
@@ -76,6 +79,7 @@ export function VariableDetectionPanel({
           <Plus size={14} />
         </button>
       </div>
+      )}
 
       {/* Variable list */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
