@@ -62,15 +62,26 @@ export interface TemplateSection {
   startLine?: number;
 }
 
+export interface DropdownOption {
+  label?: string;
+  value: string;
+}
+
 export interface VariableDefinition {
   name: string;
   label: string;
   type: VariableType;
   defaultValue: string;
-  options: string[];
+  options: (string | DropdownOption)[];
   required: boolean;
   description: string;
   masked?: boolean;
+}
+
+/** Normalize a dropdown option to { label, value } form */
+export function normalizeOption(opt: string | DropdownOption): { label: string; value: string } {
+  if (typeof opt === 'string') return { label: opt, value: opt };
+  return { label: opt.label ?? opt.value, value: opt.value };
 }
 
 // Parser output — discriminates local ($var) from global (${var}) variables
