@@ -286,8 +286,9 @@ export function parseSections(text: string, format: ConfigFormat): TemplateSecti
     // CHECK FOR GAP: content between cursor and this divider
     if (cursor < div.lineIndex) {
       const gapLines = lines.slice(cursor, div.lineIndex);
-      // Only create a section if there's non-whitespace content
-      const hasContent = gapLines.some(l => l.trim() !== '');
+      // Only create a section if there's meaningful content
+      // (standalone '!' lines are IOS comment separators — treat as whitespace)
+      const hasContent = gapLines.some(l => l.trim() !== '' && l.trim() !== '!');
       if (hasContent) {
         // Trim leading/trailing blank lines
         let gStart = 0;
@@ -340,7 +341,7 @@ export function parseSections(text: string, format: ConfigFormat): TemplateSecti
   // CHECK FOR POSTAMBLE: content after the last section
   if (cursor < lines.length) {
     const postLines = lines.slice(cursor);
-    const hasContent = postLines.some(l => l.trim() !== '');
+    const hasContent = postLines.some(l => l.trim() !== '' && l.trim() !== '!');
     if (hasContent) {
       let gStart = 0;
       while (gStart < postLines.length && postLines[gStart].trim() === '') gStart++;
