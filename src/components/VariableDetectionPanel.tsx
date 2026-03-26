@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { VariableDefinition, VariableType } from '../types/index.ts';
 import { Plus, ChevronDown, Trash2, ArrowUpCircle, GripVertical } from 'lucide-react';
+import { DropdownOptionsEditor } from './DropdownOptionsEditor.tsx';
 
 interface VariableDetectionPanelProps {
   variables: VariableDefinition[];
@@ -194,6 +195,14 @@ export function VariableDetectionPanel({
                                 </option>
                               ))}
                             </select>
+                            {variable.type === 'dropdown' && (
+                              <div className="mt-2">
+                                <DropdownOptionsEditor
+                                  options={variable.options}
+                                  onChange={(newOptions) => updateVariable(index, { options: newOptions })}
+                                />
+                              </div>
+                            )}
                           </div>
 
                           {/* Description */}

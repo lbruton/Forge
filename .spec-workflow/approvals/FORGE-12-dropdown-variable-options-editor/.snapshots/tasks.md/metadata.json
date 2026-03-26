@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-12-dropdown-variable-options-editor/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-26T00:50:59.721Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774486259717_gmsoah4wr",
+      "approvalTitle": "Tasks: FORGE-12 Dropdown options editor"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-26T00:54:35.499Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774486259717_gmsoah4wr",
+      "approvalTitle": "Tasks: FORGE-12 Dropdown options editor"
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useForgeStore } from '../store/index.ts';
 import type { VariableDefinition, VariableType } from '../types/index.ts';
 import { Globe, Plus, GripVertical, Eye, EyeOff, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { DropdownOptionsEditor } from './DropdownOptionsEditor.tsx';
 
 interface GlobalVariablesPageProps {
   viewId: string;
@@ -247,13 +248,13 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
             {/* Variable rows */}
             <div>
               {globalVariables.map((variable, index) => (
+                <div key={variable.name} className="mb-2">
                 <div
-                  key={variable.name}
                   draggable
                   onDragStart={() => handleDragStart(index)}
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
-                  className={`grid grid-cols-[28px_1fr_180px_100px_36px_200px_36px] gap-2.5 items-center px-4 py-3 bg-slate-800 border border-slate-700/50 rounded-lg mb-2 transition-colors hover:border-green-500/30 ${
+                  className={`grid grid-cols-[28px_1fr_180px_100px_36px_200px_36px] gap-2.5 items-center px-4 py-3 bg-slate-800 border border-slate-700/50 rounded-lg transition-colors hover:border-green-500/30 ${
                     dragIndex === index ? 'opacity-50 !border-green-500' : ''
                   } ${dragOverIndex === index ? '!border-green-500 shadow-[0_0_0_2px_rgba(34,197,94,0.2)]' : ''}`}
                 >
@@ -379,6 +380,17 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                       <Trash2 size={14} />
                     </button>
                   )}
+                </div>
+                {variable.type === 'dropdown' && (
+                  <div className="mt-2 ml-[40px]">
+                    <DropdownOptionsEditor
+                      options={variable.options}
+                      onChange={(newOptions) =>
+                        handleUpdate(variable.name, { options: newOptions })
+                      }
+                    />
+                  </div>
+                )}
                 </div>
               ))}
             </div>
