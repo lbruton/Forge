@@ -152,14 +152,9 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
         )}
       </div>
 
-      {/* Main workspace: side-by-side on wide screens, stacked on narrow */}
+      {/* Main workspace: config preview (center) + variable form (right sidebar) */}
       <div className="flex-1 flex flex-col lg:flex-row min-h-0">
-        {/* Variable Form - left panel */}
-        <div className="lg:w-80 lg:shrink-0 lg:border-r border-b lg:border-b-0 border-forge-graphite overflow-hidden">
-          <VariableForm />
-        </div>
-
-        {/* Preview panel - right side */}
+        {/* Preview panel - center */}
         <div className="flex-1 flex flex-col min-h-0 min-w-0">
           {/* Section tabs */}
           <SectionTabs
@@ -180,6 +175,11 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
               configFormat={configFormat}
             />
           </div>
+        </div>
+
+        {/* Variable Form - right sidebar (matches editor layout) */}
+        <div className="lg:w-80 lg:shrink-0 lg:border-l border-t lg:border-t-0 border-forge-graphite overflow-hidden bg-forge-charcoal">
+          <VariableForm />
         </div>
       </div>
       {/* Save Generated modal */}
