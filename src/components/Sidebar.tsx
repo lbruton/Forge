@@ -407,7 +407,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                   <TreeNode
                     key={plugin.manifest.name}
                     id={`plugin-${plugin.manifest.name}`}
-                    label={`${plugin.manifest.displayName} ${plugin.health.status === 'active' ? '●' : '○'}`}
+                    label={<>{plugin.manifest.displayName} <span className={plugin.health.status === 'active' ? 'text-emerald-400' : 'text-slate-500'}>{plugin.health.status === 'active' ? '●' : '○'}</span></>}
                     icon={getPluginIcon(plugin.manifest.icon)}
                     depth={1}
                     hasChildren={false}

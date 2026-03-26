@@ -4,7 +4,7 @@ import { useForgeStore } from '../store/index.ts';
 
 interface TreeNodeProps {
   id: string;
-  label: string;
+  label: ReactNode;
   icon: ReactNode;
   depth: number;
   hasChildren: boolean;
