@@ -310,9 +310,16 @@ function PluginDetail({
           <ArrowLeft size={18} />
         </button>
         <div className="flex-1 min-w-0">
-          <h2 className="text-base font-semibold text-slate-200 truncate">
-            {manifest.displayName}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold text-slate-200 truncate">
+              {manifest.displayName}
+            </h2>
+            {manifest.type === 'bundled' && (
+              <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-forge-graphite text-slate-400">
+                Built-in
+              </span>
+            )}
+          </div>
           <span className="text-[11px] text-slate-500">v{manifest.version}</span>
         </div>
       </div>
@@ -406,36 +413,38 @@ function PluginDetail({
           />
         )}
 
-        {/* Remove Plugin */}
-        <div className="pt-4 border-t border-forge-graphite">
-          {confirmRemove ? (
-            <div className="flex items-center gap-3">
-              <span className="text-[12px] text-red-400">
-                Remove {manifest.displayName}? This cannot be undone.
-              </span>
+        {/* Remove Plugin — hidden for bundled plugins */}
+        {manifest.type !== 'bundled' && (
+          <div className="pt-4 border-t border-forge-graphite">
+            {confirmRemove ? (
+              <div className="flex items-center gap-3">
+                <span className="text-[12px] text-red-400">
+                  Remove {manifest.displayName}? This cannot be undone.
+                </span>
+                <button
+                  onClick={handleRemove}
+                  className="px-3 py-1.5 text-[12px] font-semibold text-red-400 border border-red-500 rounded hover:bg-red-500/10 transition-colors"
+                >
+                  Confirm Remove
+                </button>
+                <button
+                  onClick={() => setConfirmRemove(false)}
+                  className="px-3 py-1.5 text-[12px] text-slate-400 hover:text-slate-200 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
               <button
-                onClick={handleRemove}
-                className="px-3 py-1.5 text-[12px] font-semibold text-red-400 border border-red-500 rounded hover:bg-red-500/10 transition-colors"
+                onClick={() => setConfirmRemove(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-red-400 border border-red-500 rounded hover:bg-red-500/10 transition-colors"
               >
-                Confirm Remove
+                <Trash2 size={12} />
+                Remove Plugin
               </button>
-              <button
-                onClick={() => setConfirmRemove(false)}
-                className="px-3 py-1.5 text-[12px] text-slate-400 hover:text-slate-200 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setConfirmRemove(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-red-400 border border-red-500 rounded hover:bg-red-500/10 transition-colors"
-            >
-              <Trash2 size={12} />
-              Remove Plugin
-            </button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -516,7 +525,12 @@ export default function PluginPanel({ pluginName }: PluginPanelProps) {
           </div>
         ) : (
           <div className="space-y-2 mt-4">
-            {plugins.map((reg) => (
+            {[...plugins]
+              .sort((a, b) => {
+                if (a.manifest.type === b.manifest.type) return 0;
+                return a.manifest.type === 'bundled' ? -1 : 1;
+              })
+              .map((reg) => (
               <button
                 key={reg.manifest.name}
                 onClick={() => setSelectedPluginName(reg.manifest.name)}
@@ -524,11 +538,18 @@ export default function PluginPanel({ pluginName }: PluginPanelProps) {
               >
                 <StatusDot status={reg.health.status} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-medium text-slate-200 truncate">
-                    {reg.manifest.displayName}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] font-medium text-slate-200 truncate">
+                      {reg.manifest.displayName}
+                    </span>
+                    {reg.manifest.type === 'bundled' && (
+                      <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-forge-graphite text-slate-400 shrink-0">
+                        Built-in
+                      </span>
+                    )}
                   </div>
                   <div className="text-[11px] text-slate-500">
-                    v{reg.manifest.version} &middot; {reg.manifest.type}
+                    v{reg.manifest.version}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

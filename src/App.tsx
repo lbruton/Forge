@@ -13,6 +13,7 @@ import { UnsavedChangesModal } from './components/UnsavedChangesModal.tsx';
 import PluginPanel from './components/PluginPanel.tsx';
 import PluginContentView from './components/PluginContentView.tsx';
 import { healthCheck } from './lib/plugin-service.ts';
+import { initBundledPlugins } from './plugins/init.ts';
 
 type AppMode = 'generator' | 'editor';
 
@@ -44,6 +45,7 @@ function App() {
     setPluginHealth,
     getPlugins,
     getPlugin,
+    registerPlugin,
     toggleExpandedNode,
     editorDirty,
     pendingSaveCallback,
@@ -98,8 +100,10 @@ function App() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [editorDirty]);
 
-  // Health check all sidecar plugins on mount (fire-and-forget)
+  // Register bundled plugins + health check all sidecar plugins on mount (fire-and-forget)
   useEffect(() => {
+    initBundledPlugins(getPlugin, registerPlugin, setPluginHealth);
+
     const allPlugins = getPlugins();
     const sidecarPlugins = allPlugins.filter(
       (p) => p.manifest.type === 'sidecar' && p.endpoint && p.apiKey,

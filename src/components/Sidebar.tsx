@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { FolderOpen, Cpu, FileCode2, FileCheck, Globe, Puzzle, Shield, ShieldAlert, Database, HardDrive, Network, Server } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { TreeNode } from './TreeNode.tsx';
@@ -61,7 +61,23 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
     setSelectedPluginName,
     setSelectedPluginNodeId,
     unregisterPlugin,
+    getPlugin,
+    preferences,
   } = useForgeStore();
+
+  const configurationsPlugin = getPlugin('forge-configurations');
+  const configurationsEnabled = configurationsPlugin?.enabled ?? false;
+
+  // Auto-expand Configurations nodes for each view when plugin is enabled
+  useEffect(() => {
+    if (!configurationsEnabled) return;
+    for (const view of tree.views) {
+      const nodeId = `${view.id}__configurations`;
+      if (!preferences.expandedNodes.includes(nodeId)) {
+        toggleExpandedNode(nodeId);
+      }
+    }
+  }, [configurationsEnabled, tree.views, preferences.expandedNodes, toggleExpandedNode]);
 
   const [modalContext, setModalContext] = useState<ModalContext | null>(null);
   const [editContext, setEditContext] = useState<{ type: CreateNodeType; path: Record<string, string>; currentName: string } | null>(null);
@@ -205,128 +221,140 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
               onEdit={() => handleEdit('view', { viewId: view.id }, view.name)}
               onDelete={() => handleDelete('view', { viewId: view.id })}
             >
-              <TreeNode
-                id={view.id + '__globals'}
-                label={`Global Variables${(view.globalVariables?.length ?? 0) > 0 ? ` (${view.globalVariables!.length})` : ''}`}
-                icon={<Globe size={14} />}
-                depth={1}
-                hasChildren={false}
-                isSelected={selectedGlobalVariablesViewId === view.id}
-                onSelect={() => {
-                  setSelectedGeneratedConfigId(null);
-                  if (onSelectGlobalVariables) {
-                    onSelectGlobalVariables(view.id);
-                  } else {
-                    setSelectedGlobalVariablesViewId(view.id);
-                  }
-                }}
-              />
-              {view.vendors.map((vendor) => (
+              {/* Configurations workbench node — wraps Global Variables + vendors */}
+              {configurationsEnabled && (
                 <TreeNode
-                  key={vendor.id}
-                  id={vendor.id}
-                  label={vendor.name}
-                  icon={<Server size={14} />}
+                  id={`${view.id}__configurations`}
+                  label="Configurations"
+                  icon={<FileCode2 size={14} />}
                   depth={1}
-                  hasChildren={vendor.models.length > 0}
-                  onAdd={() => openCreate('model', view.id, vendor.id)}
-                  onEdit={() => handleEdit('vendor', { viewId: view.id, vendorId: vendor.id }, vendor.name)}
-                  onDelete={() => handleDelete('vendor', { viewId: view.id, vendorId: vendor.id })}
+                  hasChildren={true}
+                  onAdd={() => openCreate('vendor', view.id)}
                 >
-                  {vendor.models.map((model) => {
-                    const generatedConfigs = getGeneratedConfigs(model.id);
-                    const hasGenerated = generatedConfigs.length > 0;
+                  <TreeNode
+                    id={view.id + '__globals'}
+                    label={`Global Variables${(view.globalVariables?.length ?? 0) > 0 ? ` (${view.globalVariables!.length})` : ''}`}
+                    icon={<Globe size={14} />}
+                    depth={2}
+                    hasChildren={false}
+                    isSelected={selectedGlobalVariablesViewId === view.id}
+                    onSelect={() => {
+                      setSelectedGeneratedConfigId(null);
+                      if (onSelectGlobalVariables) {
+                        onSelectGlobalVariables(view.id);
+                      } else {
+                        setSelectedGlobalVariablesViewId(view.id);
+                      }
+                    }}
+                  />
+                  {view.vendors.map((vendor) => (
+                    <TreeNode
+                      key={vendor.id}
+                      id={vendor.id}
+                      label={vendor.name}
+                      icon={<Server size={14} />}
+                      depth={2}
+                      hasChildren={vendor.models.length > 0}
+                      onAdd={() => openCreate('model', view.id, vendor.id)}
+                      onEdit={() => handleEdit('vendor', { viewId: view.id, vendorId: vendor.id }, vendor.name)}
+                      onDelete={() => handleDelete('vendor', { viewId: view.id, vendorId: vendor.id })}
+                    >
+                      {vendor.models.map((model) => {
+                        const generatedConfigs = getGeneratedConfigs(model.id);
+                        const hasGenerated = generatedConfigs.length > 0;
 
-                    return (
-                      <TreeNode
-                        key={model.id}
-                        id={model.id}
-                        label={model.name}
-                        icon={<Cpu size={14} />}
-                        depth={2}
-                        hasChildren={model.variants.length > 0 || hasGenerated}
-                        onAdd={() => openCreate('variant', view.id, vendor.id, model.id)}
-                        onEdit={() => handleEdit('model', { viewId: view.id, vendorId: vendor.id, modelId: model.id }, model.name)}
-                        onDelete={() => handleDelete('model', { viewId: view.id, vendorId: vendor.id, modelId: model.id })}
-                      >
-                        {/* Templates sub-folder */}
-                        <TreeNode
-                          id={`${model.id}__templates`}
-                          label="Templates"
-                          icon={<FileCode2 size={14} />}
-                          depth={3}
-                          hasChildren={model.variants.length > 0}
-                          onAdd={() => openCreate('variant', view.id, vendor.id, model.id)}
-                        >
-                          {model.variants.map((variant) => (
+                        return (
+                          <TreeNode
+                            key={model.id}
+                            id={model.id}
+                            label={model.name}
+                            icon={<Cpu size={14} />}
+                            depth={3}
+                            hasChildren={model.variants.length > 0 || hasGenerated}
+                            onAdd={() => openCreate('variant', view.id, vendor.id, model.id)}
+                            onEdit={() => handleEdit('model', { viewId: view.id, vendorId: vendor.id, modelId: model.id }, model.name)}
+                            onDelete={() => handleDelete('model', { viewId: view.id, vendorId: vendor.id, modelId: model.id })}
+                          >
+                            {/* Templates sub-folder */}
                             <TreeNode
-                              key={variant.id}
-                              id={variant.id}
-                              label={variant.name}
+                              id={`${model.id}__templates`}
+                              label="Templates"
                               icon={<FileCode2 size={14} />}
                               depth={4}
-                              hasChildren={false}
-                              isSelected={selectedVariantId === variant.id && selectedGeneratedConfigId === null}
-                              onSelect={() => handleSelectVariant(variant.id)}
-                              onEdit={() => handleEdit('variant', { viewId: view.id, vendorId: vendor.id, modelId: model.id, variantId: variant.id }, variant.name)}
-                              onDuplicate={() => {
-                                const source = getTemplate(variant.templateId);
-                                if (!source) return;
-                                const clone = structuredClone(source);
-                                clone.id = crypto.randomUUID();
-                                const now = new Date().toISOString();
-                                clone.createdAt = now;
-                                clone.updatedAt = now;
-                                saveTemplate(clone);
-                                addVariant(view.id, vendor.id, model.id, `${variant.name} (copy)`, clone.id);
-                              }}
-                              onDelete={() => handleDelete('variant', { viewId: view.id, vendorId: vendor.id, modelId: model.id, variantId: variant.id })}
-                            />
-                          ))}
-                        </TreeNode>
+                              hasChildren={model.variants.length > 0}
+                              onAdd={() => openCreate('variant', view.id, vendor.id, model.id)}
+                            >
+                              {model.variants.map((variant) => (
+                                <TreeNode
+                                  key={variant.id}
+                                  id={variant.id}
+                                  label={variant.name}
+                                  icon={<FileCode2 size={14} />}
+                                  depth={5}
+                                  hasChildren={false}
+                                  isSelected={selectedVariantId === variant.id && selectedGeneratedConfigId === null}
+                                  onSelect={() => handleSelectVariant(variant.id)}
+                                  onEdit={() => handleEdit('variant', { viewId: view.id, vendorId: vendor.id, modelId: model.id, variantId: variant.id }, variant.name)}
+                                  onDuplicate={() => {
+                                    const source = getTemplate(variant.templateId);
+                                    if (!source) return;
+                                    const clone = structuredClone(source);
+                                    clone.id = crypto.randomUUID();
+                                    const now = new Date().toISOString();
+                                    clone.createdAt = now;
+                                    clone.updatedAt = now;
+                                    saveTemplate(clone);
+                                    addVariant(view.id, vendor.id, model.id, `${variant.name} (copy)`, clone.id);
+                                  }}
+                                  onDelete={() => handleDelete('variant', { viewId: view.id, vendorId: vendor.id, modelId: model.id, variantId: variant.id })}
+                                />
+                              ))}
+                            </TreeNode>
 
-                        {/* Generated sub-folder — only if there are generated configs */}
-                        {hasGenerated && (
-                          <TreeNode
-                            id={`${model.id}__generated`}
-                            label="Generated"
-                            icon={<FileCheck size={14} />}
-                            depth={3}
-                            hasChildren={true}
-                          >
-                            {generatedConfigs.map((gc) => (
+                            {/* Generated sub-folder — only if there are generated configs */}
+                            {hasGenerated && (
                               <TreeNode
-                                key={gc.id}
-                                id={gc.id}
-                                label={`${truncateName(gc.name)} — ${formatShortDate(gc.createdAt)}`}
+                                id={`${model.id}__generated`}
+                                label="Generated"
                                 icon={<FileCheck size={14} />}
                                 depth={4}
-                                hasChildren={false}
-                                isSelected={selectedGeneratedConfigId === gc.id}
-                                onSelect={() => handleSelectGeneratedConfig(gc.id)}
-                                onEdit={() => {
-                                  const newName = prompt('Rename generated config:', gc.name);
-                                  if (newName?.trim() && newName.trim() !== gc.name) {
-                                    renameGeneratedConfig(gc.id, newName.trim());
-                                  }
-                                }}
-                                onDelete={() => {
-                                  if (confirm(`Delete "${gc.name}"?`)) {
-                                    deleteGeneratedConfig(gc.id);
-                                    if (selectedGeneratedConfigId === gc.id) {
-                                      setSelectedGeneratedConfigId(null);
-                                    }
-                                  }
-                                }}
-                              />
-                            ))}
+                                hasChildren={true}
+                              >
+                                {generatedConfigs.map((gc) => (
+                                  <TreeNode
+                                    key={gc.id}
+                                    id={gc.id}
+                                    label={`${truncateName(gc.name)} — ${formatShortDate(gc.createdAt)}`}
+                                    icon={<FileCheck size={14} />}
+                                    depth={5}
+                                    hasChildren={false}
+                                    isSelected={selectedGeneratedConfigId === gc.id}
+                                    onSelect={() => handleSelectGeneratedConfig(gc.id)}
+                                    onEdit={() => {
+                                      const newName = prompt('Rename generated config:', gc.name);
+                                      if (newName?.trim() && newName.trim() !== gc.name) {
+                                        renameGeneratedConfig(gc.id, newName.trim());
+                                      }
+                                    }}
+                                    onDelete={() => {
+                                      if (confirm(`Delete "${gc.name}"?`)) {
+                                        deleteGeneratedConfig(gc.id);
+                                        if (selectedGeneratedConfigId === gc.id) {
+                                          setSelectedGeneratedConfigId(null);
+                                        }
+                                      }
+                                    }}
+                                  />
+                                ))}
+                              </TreeNode>
+                            )}
                           </TreeNode>
-                        )}
-                      </TreeNode>
-                    );
-                  })}
+                        );
+                      })}
+                    </TreeNode>
+                  ))}
                 </TreeNode>
-              ))}
+              )}
 
               {/* Plugin-contributed tree nodes (vendorScoped: false) */}
               {getPlugins()
