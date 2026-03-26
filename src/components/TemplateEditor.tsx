@@ -70,6 +70,10 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     existingTemplate?.customVariableOrder ?? false,
   );
 
+  // Context menu state for section marker insertion
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; cursorPos: number } | null>(null);
+  const [pendingSectionName, setPendingSectionName] = useState<string | null>(null);
+
   // All global variables from the View (not just detected ones)
   const viewGlobalVariables = useMemo(() => {
     return context?.view.globalVariables ?? [];
@@ -386,6 +390,50 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     [rawText, sectionRange, handleTextChange],
   );
 
+  // Right-click context menu handler
+  const handleContextMenu = useCallback((e: React.MouseEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    const ta = e.currentTarget;
+    setContextMenu({ x: e.clientX, y: e.clientY, cursorPos: ta.selectionStart });
+  }, []);
+
+  // Insert a section marker at a cursor position in displayText
+  const insertMarkerAtCursor = useCallback((marker: string, cursorPos: number) => {
+    const text = displayText;
+    // Find the line start for the cursor position
+    const beforeCursor = text.substring(0, cursorPos);
+    const lineStart = beforeCursor.lastIndexOf('\n') + 1;
+    const newText = text.substring(0, lineStart) + marker + '\n' + text.substring(lineStart);
+    handleFilteredTextChange(newText);
+  }, [displayText, handleFilteredTextChange]);
+
+  const handleInsertStart = useCallback(() => {
+    if (!contextMenu) return;
+    const name = prompt('Section name:');
+    if (!name?.trim()) { setContextMenu(null); return; }
+    const trimmed = name.trim();
+    setPendingSectionName(trimmed);
+    insertMarkerAtCursor(`!##### ${trimmed} - START #####`, contextMenu.cursorPos);
+    setContextMenu(null);
+  }, [contextMenu, insertMarkerAtCursor]);
+
+  const handleInsertEnd = useCallback(() => {
+    if (!contextMenu) return;
+    const name = pendingSectionName ?? prompt('Section name:');
+    if (!name?.trim()) { setContextMenu(null); return; }
+    insertMarkerAtCursor(`!##### ${name.trim()} - END #####`, contextMenu.cursorPos);
+    setPendingSectionName(null);
+    setContextMenu(null);
+  }, [contextMenu, pendingSectionName, insertMarkerAtCursor]);
+
+  // Close context menu on click outside
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [contextMenu]);
+
   // Build highlighted overlay text
   const BANNER_RE = /^!#{3,}\s*.*\s*-\s*(?:START|END)\s*#{3,}$/i;
   const highlightedText = useMemo(() => {
@@ -508,6 +556,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
               value={displayText}
               onChange={(e) => handleFilteredTextChange(e.target.value)}
               onScroll={handleTextareaScroll}
+              onContextMenu={handleContextMenu}
               placeholder={`Paste your config template here...\n\nUse $variable_name or \${variable_name} for template variables.\n\nExample:\nhostname $hostname\ninterface vlan95\n ip address $vlan_95_ip_address 255.255.255.0`}
               spellCheck={false}
               className="absolute inset-0 w-full h-full px-5 py-4 text-slate-400 font-mono text-[13px] leading-relaxed resize-none outline-none placeholder:text-slate-600 border-none relative z-10 bg-forge-obsidian"
@@ -523,6 +572,33 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             </div>
           </div>
         </div>
+
+        {/* Context menu for section marker insertion */}
+        {contextMenu && (
+          <div
+            className="fixed z-[100] bg-forge-charcoal border border-forge-steel rounded-md shadow-xl py-1 min-w-[200px]"
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={handleInsertStart}
+              className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-forge-graphite flex items-center gap-2"
+            >
+              <Plus size={14} className="text-blue-400" />
+              Insert Section Start
+            </button>
+            <button
+              onClick={handleInsertEnd}
+              className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-forge-graphite flex items-center gap-2"
+            >
+              <Plus size={14} className="text-blue-400" />
+              Insert Section End
+              {pendingSectionName && (
+                <span className="ml-auto text-xs text-slate-500">({pendingSectionName})</span>
+              )}
+            </button>
+          </div>
+        )}
 
         {/* Right panel collapse toggle */}
         <button
