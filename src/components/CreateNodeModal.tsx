@@ -107,10 +107,8 @@ export function CreateNodeModal({ open, nodeType, onClose, onSubmit }: CreateNod
                 onChange={(e) => setConfigFormat(e.target.value as ConfigFormat)}
                 className="w-full px-3 py-2 bg-forge-obsidian border border-forge-graphite rounded-lg text-sm text-slate-200 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors"
               >
+                {/* TODO: re-enable xml, json, yaml when formats are tested */}
                 <option value="cli">CLI</option>
-                <option value="xml">XML</option>
-                <option value="json">JSON</option>
-                <option value="yaml">YAML</option>
               </select>
             </div>
           )}

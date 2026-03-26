@@ -64,6 +64,8 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const [sectionsCollapsed, setSectionsCollapsed] = useState(false);
   const [globalNames, setGlobalNames] = useState<string[]>([]);
   const [globalVarsCollapsed, setGlobalVarsCollapsed] = useState(false);
+  const [showAddSection, setShowAddSection] = useState(false);
+  const [addSectionName, setAddSectionName] = useState('');
   const [customVariableOrder, setCustomVariableOrder] = useState(
     existingTemplate?.customVariableOrder ?? false,
   );
@@ -80,6 +82,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   // Refs for textarea/overlay scroll sync
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const addSectionInputRef = useRef<HTMLInputElement>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cursorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -232,6 +235,37 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     setCleanUpToast(true);
     setTimeout(() => setCleanUpToast(false), 3000);
   }, [rawText, configFormat, buildVariableSectionMap, setEditorDirty]);
+
+  // Auto-focus the add-section input when shown
+  useEffect(() => {
+    if (showAddSection && addSectionInputRef.current) {
+      addSectionInputRef.current.focus();
+    }
+  }, [showAddSection]);
+
+  // Confirm adding a new section
+  const handleConfirmAddSection = useCallback(() => {
+    const name = addSectionName.trim();
+    if (name) {
+      const newText = rawText + `\n\n!##### ${name} - START #####\n\n!##### ${name} - END #####`;
+      handleTextChange(newText);
+    }
+    setShowAddSection(false);
+    setAddSectionName('');
+  }, [addSectionName, rawText, handleTextChange]);
+
+  // Handle keydown on the add-section input
+  const handleAddSectionKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        handleConfirmAddSection();
+      } else if (e.key === 'Escape') {
+        setShowAddSection(false);
+        setAddSectionName('');
+      }
+    },
+    [handleConfirmAddSection],
+  );
 
   // Drag-to-reorder handlers for sections
   const handleDragStart = useCallback((index: number) => {
@@ -566,6 +600,13 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
                   </span>
                 )}
               </button>
+              <button
+                onClick={() => setShowAddSection(true)}
+                className="p-1 rounded text-slate-400 hover:text-forge-amber hover:bg-forge-graphite transition-colors shrink-0"
+                title="Add Section"
+              >
+                <Plus size={14} />
+              </button>
               {rawText.trim() && (
                 <button
                   onClick={handleCleanUp}
@@ -577,6 +618,26 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
                 </button>
               )}
             </div>
+            {showAddSection && (
+              <div className="flex items-center gap-2 px-5 py-2 border-t border-forge-graphite">
+                <input
+                  ref={addSectionInputRef}
+                  type="text"
+                  value={addSectionName}
+                  onChange={(e) => setAddSectionName(e.target.value)}
+                  onKeyDown={handleAddSectionKeyDown}
+                  placeholder="Section name..."
+                  className="flex-1 px-2 py-1 rounded bg-forge-obsidian border border-forge-graphite text-slate-200 text-[12px] font-medium placeholder:text-slate-600 outline-none focus:border-forge-amber/50"
+                />
+                <button
+                  onClick={handleConfirmAddSection}
+                  disabled={!addSectionName.trim()}
+                  className="px-2 py-1 rounded text-[11px] font-medium text-forge-amber hover:bg-forge-amber/10 border border-forge-amber/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Add
+                </button>
+              </div>
+            )}
             {!sectionsCollapsed && hasRealSections && (
               <div className="px-5 pb-3">
                 <div className="space-y-1">
