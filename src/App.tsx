@@ -42,6 +42,8 @@ function App() {
     setSelectedPluginName,
     setSelectedPluginNodeId,
     setPluginHealth,
+    getPlugins,
+    getPlugin,
     toggleExpandedNode,
     editorDirty,
     pendingSaveCallback,
@@ -98,22 +100,17 @@ function App() {
 
   // Health check all sidecar plugins on mount (fire-and-forget)
   useEffect(() => {
-    const checks: Promise<void>[] = [];
-    for (const view of tree.views) {
-      for (const reg of Object.values(view.plugins ?? {})) {
-        if (reg.manifest.type === 'sidecar' && reg.endpoint && reg.apiKey) {
-          const viewId = view.id;
-          const pluginName = reg.manifest.name;
-          checks.push(
-            healthCheck(reg.endpoint, reg.apiKey).then((result) => {
-              setPluginHealth(viewId, pluginName, result);
-            }),
-          );
-        }
-      }
-    }
-    if (checks.length > 0) {
-      void Promise.allSettled(checks);
+    const allPlugins = getPlugins();
+    const sidecarPlugins = allPlugins.filter(
+      (p) => p.manifest.type === 'sidecar' && p.endpoint && p.apiKey,
+    );
+    if (sidecarPlugins.length > 0) {
+      void Promise.allSettled(
+        sidecarPlugins.map(async (reg) => {
+          const result = await healthCheck(reg.endpoint!, reg.apiKey!);
+          setPluginHealth(reg.manifest.name, result);
+        }),
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -240,7 +237,7 @@ function App() {
     });
   }, [guardNavigation, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId]);
 
-  const handleSelectPlugin = useCallback((_viewId: string, pluginName: string | null, nodeId: string | null) => {
+  const handleSelectPlugin = useCallback((pluginName: string | null, nodeId: string | null) => {
     guardNavigation(() => {
       setSelectedPluginName(pluginName);
       setSelectedPluginNodeId(nodeId);
@@ -254,9 +251,9 @@ function App() {
   const renderMainContent = () => {
     // Plugin Panel — when a plugin name is selected but no specific node
     if (selectedPluginName && !selectedPluginNodeId) {
-      const pluginView = tree.views.find(v => v.plugins?.[selectedPluginName]);
-      if (pluginView) {
-        return <PluginPanel viewId={pluginView.id} pluginName={selectedPluginName} />;
+      const reg = getPlugin(selectedPluginName);
+      if (reg) {
+        return <PluginPanel pluginName={selectedPluginName} />;
       }
       return (
         <div className="flex-1 flex items-center justify-center text-slate-500">
@@ -267,9 +264,14 @@ function App() {
 
     // Plugin Content — when both plugin and node are selected
     if (selectedPluginName && selectedPluginNodeId) {
-      const pluginView = tree.views.find(v => v.plugins?.[selectedPluginName]);
-      if (pluginView) {
-        return <PluginContentView pluginName={selectedPluginName} nodeId={selectedPluginNodeId} viewId={pluginView.id} />;
+      const reg = getPlugin(selectedPluginName);
+      if (reg) {
+        // Derive viewId for content context: use the selected variant's view, or fall back to first view
+        const variantInfo = selectedVariantId ? tree.views.find(v =>
+          v.vendors.some(vn => vn.models.some(m => m.variants.some(va => va.id === selectedVariantId)))
+        ) : null;
+        const contextViewId = variantInfo?.id ?? tree.views[0]?.id ?? '';
+        return <PluginContentView pluginName={selectedPluginName} nodeId={selectedPluginNodeId} viewId={contextViewId} />;
       }
       return (
         <div className="flex-1 flex items-center justify-center text-slate-500">
