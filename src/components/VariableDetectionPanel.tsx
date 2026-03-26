@@ -195,15 +195,20 @@ export function VariableDetectionPanel({
                                 </option>
                               ))}
                             </select>
-                            {variable.type === 'dropdown' && (
-                              <div className="mt-2">
-                                <DropdownOptionsEditor
-                                  options={variable.options}
-                                  onChange={(newOptions) => updateVariable(index, { options: newOptions })}
-                                />
-                              </div>
-                            )}
                           </div>
+
+                          {/* Dropdown Options */}
+                          {variable.type === 'dropdown' && (
+                            <div>
+                              <label className="block text-[10px] uppercase tracking-wider text-slate-500 mb-1">
+                                Options
+                              </label>
+                              <DropdownOptionsEditor
+                                options={variable.options}
+                                onChange={(newOptions) => updateVariable(index, { options: newOptions })}
+                              />
+                            </div>
+                          )}
 
                           {/* Description */}
                           <div>
