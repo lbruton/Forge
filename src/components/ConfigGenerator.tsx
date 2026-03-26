@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { generateConfig } from '../lib/substitution-engine.ts';
+import { parseSections } from '../lib/template-parser.ts';
 import { VariableForm } from './VariableForm.tsx';
 import { ConfigPreview } from './ConfigPreview.tsx';
 import { SectionTabs } from './SectionTabs.tsx';
@@ -64,11 +65,17 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
     };
   }, [mergedValues]);
 
+  // Re-parse sections from rawSource to get fresh names (dedup-safe)
+  const freshSections = useMemo(() => {
+    if (!template?.rawSource) return template?.sections ?? [];
+    return parseSections(template.rawSource, configFormat);
+  }, [template, configFormat]);
+
   // Generate config from debounced values
   const generated: GeneratedConfigOutput = useMemo(() => {
     if (!template) return { fullConfig: '', sections: [] };
-    return generateConfig(template.sections, debouncedValues, globalValues);
-  }, [template, debouncedValues, globalValues]);
+    return generateConfig(freshSections, debouncedValues, globalValues);
+  }, [freshSections, template, debouncedValues, globalValues]);
 
   // Derive hostname from variable values for download filenames
   const hostname = debouncedValues['hostname'] || debouncedValues['HOSTNAME'] || 'config';
