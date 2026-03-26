@@ -80,7 +80,7 @@ export function TreeNode({
         `}
         style={{ paddingLeft: `${depth * 14 + 8}px`, paddingRight: '8px', paddingTop: '5px', paddingBottom: '5px' }}
         onClick={() => {
-          if (hasChildren) toggleExpandedNode(id);
+          if (hasChildren && !onSelect) toggleExpandedNode(id);
           onSelect?.();
         }}
         onContextMenu={handleContextMenu}
@@ -90,7 +90,11 @@ export function TreeNode({
         {hasChildren ? (
           <ChevronRight
             size={12}
-            className={`shrink-0 text-slate-500 transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}`}
+            className={`shrink-0 text-slate-500 transition-transform duration-150 hover:text-slate-200 ${isExpanded ? 'rotate-90' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleExpandedNode(id);
+            }}
           />
         ) : (
           <span className="w-3 shrink-0" />
