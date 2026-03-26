@@ -10,6 +10,9 @@ import { GeneratedConfigViewer } from './components/GeneratedConfigViewer.tsx';
 import VaultModal from './components/VaultModal.tsx';
 import GlobalVariablesPage from './components/GlobalVariablesPage.tsx';
 import { UnsavedChangesModal } from './components/UnsavedChangesModal.tsx';
+import PluginPanel from './components/PluginPanel.tsx';
+import PluginContentView from './components/PluginContentView.tsx';
+import { healthCheck } from './lib/plugin-service.ts';
 
 type AppMode = 'generator' | 'editor';
 
@@ -25,6 +28,8 @@ function App() {
     tree,
     selectedVariantId,
     selectedGlobalVariablesViewId,
+    selectedPluginName,
+    selectedPluginNodeId,
     preferences,
     toggleSidebar,
     addView,
@@ -34,6 +39,9 @@ function App() {
     saveTemplate,
     setSelectedVariant,
     setSelectedGlobalVariablesViewId,
+    setSelectedPluginName,
+    setSelectedPluginNodeId,
+    setPluginHealth,
     toggleExpandedNode,
     editorDirty,
     pendingSaveCallback,
@@ -87,6 +95,28 @@ function App() {
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [editorDirty]);
+
+  // Health check all sidecar plugins on mount (fire-and-forget)
+  useEffect(() => {
+    const checks: Promise<void>[] = [];
+    for (const view of tree.views) {
+      for (const reg of Object.values(view.plugins ?? {})) {
+        if (reg.manifest.type === 'sidecar' && reg.endpoint && reg.apiKey) {
+          const viewId = view.id;
+          const pluginName = reg.manifest.name;
+          checks.push(
+            healthCheck(reg.endpoint, reg.apiKey).then((result) => {
+              setPluginHealth(viewId, pluginName, result);
+            }),
+          );
+        }
+      }
+    }
+    if (checks.length > 0) {
+      void Promise.allSettled(checks);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const hasVariants = tree.views.some((v) =>
     v.vendors.some((vn) => vn.models.some((m) => m.variants.length > 0)),
@@ -184,8 +214,10 @@ function App() {
       setSelectedGeneratedConfigId(configId);
       setSelectedVariant(null);
       setSelectedGlobalVariablesViewId(null);
+      setSelectedPluginName(null);
+      setSelectedPluginNodeId(null);
     });
-  }, [guardNavigation, setSelectedVariant, setSelectedGlobalVariablesViewId]);
+  }, [guardNavigation, setSelectedVariant, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId]);
 
   const handleBackFromViewer = useCallback(() => {
     setSelectedGeneratedConfigId(null);
@@ -195,15 +227,48 @@ function App() {
     guardNavigation(() => {
       setSelectedGlobalVariablesViewId(null);
       setSelectedVariant(variantId);
+      setSelectedPluginName(null);
+      setSelectedPluginNodeId(null);
     });
-  }, [guardNavigation, setSelectedVariant, setSelectedGlobalVariablesViewId]);
+  }, [guardNavigation, setSelectedVariant, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId]);
 
   const handleSelectGlobalVariables = useCallback((viewId: string) => {
-    guardNavigation(() => setSelectedGlobalVariablesViewId(viewId));
-  }, [guardNavigation, setSelectedGlobalVariablesViewId]);
+    guardNavigation(() => {
+      setSelectedGlobalVariablesViewId(viewId);
+      setSelectedPluginName(null);
+      setSelectedPluginNodeId(null);
+    });
+  }, [guardNavigation, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId]);
+
+  const handleSelectPlugin = useCallback((_viewId: string, pluginName: string | null, nodeId: string | null) => {
+    guardNavigation(() => {
+      setSelectedPluginName(pluginName);
+      setSelectedPluginNodeId(nodeId);
+      setSelectedVariant(null);
+      setSelectedGlobalVariablesViewId(null);
+      setSelectedGeneratedConfigId(null);
+    });
+  }, [guardNavigation, setSelectedPluginName, setSelectedPluginNodeId, setSelectedVariant, setSelectedGlobalVariablesViewId]);
 
   // Determine main content
   const renderMainContent = () => {
+    // Plugin Panel — when a plugin name is selected but no specific node
+    if (selectedPluginName && !selectedPluginNodeId) {
+      const pluginView = tree.views.find(v => v.plugins?.[selectedPluginName]);
+      if (pluginView) {
+        return <PluginPanel viewId={pluginView.id} pluginName={selectedPluginName} />;
+      }
+      return <PluginPanel viewId={tree.views[0]?.id ?? ''} pluginName={null} />;
+    }
+
+    // Plugin Content — when both plugin and node are selected
+    if (selectedPluginName && selectedPluginNodeId) {
+      const pluginView = tree.views.find(v => v.plugins?.[selectedPluginName]);
+      if (pluginView) {
+        return <PluginContentView pluginName={selectedPluginName} nodeId={selectedPluginNodeId} viewId={pluginView.id} />;
+      }
+    }
+
     // Generated config viewer takes priority when a config is selected
     if (selectedGeneratedConfigId) {
       return (
@@ -319,6 +384,7 @@ function App() {
               onSelectGeneratedConfig={handleSelectGeneratedConfig}
               onSelectVariant={handleSelectVariant}
               onSelectGlobalVariables={handleSelectGlobalVariables}
+              onSelectPlugin={handleSelectPlugin}
             />
           </div>
         )}

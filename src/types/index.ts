@@ -1,5 +1,6 @@
 // Plugin types
 export * from './plugin.ts';
+import type { PluginRegistration } from './plugin.ts';
 
 // Navigation hierarchy
 export type ConfigFormat = 'cli' | 'xml' | 'json' | 'yaml';

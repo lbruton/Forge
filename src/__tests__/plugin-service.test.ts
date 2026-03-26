@@ -47,13 +47,13 @@ describe('validateManifest', () => {
 
   it('throws for missing name field', () => {
     const data = validManifestData();
-    delete (data as Record<string, unknown>).name;
+    delete (data as unknown as Record<string, unknown>).name;
     expect(() => validateManifest(data)).toThrow("missing required field 'name'");
   });
 
   it('throws for missing type field', () => {
     const data = validManifestData();
-    delete (data as Record<string, unknown>).type;
+    delete (data as unknown as Record<string, unknown>).type;
     expect(() => validateManifest(data)).toThrow("field 'type' must be 'bundled' or 'sidecar'");
   });
 
@@ -64,13 +64,13 @@ describe('validateManifest', () => {
 
   it('throws for missing vendors', () => {
     const data = validManifestData();
-    delete (data as Record<string, unknown>).vendors;
+    delete (data as unknown as Record<string, unknown>).vendors;
     expect(() => validateManifest(data)).toThrow("missing required field 'vendors'");
   });
 
   it('throws for missing treeNodes', () => {
     const data = validManifestData();
-    delete (data as Record<string, unknown>).treeNodes;
+    delete (data as unknown as Record<string, unknown>).treeNodes;
     expect(() => validateManifest(data)).toThrow("missing required field 'treeNodes'");
   });
 
