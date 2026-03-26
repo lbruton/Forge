@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 interface PluginPanelProps {
-  viewId: string;
+  viewId?: string;
   pluginName: string | null;
 }
 
@@ -44,10 +44,8 @@ function formatTimestamp(iso: string): string {
 // --- Add Plugin Form ---
 
 function AddPluginForm({
-  viewId,
   onDone,
 }: {
-  viewId: string;
   onDone: () => void;
 }) {
   const registerPlugin = useForgeStore((s) => s.registerPlugin);
@@ -67,16 +65,16 @@ function AddPluginForm({
     setError(null);
     try {
       const manifest = await fetchManifest(endpoint.trim(), apiKey);
-      registerPlugin(viewId, manifest, endpoint.trim(), apiKey);
+      registerPlugin(manifest, endpoint.trim(), apiKey);
       const health = await healthCheck(endpoint.trim(), apiKey);
-      setPluginHealth(viewId, manifest.name, health);
+      setPluginHealth(manifest.name, health);
       onDone();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to connect to plugin');
     } finally {
       setLoading(false);
     }
-  }, [endpoint, apiKey, viewId, registerPlugin, setPluginHealth, onDone]);
+  }, [endpoint, apiKey, registerPlugin, setPluginHealth, onDone]);
 
   return (
     <div className="bg-forge-charcoal border border-forge-graphite rounded-lg p-4 mt-4">
@@ -143,12 +141,10 @@ function AddPluginForm({
 // --- Settings Form ---
 
 function SettingsForm({
-  viewId,
   pluginName,
   schema,
   currentSettings,
 }: {
-  viewId: string;
   pluginName: string;
   schema: Record<string, SettingsField>;
   currentSettings: Record<string, string | number | boolean>;
@@ -170,9 +166,9 @@ function SettingsForm({
 
   const handleChange = useCallback(
     (key: string, value: string | number | boolean) => {
-      updatePluginSettings(viewId, pluginName, { [key]: value });
+      updatePluginSettings(pluginName, { [key]: value });
     },
-    [viewId, pluginName, updatePluginSettings],
+    [pluginName, updatePluginSettings],
   );
 
   const entries = Object.entries(schema);
@@ -266,11 +262,9 @@ function SettingsForm({
 // --- Plugin Detail View ---
 
 function PluginDetail({
-  viewId,
   registration,
   onBack,
 }: {
-  viewId: string;
   registration: PluginRegistration;
   onBack: () => void;
 }) {
@@ -290,16 +284,16 @@ function PluginDetail({
     setRefreshing(true);
     try {
       const health = await healthCheck(registration.endpoint, registration.apiKey);
-      setPluginHealth(viewId, manifest.name, health);
+      setPluginHealth(manifest.name, health);
     } finally {
       setRefreshing(false);
     }
-  }, [viewId, manifest.name, registration.endpoint, registration.apiKey, setPluginHealth]);
+  }, [manifest.name, registration.endpoint, registration.apiKey, setPluginHealth]);
 
   const handleRemove = useCallback(() => {
-    unregisterPlugin(viewId, manifest.name);
+    unregisterPlugin(manifest.name);
     onBack();
-  }, [viewId, manifest.name, unregisterPlugin, onBack]);
+  }, [manifest.name, unregisterPlugin, onBack]);
 
   const maskedApiKey = registration.apiKey
     ? '\u2022'.repeat(16)
@@ -348,7 +342,7 @@ function PluginDetail({
           <span className="text-[13px] text-slate-300">Enabled</span>
           <button
             onClick={() =>
-              setPluginEnabled(viewId, manifest.name, !registration.enabled)
+              setPluginEnabled(manifest.name, !registration.enabled)
             }
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
               registration.enabled ? 'bg-forge-amber' : 'bg-slate-600'
@@ -406,7 +400,6 @@ function PluginDetail({
         {/* Dynamic settings form */}
         {manifest.settingsSchema && Object.keys(manifest.settingsSchema).length > 0 && (
           <SettingsForm
-            viewId={viewId}
             pluginName={manifest.name}
             schema={manifest.settingsSchema}
             currentSettings={registration.settings}
@@ -450,18 +443,18 @@ function PluginDetail({
 
 // --- Main PluginPanel ---
 
-export default function PluginPanel({ viewId, pluginName }: PluginPanelProps) {
-  const view = useForgeStore((s) => s.tree.views.find((v) => v.id === viewId));
+export default function PluginPanel({ pluginName }: PluginPanelProps) {
   const setSelectedPluginName = useForgeStore((s) => s.setSelectedPluginName);
-  const getViewPlugins = useForgeStore((s) => s.getViewPlugins);
+  const getPlugins = useForgeStore((s) => s.getPlugins);
+  const getPlugin = useForgeStore((s) => s.getPlugin);
 
   const [showAddForm, setShowAddForm] = useState(false);
 
-  const plugins = getViewPlugins(viewId);
+  const plugins = getPlugins();
 
   // Plugin Detail view
   if (pluginName) {
-    const registration = view?.plugins?.[pluginName];
+    const registration = getPlugin(pluginName);
     if (!registration) {
       return (
         <div className="flex-1 flex items-center justify-center text-slate-500 bg-forge-obsidian">
@@ -471,7 +464,6 @@ export default function PluginPanel({ viewId, pluginName }: PluginPanelProps) {
     }
     return (
       <PluginDetail
-        viewId={viewId}
         registration={registration}
         onBack={() => setSelectedPluginName(null)}
       />
@@ -504,7 +496,7 @@ export default function PluginPanel({ viewId, pluginName }: PluginPanelProps) {
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-6 py-6">
         {showAddForm && (
-          <AddPluginForm viewId={viewId} onDone={() => setShowAddForm(false)} />
+          <AddPluginForm onDone={() => setShowAddForm(false)} />
         )}
 
         {plugins.length === 0 && !showAddForm ? (
