@@ -3,6 +3,7 @@ import DOMPurify from 'dompurify';
 import { useForgeStore } from '../store/index.ts';
 import { pluginFetch } from '../lib/plugin-service.ts';
 import SecretsBrowser from '../plugins/infisical/SecretsBrowser.tsx';
+import { INFISICAL_MANIFEST } from '../plugins/infisical/manifest.ts';
 
 interface PluginContentViewProps {
   pluginName: string;
@@ -24,7 +25,7 @@ export default function PluginContentView({ pluginName, nodeId, viewId }: Plugin
   const displayName = registration?.manifest.displayName ?? pluginName;
   const nodeLabel = registration?.manifest.treeNodes.find((n) => n.id === nodeId)?.label ?? nodeId;
 
-  const isIntegrationPlugin = pluginName === 'forge-infisical';
+  const isIntegrationPlugin = pluginName === INFISICAL_MANIFEST.name;
 
   const fetchContent = useCallback(async () => {
     // Integration plugins are handled by their own component

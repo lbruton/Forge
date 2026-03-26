@@ -16,6 +16,7 @@ import { SectionCardView, type SectionSelection } from './components/SectionCard
 import { healthCheck } from './lib/plugin-service.ts';
 import { initBundledPlugins } from './plugins/init.ts';
 import { InfisicalProvider } from './plugins/infisical/provider.ts';
+import { INFISICAL_MANIFEST } from './plugins/infisical/manifest.ts';
 
 type AppMode = 'generator' | 'editor';
 
@@ -122,13 +123,13 @@ function App() {
     }
 
     // Initialize Infisical secrets provider if plugin is enabled and configured
-    const infisicalPlugin = getPlugin('forge-infisical');
+    const infisicalPlugin = getPlugin(INFISICAL_MANIFEST.name);
     if (infisicalPlugin?.enabled) {
       const { endpoint, clientId, clientSecret } = infisicalPlugin.settings as Record<string, string>;
       if (endpoint && clientId && clientSecret) {
         const provider = new InfisicalProvider(endpoint, clientId, clientSecret);
         void provider.connect().then((result) => {
-          setPluginHealth('forge-infisical', {
+          setPluginHealth(INFISICAL_MANIFEST.name, {
             status: result.connected ? 'active' : 'inactive',
             lastChecked: new Date().toISOString(),
             error: result.error,
@@ -136,6 +137,12 @@ function App() {
           if (result.connected) {
             registerSecretsProvider(provider);
           }
+        }).catch((err: unknown) => {
+          setPluginHealth(INFISICAL_MANIFEST.name, {
+            status: 'inactive',
+            lastChecked: new Date().toISOString(),
+            error: err instanceof Error ? err.message : 'Connection failed',
+          });
         });
       }
     }

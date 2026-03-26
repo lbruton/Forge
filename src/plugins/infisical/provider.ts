@@ -43,8 +43,13 @@ export class InfisicalProvider implements SecretsProvider {
     if (!this.canWrite) throw new Error('Infisical connection is read-only');
     try {
       await this.client.updateSecret(projectId, environment, key, value);
-    } catch {
-      await this.client.createSecret(projectId, environment, key, value);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes('404') || message.toLowerCase().includes('not found')) {
+        await this.client.createSecret(projectId, environment, key, value);
+      } else {
+        throw err;
+      }
     }
   }
 }

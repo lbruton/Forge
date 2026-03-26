@@ -50,17 +50,21 @@ export default function SecretsBrowser({ pluginName, viewId: _viewId }: SecretsB
       .listProjects()
       .then((p) => {
         setProjects(p);
-        // Auto-select first project if no default
-        if (!selectedProject && p.length > 0) {
-          setSelectedProject(p[0].id);
-        }
       })
       .catch((err) => {
         setError(`Failed to load projects: ${err instanceof Error ? err.message : String(err)}`);
       })
       .finally(() => setProjectsLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [provider]);
+
+  // Auto-select default project when projects load and none is selected
+  useEffect(() => {
+    if (!selectedProject && projects.length > 0) {
+      const defaultId = (settings.defaultProjectId as string) || '';
+      const match = defaultId && projects.find((p) => p.id === defaultId);
+      setSelectedProject(match ? match.id : projects[0].id);
+    }
+  }, [projects, selectedProject, settings.defaultProjectId]);
 
   // Get environments for selected project
   const selectedProjectData = projects.find((p) => p.id === selectedProject);

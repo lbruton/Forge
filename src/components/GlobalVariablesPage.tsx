@@ -3,6 +3,7 @@ import { useForgeStore } from '../store/index.ts';
 import type { VariableDefinition, VariableType } from '../types/index.ts';
 import { Globe, Plus, GripVertical, Eye, EyeOff, Trash2, ArrowUp, ArrowDown, Cloud, CloudOff } from 'lucide-react';
 import { DropdownOptionsEditor } from './DropdownOptionsEditor.tsx';
+import { INFISICAL_MANIFEST } from '../plugins/infisical/manifest.ts';
 
 interface GlobalVariablesPageProps {
   viewId: string;
@@ -126,7 +127,7 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
       }
 
       // Enable sync — get defaults from the infisical plugin settings
-      const plugin = getPlugin('forge-infisical');
+      const plugin = getPlugin(INFISICAL_MANIFEST.name);
       const settings = (plugin?.settings ?? {}) as Record<string, string>;
       const projectId = settings.defaultProjectId || '';
       const environment = settings.defaultEnvironment || 'dev';
