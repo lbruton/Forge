@@ -14,6 +14,7 @@ interface TreeNodeProps {
   onEdit?: () => void;
   onDuplicate?: () => void;
   onDelete?: () => void;
+  contextMenuExtras?: Array<{ label: string; onClick: () => void; className?: string }>;
   children?: ReactNode;
 }
 
@@ -29,6 +30,7 @@ export function TreeNode({
   onEdit,
   onDuplicate,
   onDelete,
+  contextMenuExtras,
   children,
 }: TreeNodeProps) {
   const { preferences, toggleExpandedNode } = useForgeStore();
@@ -49,7 +51,7 @@ export function TreeNode({
     return () => document.removeEventListener('mousedown', handler);
   }, [contextMenuOpen]);
 
-  const hasMenuActions = !!(onAdd || onEdit || onDuplicate || onDelete);
+  const hasMenuActions = !!(onAdd || onEdit || onDuplicate || onDelete || contextMenuExtras?.length);
 
   const handleContextMenu = (e: React.MouseEvent) => {
     if (!hasMenuActions) return; // no actions = no menu
@@ -171,6 +173,18 @@ export function TreeNode({
               Delete
             </button>
           )}
+          {contextMenuExtras?.map((item) => (
+            <button
+              key={item.label}
+              className={item.className || "w-full text-left px-3 py-1.5 text-[13px] text-slate-300 hover:bg-forge-graphite hover:text-slate-100 transition-colors"}
+              onClick={() => {
+                setContextMenuOpen(false);
+                item.onClick();
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
       )}
 

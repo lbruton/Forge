@@ -62,6 +62,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
     setSelectedPluginName,
     setSelectedPluginNodeId,
     unregisterPlugin,
+    setPluginEnabled,
     getPlugin,
     preferences,
   } = useForgeStore();
@@ -418,7 +419,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                         onSelectPlugin(plugin.manifest.name, null);
                       }
                     }}
-                    onDelete={() => {
+                    onDelete={plugin.manifest.type !== 'bundled' ? () => {
                       if (confirm(`Remove plugin "${plugin.manifest.displayName}"?`)) {
                         const state = useForgeStore.getState();
                         if (state.selectedPluginName === plugin.manifest.name) {
@@ -427,7 +428,11 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                         }
                         unregisterPlugin(plugin.manifest.name);
                       }
-                    }}
+                    } : undefined}
+                    contextMenuExtras={[{
+                      label: plugin.enabled ? 'Disable' : 'Enable',
+                      onClick: () => setPluginEnabled(plugin.manifest.name, !plugin.enabled),
+                    }]}
                   />
                 ))}
               </TreeNode>
