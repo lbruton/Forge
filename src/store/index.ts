@@ -95,6 +95,7 @@ interface ForgeStore {
   // Generated configs
   saveGeneratedConfig: (config: GeneratedConfig) => void;
   deleteGeneratedConfig: (id: string) => void;
+  renameGeneratedConfig: (id: string, name: string) => void;
   getGeneratedConfigs: (modelId: string) => GeneratedConfig[];
 
   // Selection
@@ -523,6 +524,16 @@ export const useForgeStore = create<ForgeStore>()(
           delete generatedConfigs[id];
           return { generatedConfigs };
         });
+      },
+
+      renameGeneratedConfig: (id, name) => {
+        const config = get().generatedConfigs[id];
+        if (!config) return;
+        const updated = { ...config, name };
+        storage.setItem(`generated_${id}`, updated);
+        set((state) => ({
+          generatedConfigs: { ...state.generatedConfigs, [id]: updated },
+        }));
       },
 
       getGeneratedConfigs: (modelId) => {
