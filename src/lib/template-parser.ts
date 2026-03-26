@@ -226,6 +226,29 @@ export function parseSections(text: string, format: ConfigFormat): TemplateSecti
 
     // Sort dividers by line index to preserve document order
     dividers.sort((a, b) => a.lineIndex - b.lineIndex);
+
+    // Remove outer START/END pairs that fully contain inner START/END pairs.
+    // When a user nests markers, the intent is to break the outer block apart —
+    // the inner blocks become their own sections, and the gaps become Generic Config.
+    const toRemove = new Set<number>();
+    for (let i = 0; i < dividers.length; i++) {
+      const outer = dividers[i];
+      if (outer.endLineIndex == null) continue; // legacy divider, skip
+      for (let j = 0; j < dividers.length; j++) {
+        if (i === j) continue;
+        const inner = dividers[j];
+        // Check if inner divider is fully contained within outer's range
+        if (inner.lineIndex > outer.lineIndex && inner.lineIndex < outer.endLineIndex!) {
+          toRemove.add(i); // remove the outer, keep the inner
+          break;
+        }
+      }
+    }
+    if (toRemove.size > 0) {
+      const filtered = dividers.filter((_, i) => !toRemove.has(i));
+      dividers.length = 0;
+      dividers.push(...filtered);
+    }
   } else if (format === 'xml') {
     for (let i = 0; i < lines.length; i++) {
       const match = lines[i].match(/^<!--\s+(.+?)\s+-->$/);
