@@ -6,7 +6,7 @@ export interface PluginManifest {
   displayName: string;    // human-readable, e.g., "Cisco PSIRT/Nuclei Scan"
   version: string;        // semver, e.g., "1.0.0"
   icon: string;           // Lucide icon name, e.g., "shield-alert"
-  type: 'bundled' | 'sidecar';
+  type: 'bundled' | 'sidecar' | 'integration';
   vendors: string[];      // vendor types supported, e.g., ["cisco"]
   treeNodes: PluginTreeNode[];
   settingsSchema?: Record<string, SettingsField>;

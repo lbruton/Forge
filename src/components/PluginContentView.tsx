@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { useForgeStore } from '../store/index.ts';
 import { pluginFetch } from '../lib/plugin-service.ts';
+import SecretsBrowser from '../plugins/infisical/SecretsBrowser.tsx';
+import { INFISICAL_MANIFEST } from '../plugins/infisical/manifest.ts';
 
 interface PluginContentViewProps {
   pluginName: string;
@@ -15,7 +17,7 @@ type ContentState =
   | { kind: 'loaded'; html: string }
   | { kind: 'bundled' };
 
-export default function PluginContentView({ pluginName, nodeId, viewId: _viewId }: PluginContentViewProps) {
+export default function PluginContentView({ pluginName, nodeId, viewId }: PluginContentViewProps) {
   const [state, setState] = useState<ContentState>({ kind: 'loading' });
   const getPlugin = useForgeStore((s) => s.getPlugin);
 
@@ -23,13 +25,18 @@ export default function PluginContentView({ pluginName, nodeId, viewId: _viewId 
   const displayName = registration?.manifest.displayName ?? pluginName;
   const nodeLabel = registration?.manifest.treeNodes.find((n) => n.id === nodeId)?.label ?? nodeId;
 
+  const isIntegrationPlugin = pluginName === INFISICAL_MANIFEST.name;
+
   const fetchContent = useCallback(async () => {
+    // Integration plugins are handled by their own component
+    if (isIntegrationPlugin) return;
+
     if (!registration) {
       setState({ kind: 'error', message: `Plugin "${pluginName}" is not registered` });
       return;
     }
 
-    if (registration.manifest.type === 'bundled') {
+    if (registration.manifest.type === 'bundled' || registration.manifest.type === 'integration') {
       setState({ kind: 'bundled' });
       return;
     }
@@ -66,11 +73,16 @@ export default function PluginContentView({ pluginName, nodeId, viewId: _viewId 
       console.error(`Error fetching content from plugin '${pluginName}':`, err);
       setState({ kind: 'error', message: `Unable to load data from ${displayName}` });
     }
-  }, [registration, pluginName, nodeId, displayName]);
+  }, [isIntegrationPlugin, registration, pluginName, nodeId, displayName]);
 
   useEffect(() => {
     fetchContent();
   }, [fetchContent]);
+
+  // Integration plugins get their own dedicated UI
+  if (isIntegrationPlugin) {
+    return <SecretsBrowser pluginName={pluginName} viewId={viewId} />;
+  }
 
   return (
     <div className="flex flex-col h-full bg-forge-terminal">

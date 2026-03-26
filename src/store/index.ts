@@ -16,6 +16,7 @@ import type {
   View,
 } from '../types/index.ts';
 import type { PluginManifest, PluginRegistration, PluginHealthStatus } from '../types/plugin.ts';
+import type { SecretsProvider } from '../types/secrets-provider.ts';
 
 // --- Custom storage adapter for zustand persist ---
 
@@ -64,6 +65,7 @@ interface ForgeStore {
   variableValues: Record<string, VariableValues>;
   generatedConfigs: Record<string, GeneratedConfig>;
   plugins: Record<string, PluginRegistration>;
+  secretsProviders: Record<string, SecretsProvider>;
   preferences: Preferences;
 
   // Selection
@@ -134,6 +136,12 @@ interface ForgeStore {
   getPlugins: () => PluginRegistration[];
   getPlugin: (name: string) => PluginRegistration | undefined;
 
+  // Secrets provider registry
+  registerSecretsProvider: (provider: SecretsProvider) => void;
+  unregisterSecretsProvider: (name: string) => void;
+  getSecretsProvider: (name: string) => SecretsProvider | undefined;
+  getSecretsProviders: () => SecretsProvider[];
+
   // Helpers
   findVariant: (variantId: string) => { view: View; vendor: Vendor; model: Model; variant: Variant } | null;
   getConfigFormat: (variantId: string) => ConfigFormat;
@@ -150,6 +158,7 @@ export const useForgeStore = create<ForgeStore>()(
       variableValues: {},
       generatedConfigs: {},
       plugins: {},
+      secretsProviders: {},
       preferences: defaultPreferences,
       selectedVariantId: null,
       selectedGlobalVariablesViewId: null,
@@ -639,6 +648,7 @@ export const useForgeStore = create<ForgeStore>()(
           variableValues: {},
           generatedConfigs: {},
           plugins: {},
+          secretsProviders: {},
           preferences: defaultPreferences,
           selectedVariantId: null,
           selectedGlobalVariablesViewId: null,
@@ -812,6 +822,30 @@ export const useForgeStore = create<ForgeStore>()(
         return get().plugins[name];
       },
 
+      // --- Secrets provider registry ---
+
+      registerSecretsProvider: (provider) => {
+        set((state) => ({
+          secretsProviders: { ...state.secretsProviders, [provider.name]: provider },
+        }));
+      },
+
+      unregisterSecretsProvider: (name) => {
+        set((state) => {
+          const secretsProviders = { ...state.secretsProviders };
+          delete secretsProviders[name];
+          return { secretsProviders };
+        });
+      },
+
+      getSecretsProvider: (name) => {
+        return get().secretsProviders[name];
+      },
+
+      getSecretsProviders: () => {
+        return Object.values(get().secretsProviders);
+      },
+
       // --- Helpers ---
 
       findVariant: (variantId) => {
@@ -840,7 +874,7 @@ export const useForgeStore = create<ForgeStore>()(
       storage: createJSONStorage(() => forgeStorage),
       partialize: (state) => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { editorDirty, pendingSaveCallback, setEditorDirty, setPendingSaveCallback, selectedPluginName, selectedPluginNodeId, ...rest } = state;
+        const { editorDirty, pendingSaveCallback, setEditorDirty, setPendingSaveCallback, selectedPluginName, selectedPluginNodeId, secretsProviders, ...rest } = state;
         return rest;
       },
     },
