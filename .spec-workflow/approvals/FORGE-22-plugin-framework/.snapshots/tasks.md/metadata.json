@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-22-plugin-framework/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-26T06:55:17.880Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774508117878_egxbu92kn",
+      "approvalTitle": "Tasks: Plugin framework — 8 implementation tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-26T06:56:48.238Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774508117878_egxbu92kn",
+      "approvalTitle": "Tasks: Plugin framework — 8 implementation tasks"
+    }
+  ]
+}

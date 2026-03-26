@@ -1,0 +1,54 @@
+# Tasks Document
+
+## References
+
+- **Issue:** FORGE-24
+- **Spec Path:** `.spec-workflow/specs/FORGE-24-plugin-registry-global-refactor/`
+- **Requirements:** `.spec-workflow/specs/FORGE-24-plugin-registry-global-refactor/requirements.md`
+- **Design:** `.spec-workflow/specs/FORGE-24-plugin-registry-global-refactor/design.md`
+
+## File Touch Map
+
+| Action | File | Scope |
+|--------|------|-------|
+| MODIFY | `src/types/index.ts` | Remove `plugins` from View interface |
+| MODIFY | `src/store/index.ts` | Move plugin state to root, simplify all 6 actions (drop viewId), add migration in importData |
+| MODIFY | `src/components/Sidebar.tsx` | Move Plugins node to top-level, keep workbench nodes inside Views |
+| MODIFY | `src/App.tsx` | Simplify routing (direct lookup), update health check loop |
+| MODIFY | `src/components/PluginPanel.tsx` | Switch from getViewPlugins(viewId) to getPlugins()/getPlugin() |
+| MODIFY | `src/components/PluginContentView.tsx` | Switch from getViewPlugins(viewId) to getPlugin() |
+| MODIFY | `src/__tests__/plugin-store.test.ts` | Rewrite for global model (no viewId) |
+
+---
+
+- [x] 1. Move plugin state from View to store root
+  - File: `src/types/index.ts` (MODIFY — remove `plugins` from View)
+  - File: `src/store/index.ts` (MODIFY — add `plugins: Record<string, PluginRegistration>` to root state, refactor all 6 plugin actions to drop viewId, add `getPlugin(name)` helper, update `partialize` to include `plugins` in persistence, add migration logic in `importData` to move View-scoped plugins to global)
+  - _Leverage: `src/store/index.ts` (existing plugin action implementations — same logic, simpler paths), `src/types/plugin.ts` (types unchanged)_
+  - _Requirements: 1 (global registry), 4 (store action refactor), 5 (export/import compat)_
+  - _Prompt: Implement the task for spec FORGE-24-plugin-registry-global-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript/Zustand Developer | Task: (1) In `src/types/index.ts`, remove `plugins?: Record<string, PluginRegistration>` from the View interface. (2) In `src/store/index.ts`, add `plugins: Record<string, PluginRegistration>` as a root-level state field (initial value: `{}`). Refactor all plugin actions to operate on `state.plugins` directly instead of nested View.plugins. Drop `viewId` parameter from: `registerPlugin(manifest, endpoint?, apiKey?)`, `unregisterPlugin(pluginName)`, `setPluginEnabled(pluginName, enabled)`, `setPluginHealth(pluginName, status)`, `updatePluginSettings(pluginName, settings)`. Replace `getViewPlugins(viewId)` with `getPlugins(): PluginRegistration[]` and `getPlugin(name): PluginRegistration | undefined`. (3) Ensure `plugins` is included in Zustand persist (it's a root field so it should auto-persist, but verify `partialize` doesn't exclude it). (4) In the `exportData` function, include `plugins: get().plugins` in the export object. (5) In the `importData` function, add migration: iterate imported views, if any view has a `plugins` field, merge those registrations into the global `state.plugins` map (don't overwrite existing). Delete `view.plugins` after migration. Also handle importing a `plugins` field at the root level (new format). | Restrictions: Do NOT change PluginRegistration type. Do NOT change plugin-service.ts. Follow existing Zustand mutation patterns. The migration must handle both old format (View.plugins) and new format (root plugins). | Success: `npx tsc --noEmit` passes. Store actions no longer require viewId. Export includes plugins. Import migrates old format._
+
+- [x] 2. Move Plugins node to top-level in Sidebar
+  - File: `src/components/Sidebar.tsx` (MODIFY)
+  - _Leverage: `src/components/Sidebar.tsx` (existing plugin rendering code from FORGE-22), `src/components/TreeNode.tsx` (unchanged)_
+  - _Requirements: 2 (top-level Plugins node), 3 (View workbench nodes)_
+  - _Prompt: Implement the task for spec FORGE-24-plugin-registry-global-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React Frontend Developer | Task: Refactor `src/components/Sidebar.tsx`: (1) Remove the "Plugins" TreeNode that currently renders INSIDE each View's children (the block at depth 1 with plugin child nodes). (2) Add a new "Plugins" TreeNode AFTER the Views loop, at depth 0 (top-level, sibling to Views). This node should: use Puzzle icon, always be visible, expand to show all registered plugins from `getPlugins()` with active/inactive status indicators, have an "Add Plugin" onAdd action, have onDelete on each plugin child. (3) Keep the workbench nodes inside Views — for each enabled plugin from `getPlugins()`, render its `treeNodes` at depth 1 inside each View (this logic already exists, just change the data source from `getViewPlugins(view.id)` to `getPlugins().filter(p => p.enabled)`). (4) Update all calls: replace `getViewPlugins` with `getPlugins`, replace `unregisterPlugin(view.id, name)` with `unregisterPlugin(name)`. (5) Remove the `onSelectPlugin` viewId parameter if it exists — plugin selection no longer needs a viewId. | Restrictions: Do NOT modify TreeNode.tsx. Plugins node MUST be the last item in the sidebar (after all Views). Workbench nodes inside Views MUST still appear when plugins are enabled. | Success: `npx tsc --noEmit` passes. Plugins node renders at top-level. Workbench nodes still render inside Views. No viewId in plugin-related calls._
+
+- [x] 3. Simplify App.tsx routing and health checks
+  - File: `src/App.tsx` (MODIFY)
+  - _Leverage: `src/App.tsx` (existing plugin routing from FORGE-22)_
+  - _Requirements: 1 (global registry), 3 (workbench content rendering)_
+  - _Prompt: Implement the task for spec FORGE-24-plugin-registry-global-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React Application Developer | Task: Refactor `src/App.tsx`: (1) Replace `tree.views.find(v => v.plugins?.[selectedPluginName])` lookups (at approximately lines 257 and 270) with direct `getPlugin(selectedPluginName)` calls from the store. (2) For PluginPanel rendering: pass only `pluginName` (remove viewId if it was required). (3) For PluginContentView rendering: still pass a viewId for content context — use the currently selected View (derive from sidebar selection state or the first View). (4) Health check useEffect: replace the nested loop (`for view, for plugin in view.plugins`) with a flat loop over `Object.values(plugins)` from root store state. Update `setPluginHealth(pluginName, result)` calls (no viewId). (5) Update `handleSelectPlugin` if it took viewId — simplify to just set `selectedPluginName`. | Restrictions: Plugin routing MUST still come before existing content checks in renderMainContent. Health checks must remain fire-and-forget (Promise.allSettled). | Success: `npx tsc --noEmit` passes. No more View search for plugin routing. Health checks iterate global plugins._
+
+- [x] 4. Update PluginPanel and PluginContentView data sources
+  - File: `src/components/PluginPanel.tsx` (MODIFY)
+  - File: `src/components/PluginContentView.tsx` (MODIFY)
+  - _Leverage: `src/components/PluginPanel.tsx`, `src/components/PluginContentView.tsx` (existing code)_
+  - _Requirements: 1 (global registry), 4 (store action refactor)_
+  - _Prompt: Implement the task for spec FORGE-24-plugin-registry-global-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React Frontend Developer | Task: (1) In `PluginPanel.tsx`: replace all `getViewPlugins(viewId)` calls with `getPlugins()` or `getPlugin(pluginName)`. Replace `registerPlugin(viewId, manifest, endpoint, apiKey)` with `registerPlugin(manifest, endpoint, apiKey)`. Replace `unregisterPlugin(viewId, name)` with `unregisterPlugin(name)`. Replace `setPluginHealth(viewId, name, status)` with `setPluginHealth(name, status)`. Remove `viewId` from props if it's no longer needed (it may still be needed if the panel shows View-specific data in the future — keep it optional). (2) In `PluginContentView.tsx`: replace `getViewPlugins(viewId).find(r => r.manifest.name === pluginName)` with `getPlugin(pluginName)`. Keep viewId in props (needed for future View-scoped content like device lists). | Restrictions: Do NOT change the visual design or component structure. This is a data source swap only. | Success: `npx tsc --noEmit` passes. Both components read from global plugins. No viewId in plugin action calls._
+
+- [x] 5. Rewrite plugin store unit tests
+  - File: `src/__tests__/plugin-store.test.ts` (MODIFY)
+  - _Leverage: `src/__tests__/plugin-store.test.ts` (existing tests — same logic, updated API)_
+  - _Requirements: 4 (store action refactor), 5 (export/import compat)_
+  - _Prompt: Implement the task for spec FORGE-24-plugin-registry-global-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer | Task: Rewrite `src/__tests__/plugin-store.test.ts` for the global plugin model. (1) Update all `registerPlugin` calls: remove viewId parameter. Use `registerPlugin(manifest, endpoint, apiKey)`. (2) Update all `getViewPlugins(viewId)` assertions: replace with `getPlugins()`. (3) Update `unregisterPlugin`, `setPluginEnabled`, `setPluginHealth` calls: remove viewId. (4) Add a new test for `getPlugin(name)`: returns the specific plugin by name, returns undefined for unknown name. (5) Add migration tests: create a store state that has old View-scoped plugins (manually set `view.plugins`), call importData or simulate migration, verify plugins appear in global `getPlugins()`. (6) Verify all existing test scenarios still pass with the new API. | Restrictions: Use Vitest. Do NOT test plugin-service.ts (those tests are unchanged). Follow existing test patterns. | Success: `npx vitest run` passes all tests. Coverage includes migration path._

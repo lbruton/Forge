@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-22-plugin-framework/readiness-report.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-26T06:57:50.163Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774508270160_uhq72nea4",
+      "approvalTitle": "Readiness Report: FORGE-22 Plugin Framework — PASS"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-26T07:52:02.196Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774508270160_uhq72nea4",
+      "approvalTitle": "Readiness Report: FORGE-22 Plugin Framework — PASS"
+    }
+  ]
+}

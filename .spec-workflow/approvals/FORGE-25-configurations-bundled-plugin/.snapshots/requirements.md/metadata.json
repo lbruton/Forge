@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-25-configurations-bundled-plugin/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-26T14:43:05.213Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774536185209_nty6tam28",
+      "approvalTitle": "Requirements: FORGE-25 — Configurations as bundled plugin"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-26T14:45:50.666Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774536185209_nty6tam28",
+      "approvalTitle": "Requirements: FORGE-25 — Configurations as bundled plugin"
+    }
+  ]
+}

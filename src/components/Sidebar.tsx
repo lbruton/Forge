@@ -3,6 +3,7 @@ import { FolderOpen, Cpu, FileCode2, FileCheck, Globe, Puzzle, Shield, ShieldAle
 import { useForgeStore } from '../store/index.ts';
 import { TreeNode } from './TreeNode.tsx';
 import { CreateNodeModal, type CreateNodeType, type CreateNodeData } from './CreateNodeModal.tsx';
+import type { SectionSelection } from './SectionCardView.tsx';
 
 const PLUGIN_ICONS: Record<string, typeof Puzzle> = {
   puzzle: Puzzle, shield: Shield, 'shield-alert': ShieldAlert,
@@ -28,6 +29,7 @@ interface SidebarProps {
   onSelectVariant?: (variantId: string) => void;
   onSelectGlobalVariables?: (viewId: string) => void;
   onSelectPlugin?: (pluginName: string | null, nodeId: string | null) => void;
+  onSelectSection?: (sel: SectionSelection) => void;
 }
 
 function formatShortDate(iso: string): string {
@@ -39,7 +41,7 @@ function truncateName(name: string, max = 12): string {
   return name.length > max ? name.slice(0, max) + '...' : name;
 }
 
-export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVariant, onSelectGlobalVariables, onSelectPlugin }: SidebarProps) {
+export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVariant, onSelectGlobalVariables, onSelectPlugin, onSelectSection }: SidebarProps) {
   const {
     tree,
     selectedVariantId,
@@ -235,6 +237,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                   hasChildren={true}
                   isSection
                   onAdd={() => openCreate('vendor', view.id)}
+                  onSelect={() => onSelectSection?.({ type: 'configurations', viewId: view.id })}
                 >
                   <TreeNode
                     id={view.id + '__globals'}
@@ -264,6 +267,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                       onAdd={() => openCreate('model', view.id, vendor.id)}
                       onEdit={() => handleEdit('vendor', { viewId: view.id, vendorId: vendor.id }, vendor.name)}
                       onDelete={() => handleDelete('vendor', { viewId: view.id, vendorId: vendor.id })}
+                      onSelect={() => onSelectSection?.({ type: 'vendor', viewId: view.id, vendorId: vendor.id })}
                     >
                       {vendor.models.map((model) => {
                         const generatedConfigs = getGeneratedConfigs(model.id);
@@ -281,6 +285,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                             onAdd={() => openCreate('variant', view.id, vendor.id, model.id)}
                             onEdit={() => handleEdit('model', { viewId: view.id, vendorId: vendor.id, modelId: model.id }, model.name)}
                             onDelete={() => handleDelete('model', { viewId: view.id, vendorId: vendor.id, modelId: model.id })}
+                            onSelect={() => onSelectSection?.({ type: 'model', viewId: view.id, vendorId: vendor.id, modelId: model.id })}
                           >
                             {/* Templates sub-folder */}
                             <TreeNode
@@ -291,6 +296,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                               hasChildren={model.variants.length > 0}
                               isSection
                               onAdd={() => openCreate('variant', view.id, vendor.id, model.id)}
+                              onSelect={() => onSelectSection?.({ type: 'templates', viewId: view.id, vendorId: vendor.id, modelId: model.id })}
                             >
                               {model.variants.map((variant) => (
                                 <TreeNode
@@ -328,6 +334,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                                 depth={4}
                                 hasChildren={true}
                                 isSection
+                                onSelect={() => onSelectSection?.({ type: 'generated', viewId: view.id, vendorId: vendor.id, modelId: model.id })}
                               >
                                 {generatedConfigs.map((gc) => (
                                   <TreeNode

@@ -1,11 +1,12 @@
-import { Plus, Upload } from 'lucide-react';
+import { Plus, Upload, Puzzle } from 'lucide-react';
 
 interface WelcomeScreenProps {
   onRequestImport?: () => void;
   onRequestAddTemplate?: () => void;
+  onRequestPlugins?: () => void;
 }
 
-function WelcomeScreen({ onRequestImport, onRequestAddTemplate }: WelcomeScreenProps) {
+function WelcomeScreen({ onRequestImport, onRequestAddTemplate, onRequestPlugins }: WelcomeScreenProps) {
   const handleImport = () => {
     if (onRequestImport) {
       onRequestImport();
@@ -15,6 +16,12 @@ function WelcomeScreen({ onRequestImport, onRequestAddTemplate }: WelcomeScreenP
   const handleAddTemplate = () => {
     if (onRequestAddTemplate) {
       onRequestAddTemplate();
+    }
+  };
+
+  const handlePlugins = () => {
+    if (onRequestPlugins) {
+      onRequestPlugins();
     }
   };
 
@@ -96,13 +103,13 @@ function WelcomeScreen({ onRequestImport, onRequestAddTemplate }: WelcomeScreenP
 
             {/* FORGE text */}
             <text x="256" y="448" textAnchor="middle" fontFamily="'JetBrains Mono', 'Fira Code', 'Consolas', monospace" fontSize="56" fontWeight="700" letterSpacing="12" fill="#E2E8F0">FORGE</text>
-            <text x="256" y="478" textAnchor="middle" fontFamily="'Inter', 'Segoe UI', sans-serif" fontSize="14" fontWeight="400" letterSpacing="4" fill="#94A3B8">CONFIG GENERATOR</text>
+            <text x="256" y="478" textAnchor="middle" fontFamily="'Inter', 'Segoe UI', sans-serif" fontSize="14" fontWeight="400" letterSpacing="4" fill="#94A3B8">NETWORK WORKSHOP</text>
           </svg>
         </div>
 
         {/* Tagline */}
         <p className="text-slate-400 italic text-base leading-relaxed">
-          The forge is cold. Add a template to light it.
+          The forge is cold. Light it up.
         </p>
 
         {/* CTA buttons */}
@@ -122,11 +129,19 @@ function WelcomeScreen({ onRequestImport, onRequestAddTemplate }: WelcomeScreenP
             <Upload size={16} />
             Import .stvault
           </button>
+
+          <button
+            onClick={handlePlugins}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-slate-500 hover:text-slate-300 transition-colors w-full sm:w-auto"
+          >
+            <Puzzle size={16} />
+            Configure Plugins
+          </button>
         </div>
 
         {/* Description */}
         <p className="text-slate-500 text-xs leading-relaxed max-w-sm">
-          Create templates from your existing switch configs, or import a shared .stvault archive from your team.
+          Create a View for your network, add templates, connect plugins.
         </p>
       </div>
     </div>

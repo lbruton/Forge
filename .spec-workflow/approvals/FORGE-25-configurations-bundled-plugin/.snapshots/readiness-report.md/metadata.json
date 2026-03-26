@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-25-configurations-bundled-plugin/readiness-report.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-26T15:02:44.520Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774537364517_nhquaq996",
+      "approvalTitle": "Readiness Gate: FORGE-25 Configurations Bundled Plugin"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-26T15:08:14.045Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774537364517_nhquaq996",
+      "approvalTitle": "Readiness Gate: FORGE-25 Configurations Bundled Plugin"
+    }
+  ]
+}
