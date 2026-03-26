@@ -62,7 +62,8 @@ export default function PluginContentView({ pluginName, nodeId, viewId }: Plugin
       });
 
       setState({ kind: 'loaded', html: clean });
-    } catch {
+    } catch (err) {
+      console.error(`Error fetching content from plugin '${pluginName}':`, err);
       setState({ kind: 'error', message: `Unable to load data from ${displayName}` });
     }
   }, [registration, pluginName, nodeId, displayName]);

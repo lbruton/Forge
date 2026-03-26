@@ -388,6 +388,11 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                     }}
                     onDelete={() => {
                       if (confirm(`Remove plugin "${plugin.manifest.displayName}"?`)) {
+                        const state = useForgeStore.getState();
+                        if (state.selectedPluginName === plugin.manifest.name) {
+                          setSelectedPluginName(null);
+                          setSelectedPluginNodeId(null);
+                        }
                         unregisterPlugin(view.id, plugin.manifest.name);
                       }
                     }}

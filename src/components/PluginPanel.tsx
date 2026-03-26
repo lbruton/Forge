@@ -302,7 +302,7 @@ function PluginDetail({
   }, [viewId, manifest.name, unregisterPlugin, onBack]);
 
   const maskedApiKey = registration.apiKey
-    ? '\u2022'.repeat(Math.min(registration.apiKey.length, 32))
+    ? '\u2022'.repeat(16)
     : '';
 
   return (

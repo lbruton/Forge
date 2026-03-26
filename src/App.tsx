@@ -258,7 +258,11 @@ function App() {
       if (pluginView) {
         return <PluginPanel viewId={pluginView.id} pluginName={selectedPluginName} />;
       }
-      return <PluginPanel viewId={tree.views[0]?.id ?? ''} pluginName={null} />;
+      return (
+        <div className="flex-1 flex items-center justify-center text-slate-500">
+          Plugin "{selectedPluginName}" not found.
+        </div>
+      );
     }
 
     // Plugin Content — when both plugin and node are selected
@@ -267,6 +271,11 @@ function App() {
       if (pluginView) {
         return <PluginContentView pluginName={selectedPluginName} nodeId={selectedPluginNodeId} viewId={pluginView.id} />;
       }
+      return (
+        <div className="flex-1 flex items-center justify-center text-slate-500">
+          Plugin "{selectedPluginName}" not found.
+        </div>
+      );
     }
 
     // Generated config viewer takes priority when a config is selected
