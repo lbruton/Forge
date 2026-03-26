@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
-import { generateConfig } from '../lib/substitution-engine.ts';
+import { generateConfig, stripSubMarkers } from '../lib/substitution-engine.ts';
 import { parseSections } from '../lib/template-parser.ts';
 import { VariableForm } from './VariableForm.tsx';
 import { ConfigPreview } from './ConfigPreview.tsx';
@@ -158,7 +158,7 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
         isOpen={saveModalOpen}
         onClose={() => setSaveModalOpen(false)}
         variantId={selectedVariantId}
-        fullConfig={generated.fullConfig}
+        fullConfig={stripSubMarkers(generated.fullConfig)}
         sections={generated.sections}
         variableValues={debouncedValues}
         globalVariableValues={globalValues}

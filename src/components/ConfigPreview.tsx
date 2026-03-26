@@ -17,6 +17,7 @@ const TOKEN_STYLES: Record<string, string> = {
   'interface-name': 'text-green-400',
   number: 'text-orange-300',
   variable: 'text-amber-500 bg-amber-500/10 rounded px-0.5',
+  'variable-value': 'text-amber-400 bg-amber-500/10 rounded px-0.5',
   text: 'text-slate-200',
   // XML / JSON / YAML specific
   tag: 'text-sky-400',

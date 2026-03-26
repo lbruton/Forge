@@ -1,4 +1,5 @@
 import type { ConfigFormat, HighlightToken } from '../types/index.ts';
+import { SUB_START, SUB_END } from './substitution-engine.ts';
 
 type MatchResult = { index: number; length: number; className: string; text: string };
 
@@ -246,11 +247,48 @@ const tokenizers: Record<ConfigFormat, (line: string) => HighlightToken[]> = {
 };
 
 /**
+ * Tokenize a line that may contain substitution sentinels.
+ * Splits on sentinel boundaries, tokenizes non-substituted segments normally,
+ * and emits 'variable-value' tokens for substituted values.
+ */
+function tokenizeWithSubstitutions(line: string, tokenizer: (l: string) => HighlightToken[]): HighlightToken[] {
+  // Fast path: no sentinels in this line
+  if (!line.includes(SUB_START)) {
+    return tokenizer(line);
+  }
+
+  const tokens: HighlightToken[] = [];
+  // Split by sentinel pairs: text \uE000value\uE001 text ...
+  const re = new RegExp(`${SUB_START}(.*?)${SUB_END}`, 'g');
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = re.exec(line)) !== null) {
+    // Tokenize text before the substitution normally
+    if (match.index > lastIndex) {
+      const before = line.slice(lastIndex, match.index);
+      tokens.push(...tokenizer(before));
+    }
+    // Emit the substituted value as a variable-value token
+    tokens.push({ text: match[1], className: 'variable-value' });
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Tokenize any remaining text after the last substitution
+  if (lastIndex < line.length) {
+    tokens.push(...tokenizer(line.slice(lastIndex)));
+  }
+
+  return tokens;
+}
+
+/**
  * Tokenize text into highlighted spans, grouped by line.
  * Returns an array of lines, each line being an array of HighlightToken objects.
+ * Handles substitution sentinel markers from the substitution engine.
  */
 export function highlight(text: string, format: ConfigFormat): HighlightToken[][] {
   const lines = text.split('\n');
   const tokenizer = tokenizers[format];
-  return lines.map((line) => (line.length === 0 ? [{ text: '', className: 'text' }] : tokenizer(line)));
+  return lines.map((line) => (line.length === 0 ? [{ text: '', className: 'text' }] : tokenizeWithSubstitutions(line, tokenizer)));
 }

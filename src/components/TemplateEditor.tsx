@@ -489,7 +489,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
               onKeyUp={detectCursorSection}
               placeholder={`Paste your config template here...\n\nUse $variable_name or \${variable_name} for template variables.\n\nExample:\nhostname $hostname\ninterface vlan95\n ip address $vlan_95_ip_address 255.255.255.0`}
               spellCheck={false}
-              className="absolute inset-0 w-full h-full px-5 py-4 text-slate-200 font-mono text-[13px] leading-relaxed resize-none outline-none placeholder:text-slate-600 border-none relative z-10 bg-forge-obsidian"
+              className="absolute inset-0 w-full h-full px-5 py-4 text-slate-400 font-mono text-[13px] leading-relaxed resize-none outline-none placeholder:text-slate-600 border-none relative z-10 bg-forge-obsidian"
               style={{ caretColor: '#e2e8f0' }}
             />
             {/* Highlight overlay — above textarea, pointer-events-none, only shows background highlights */}

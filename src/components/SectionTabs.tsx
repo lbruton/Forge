@@ -1,4 +1,5 @@
 import { CopyButton, DownloadButton } from './CopyButton.tsx';
+import { stripSubMarkers } from '../lib/substitution-engine.ts';
 import type { GeneratedSection } from '../types/index.ts';
 
 interface SectionTabsProps {
@@ -62,9 +63,9 @@ export function SectionTabs({ sections, activeSection, onSelectSection, hostname
         <div className="flex items-center gap-1 py-1 ml-auto">
         {activeSection === null ? (
           <>
-            <CopyButton text={allText} label="Copy" />
+            <CopyButton text={stripSubMarkers(allText)} label="Copy" />
             <DownloadButton
-              text={allText}
+              text={stripSubMarkers(allText)}
               filename={`${safeHostname}-all.txt`}
               label="Download"
             />
@@ -76,9 +77,9 @@ export function SectionTabs({ sections, activeSection, onSelectSection, hostname
             const safeName = section.name.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
             return (
               <>
-                <CopyButton text={section.content} label="Copy" />
+                <CopyButton text={stripSubMarkers(section.content)} label="Copy" />
                 <DownloadButton
-                  text={section.content}
+                  text={stripSubMarkers(section.content)}
                   filename={`${safeHostname}-${safeName}.txt`}
                   label="Download"
                 />
