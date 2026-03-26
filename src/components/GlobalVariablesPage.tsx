@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useForgeStore } from '../store/index.ts';
 import type { VariableDefinition, VariableType } from '../types/index.ts';
-import { Globe, Plus, GripVertical, Eye, EyeOff, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { Globe, Plus, GripVertical, Eye, EyeOff, Trash2, ArrowUp, ArrowDown, Cloud, CloudOff } from 'lucide-react';
 import { DropdownOptionsEditor } from './DropdownOptionsEditor.tsx';
 
 interface GlobalVariablesPageProps {
@@ -27,9 +27,16 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
   const deleteGlobalVariable = useForgeStore((s) => s.deleteGlobalVariable);
   const reorderGlobalVariables = useForgeStore((s) => s.reorderGlobalVariables);
 
+  const getSecretsProviders = useForgeStore((s) => s.getSecretsProviders);
+  const getPlugin = useForgeStore((s) => s.getPlugin);
+
+  const providers = getSecretsProviders();
+  const writableProvider = providers.find((p) => p.isConnected() && p.capabilities().write);
+
   const globalVariables = view?.globalVariables ?? [];
 
   const [confirmDeleteName, setConfirmDeleteName] = useState<string | null>(null);
+  const [syncErrors, setSyncErrors] = useState<Record<string, string>>({});
   const [ipErrors, setIpErrors] = useState<Record<string, boolean>>({});
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -103,6 +110,84 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
     [],
   );
 
+  const handleSyncToggle = useCallback(
+    async (variable: VariableDefinition) => {
+      if (!writableProvider) return;
+
+      if (variable.syncToSecrets) {
+        // Disable sync — just clear the metadata
+        handleUpdate(variable.name, { syncToSecrets: undefined });
+        setSyncErrors((prev) => {
+          const next = { ...prev };
+          delete next[variable.name];
+          return next;
+        });
+        return;
+      }
+
+      // Enable sync — get defaults from the infisical plugin settings
+      const plugin = getPlugin('forge-infisical');
+      const settings = (plugin?.settings ?? {}) as Record<string, string>;
+      const projectId = settings.defaultProjectId || '';
+      const environment = settings.defaultEnvironment || 'dev';
+      const secretKey = 'FORGE_' + variable.name.toUpperCase();
+
+      if (!projectId) {
+        setSyncErrors((prev) => ({
+          ...prev,
+          [variable.name]: 'No default project configured in Infisical plugin settings.',
+        }));
+        return;
+      }
+
+      try {
+        if (writableProvider.setSecret) {
+          await writableProvider.setSecret(projectId, environment, secretKey, variable.defaultValue);
+        }
+        handleUpdate(variable.name, {
+          syncToSecrets: {
+            provider: writableProvider.name,
+            projectId,
+            environment,
+            secretKey,
+          },
+        });
+        setSyncErrors((prev) => {
+          const next = { ...prev };
+          delete next[variable.name];
+          return next;
+        });
+      } catch (err) {
+        setSyncErrors((prev) => ({
+          ...prev,
+          [variable.name]: err instanceof Error ? err.message : 'Sync failed',
+        }));
+      }
+    },
+    [writableProvider, getPlugin, handleUpdate],
+  );
+
+  const handleValueBlurSync = useCallback(
+    async (variable: VariableDefinition) => {
+      if (!variable.syncToSecrets || !writableProvider?.setSecret) return;
+      const { projectId, environment, secretKey } = variable.syncToSecrets;
+      try {
+        await writableProvider.setSecret(projectId, environment, secretKey, variable.defaultValue);
+        setSyncErrors((prev) => {
+          const next = { ...prev };
+          delete next[variable.name];
+          return next;
+        });
+      } catch (err) {
+        setSyncErrors((prev) => ({
+          ...prev,
+          [variable.name]: err instanceof Error ? err.message : 'Sync failed',
+        }));
+      }
+    },
+    [writableProvider],
+  );
+
   const handleDragStart = useCallback((index: number) => {
     setDragIndex(index);
   }, []);
@@ -136,7 +221,13 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
       return (
         <select
           value={variable.defaultValue}
-          onChange={(e) => handleUpdate(variable.name, { defaultValue: e.target.value })}
+          onChange={(e) => {
+            handleUpdate(variable.name, { defaultValue: e.target.value });
+            // Sync after dropdown change (no blur event for selects)
+            if (variable.syncToSecrets) {
+              void handleValueBlurSync({ ...variable, defaultValue: e.target.value });
+            }
+          }}
           className={`${inputClasses} cursor-pointer`}
         >
           <option value="">Select...</option>
@@ -158,6 +249,7 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
           type={variable.masked ? 'password' : 'number'}
           value={variable.defaultValue}
           onChange={(e) => handleUpdate(variable.name, { defaultValue: e.target.value })}
+          onBlur={() => void handleValueBlurSync(variable)}
           className={inputClasses}
           placeholder="0"
         />
@@ -170,11 +262,12 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
           type={variable.masked ? 'password' : 'text'}
           value={variable.defaultValue}
           onChange={(e) => handleUpdate(variable.name, { defaultValue: e.target.value })}
-          onBlur={
-            variable.type === 'ip'
-              ? () => handleIpBlur(variable.name, variable.defaultValue)
-              : undefined
-          }
+          onBlur={() => {
+            if (variable.type === 'ip') {
+              handleIpBlur(variable.name, variable.defaultValue);
+            }
+            void handleValueBlurSync(variable);
+          }}
           className={`${inputClasses} ${ipErrors[variable.name] ? '!border-red-500' : ''}`}
           placeholder={variable.type === 'ip' ? '0.0.0.0' : 'Enter value...'}
         />
@@ -215,6 +308,16 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
         </button>
       </div>
 
+      {/* Secrets sync hint */}
+      {!writableProvider && globalVariables.length > 0 && (
+        <div className="px-6 pt-3 pb-0">
+          <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
+            <CloudOff size={12} className="text-slate-600" />
+            Connect a secrets provider with write access to enable variable syncing.
+          </p>
+        </div>
+      )}
+
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-6 py-6">
         {globalVariables.length === 0 ? (
@@ -238,12 +341,13 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
         ) : (
           <>
             {/* Column headers */}
-            <div className="grid grid-cols-[28px_1fr_180px_100px_36px_200px_36px] gap-2.5 px-4 mb-1.5 text-[10px] font-semibold tracking-widest uppercase text-slate-500">
+            <div className={`grid ${writableProvider ? 'grid-cols-[28px_1fr_180px_100px_36px_36px_200px_36px]' : 'grid-cols-[28px_1fr_180px_100px_36px_200px_36px]'} gap-2.5 px-4 mb-1.5 text-[10px] font-semibold tracking-widest uppercase text-slate-500`}>
               <span />
               <span>Variable Name</span>
               <span>Value</span>
               <span>Type</span>
               <span />
+              {writableProvider && <span>Sync</span>}
               <span>Description</span>
               <span />
             </div>
@@ -257,7 +361,7 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                   onDragStart={() => handleDragStart(index)}
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
-                  className={`grid grid-cols-[28px_1fr_180px_100px_36px_200px_36px] gap-2.5 items-center px-4 py-3 bg-slate-800 border border-slate-700/50 rounded-lg transition-colors hover:border-green-500/30 ${
+                  className={`grid ${writableProvider ? 'grid-cols-[28px_1fr_180px_100px_36px_36px_200px_36px]' : 'grid-cols-[28px_1fr_180px_100px_36px_200px_36px]'} gap-2.5 items-center px-4 py-3 bg-slate-800 border border-slate-700/50 rounded-lg transition-colors hover:border-green-500/30 ${
                     dragIndex === index ? 'opacity-50 !border-green-500' : ''
                   } ${dragOverIndex === index ? '!border-green-500 shadow-[0_0_0_2px_rgba(34,197,94,0.2)]' : ''}`}
                 >
@@ -351,6 +455,28 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                   >
                     {variable.masked ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
+
+                  {/* Sync to secrets toggle */}
+                  {writableProvider && (
+                    <div className="flex flex-col items-center">
+                      <button
+                        onClick={() => void handleSyncToggle(variable)}
+                        className={`inline-flex items-center justify-center w-7 h-7 rounded border-none cursor-pointer transition-colors ${
+                          variable.syncToSecrets
+                            ? 'text-amber-500 bg-slate-700/50'
+                            : 'text-slate-500 bg-transparent hover:bg-slate-700/50 hover:text-slate-400'
+                        }`}
+                        title={variable.syncToSecrets ? 'Stop syncing to Infisical' : 'Sync to Infisical'}
+                      >
+                        {variable.syncToSecrets ? <Cloud size={14} /> : <CloudOff size={14} />}
+                      </button>
+                      {syncErrors[variable.name] && (
+                        <p className="text-[9px] text-red-400 mt-0.5 max-w-[80px] text-center leading-tight truncate" title={syncErrors[variable.name]}>
+                          {syncErrors[variable.name]}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Description */}
                   <input
