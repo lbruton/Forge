@@ -15,6 +15,7 @@ import type {
   Vendor,
   View,
 } from '../types/index.ts';
+import type { PluginManifest, PluginRegistration, PluginHealthStatus } from '../types/plugin.ts';
 
 // --- Custom storage adapter for zustand persist ---
 
@@ -118,6 +119,18 @@ interface ForgeStore {
   pendingSaveCallback: (() => void) | null;
   setEditorDirty: (dirty: boolean) => void;
   setPendingSaveCallback: (cb: (() => void) | null) => void;
+
+  // Plugin state
+  selectedPluginName: string | null;
+  selectedPluginNodeId: string | null;
+  setSelectedPluginName: (name: string | null) => void;
+  setSelectedPluginNodeId: (nodeId: string | null) => void;
+  registerPlugin: (viewId: string, manifest: PluginManifest, endpoint?: string, apiKey?: string) => void;
+  unregisterPlugin: (viewId: string, pluginName: string) => void;
+  setPluginEnabled: (viewId: string, pluginName: string, enabled: boolean) => void;
+  setPluginHealth: (viewId: string, pluginName: string, status: PluginHealthStatus) => void;
+  updatePluginSettings: (viewId: string, pluginName: string, settings: Record<string, string | number | boolean>) => void;
+  getViewPlugins: (viewId: string) => PluginRegistration[];
 
   // Helpers
   findVariant: (variantId: string) => { view: View; vendor: Vendor; model: Model; variant: Variant } | null;
@@ -701,6 +714,114 @@ export const useForgeStore = create<ForgeStore>()(
         };
       },
 
+      // --- Plugin state ---
+
+      selectedPluginName: null,
+      selectedPluginNodeId: null,
+      setSelectedPluginName: (name) => set({ selectedPluginName: name }),
+      setSelectedPluginNodeId: (nodeId) => set({ selectedPluginNodeId: nodeId }),
+
+      registerPlugin: (viewId, manifest, endpoint, apiKey) => {
+        const ts = now();
+        const registration: PluginRegistration = {
+          manifest,
+          endpoint,
+          apiKey,
+          enabled: true,
+          settings: {},
+          health: { status: 'unknown', lastChecked: '' },
+        };
+        set((state) => ({
+          tree: {
+            views: state.tree.views.map((v) =>
+              v.id === viewId
+                ? {
+                    ...v,
+                    updatedAt: ts,
+                    plugins: { ...(v.plugins ?? {}), [manifest.name]: registration },
+                  }
+                : v,
+            ),
+          },
+        }));
+      },
+
+      unregisterPlugin: (viewId, pluginName) => {
+        const ts = now();
+        set((state) => ({
+          tree: {
+            views: state.tree.views.map((v) => {
+              if (v.id !== viewId) return v;
+              const plugins = { ...(v.plugins ?? {}) };
+              delete plugins[pluginName];
+              return { ...v, plugins, updatedAt: ts };
+            }),
+          },
+        }));
+      },
+
+      setPluginEnabled: (viewId, pluginName, enabled) => {
+        const ts = now();
+        set((state) => ({
+          tree: {
+            views: state.tree.views.map((v) => {
+              if (v.id !== viewId) return v;
+              const existing = v.plugins?.[pluginName];
+              if (!existing) return v;
+              return {
+                ...v,
+                updatedAt: ts,
+                plugins: { ...(v.plugins ?? {}), [pluginName]: { ...existing, enabled } },
+              };
+            }),
+          },
+        }));
+      },
+
+      setPluginHealth: (viewId, pluginName, status) => {
+        const ts = now();
+        set((state) => ({
+          tree: {
+            views: state.tree.views.map((v) => {
+              if (v.id !== viewId) return v;
+              const existing = v.plugins?.[pluginName];
+              if (!existing) return v;
+              return {
+                ...v,
+                updatedAt: ts,
+                plugins: { ...(v.plugins ?? {}), [pluginName]: { ...existing, health: status } },
+              };
+            }),
+          },
+        }));
+      },
+
+      updatePluginSettings: (viewId, pluginName, settings) => {
+        const ts = now();
+        set((state) => ({
+          tree: {
+            views: state.tree.views.map((v) => {
+              if (v.id !== viewId) return v;
+              const existing = v.plugins?.[pluginName];
+              if (!existing) return v;
+              return {
+                ...v,
+                updatedAt: ts,
+                plugins: {
+                  ...(v.plugins ?? {}),
+                  [pluginName]: { ...existing, settings: { ...existing.settings, ...settings } },
+                },
+              };
+            }),
+          },
+        }));
+      },
+
+      getViewPlugins: (viewId) => {
+        const view = get().tree.views.find((v) => v.id === viewId);
+        return Object.values(view?.plugins ?? {});
+      },
+
       // --- Helpers ---
 
       findVariant: (variantId) => {
@@ -729,7 +850,7 @@ export const useForgeStore = create<ForgeStore>()(
       storage: createJSONStorage(() => forgeStorage),
       partialize: (state) => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { editorDirty, pendingSaveCallback, setEditorDirty, setPendingSaveCallback, ...rest } = state;
+        const { editorDirty, pendingSaveCallback, setEditorDirty, setPendingSaveCallback, selectedPluginName, selectedPluginNodeId, ...rest } = state;
         return rest;
       },
     },
