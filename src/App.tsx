@@ -12,6 +12,7 @@ import GlobalVariablesPage from './components/GlobalVariablesPage.tsx';
 import { UnsavedChangesModal } from './components/UnsavedChangesModal.tsx';
 import PluginPanel from './components/PluginPanel.tsx';
 import PluginContentView from './components/PluginContentView.tsx';
+import { SectionCardView, type SectionSelection } from './components/SectionCardView.tsx';
 import { healthCheck } from './lib/plugin-service.ts';
 import { initBundledPlugins } from './plugins/init.ts';
 
@@ -57,6 +58,7 @@ function App() {
   const [vaultOpen, setVaultOpen] = useState(false);
   const [vaultInitialTab, setVaultInitialTab] = useState<'export' | 'import'>('export');
   const [selectedGeneratedConfigId, setSelectedGeneratedConfigId] = useState<string | null>(null);
+  const [selectedSection, setSelectedSection] = useState<SectionSelection | null>(null);
 
   // Wizard for "Add Template" button
   const [wizard, setWizard] = useState<WizardState | null>(null);
@@ -217,6 +219,7 @@ function App() {
       setSelectedGlobalVariablesViewId(null);
       setSelectedPluginName(null);
       setSelectedPluginNodeId(null);
+      setSelectedSection(null);
     });
   }, [guardNavigation, setSelectedVariant, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId]);
 
@@ -230,6 +233,7 @@ function App() {
       setSelectedVariant(variantId);
       setSelectedPluginName(null);
       setSelectedPluginNodeId(null);
+      setSelectedSection(null);
     });
   }, [guardNavigation, setSelectedVariant, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId]);
 
@@ -238,6 +242,7 @@ function App() {
       setSelectedGlobalVariablesViewId(viewId);
       setSelectedPluginName(null);
       setSelectedPluginNodeId(null);
+      setSelectedSection(null);
     });
   }, [guardNavigation, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId]);
 
@@ -248,8 +253,20 @@ function App() {
       setSelectedVariant(null);
       setSelectedGlobalVariablesViewId(null);
       setSelectedGeneratedConfigId(null);
+      setSelectedSection(null);
     });
   }, [guardNavigation, setSelectedPluginName, setSelectedPluginNodeId, setSelectedVariant, setSelectedGlobalVariablesViewId]);
+
+  const handleSelectSection = useCallback((sel: SectionSelection) => {
+    guardNavigation(() => {
+      setSelectedSection(sel);
+      setSelectedVariant(null);
+      setSelectedGlobalVariablesViewId(null);
+      setSelectedPluginName(null);
+      setSelectedPluginNodeId(null);
+      setSelectedGeneratedConfigId(null);
+    });
+  }, [guardNavigation, setSelectedVariant, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId]);
 
   // Determine main content
   const renderMainContent = () => {
@@ -295,6 +312,18 @@ function App() {
         <GeneratedConfigViewer
           configId={selectedGeneratedConfigId}
           onBack={handleBackFromViewer}
+        />
+      );
+    }
+
+    // Section card view when a section node is selected
+    if (selectedSection) {
+      return (
+        <SectionCardView
+          selection={selectedSection}
+          onNavigateVariant={handleSelectVariant}
+          onNavigateGeneratedConfig={handleSelectGeneratedConfig}
+          onNavigateSection={handleSelectSection}
         />
       );
     }
@@ -406,6 +435,7 @@ function App() {
               onSelectVariant={handleSelectVariant}
               onSelectGlobalVariables={handleSelectGlobalVariables}
               onSelectPlugin={handleSelectPlugin}
+              onSelectSection={handleSelectSection}
             />
           </div>
         )}
