@@ -49,7 +49,10 @@ export function TreeNode({
     return () => document.removeEventListener('mousedown', handler);
   }, [contextMenuOpen]);
 
+  const hasMenuActions = !!(onAdd || onEdit || onDuplicate || onDelete);
+
   const handleContextMenu = (e: React.MouseEvent) => {
+    if (!hasMenuActions) return; // no actions = no menu
     e.preventDefault();
     setMenuPosition({ x: e.clientX, y: e.clientY });
     setContextMenuOpen(true);
@@ -122,6 +125,18 @@ export function TreeNode({
           className="fixed z-50 bg-forge-charcoal border border-forge-steel rounded-lg shadow-xl py-1 min-w-[120px]"
           style={{ left: menuPosition.x, top: menuPosition.y }}
         >
+          {onAdd && (
+            <button
+              className="w-full text-left px-3 py-1.5 text-[13px] text-slate-300 hover:bg-forge-graphite hover:text-slate-100 transition-colors flex items-center gap-2"
+              onClick={() => {
+                setContextMenuOpen(false);
+                onAdd();
+              }}
+            >
+              <Plus size={12} />
+              Add
+            </button>
+          )}
           {onEdit && (
             <button
               className="w-full text-left px-3 py-1.5 text-[13px] text-slate-300 hover:bg-forge-graphite hover:text-slate-100 transition-colors"
