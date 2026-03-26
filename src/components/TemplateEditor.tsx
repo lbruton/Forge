@@ -70,6 +70,10 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     existingTemplate?.customVariableOrder ?? false,
   );
 
+  // Context menu state for section marker insertion
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; cursorPos: number } | null>(null);
+  const [pendingSectionName, setPendingSectionName] = useState<string | null>(null);
+
   // All global variables from the View (not just detected ones)
   const viewGlobalVariables = useMemo(() => {
     return context?.view.globalVariables ?? [];
@@ -85,7 +89,6 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const addSectionInputRef = useRef<HTMLInputElement>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cursorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Build variable-to-section mapping
   const buildVariableSectionMap = useCallback(
@@ -329,72 +332,165 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   }, []);
 
   // Jump to a section in the textarea
-  const handleJumpToSection = useCallback((section: TemplateSection) => {
-    if (!textareaRef.current) return;
-    const ta = textareaRef.current;
-    const computedLineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 26.4;
-    const lineIndex = section.startLine ?? rawText.split('\n').findIndex((line) => section.template.split('\n')[0] === line);
-    if (lineIndex < 0) return;
-    const scrollTop = lineIndex * computedLineHeight;
-    ta.scrollTop = scrollTop;
-    if (overlayRef.current) overlayRef.current.scrollTop = scrollTop;
-    setActiveSectionName(section.name);
-  }, [rawText]);
+  // Section selection handler — sets active section for filtering
+  const handleSelectSection = useCallback((sectionName: string | null) => {
+    setActiveSectionName(sectionName);
+    // Scroll textarea to top when switching sections
+    if (textareaRef.current) textareaRef.current.scrollTop = 0;
+    if (overlayRef.current) overlayRef.current.scrollTop = 0;
+  }, []);
 
-  // Detect which section the cursor is in (debounced)
-  const detectCursorSection = useCallback(() => {
-    if (cursorDebounceRef.current) clearTimeout(cursorDebounceRef.current);
-    cursorDebounceRef.current = setTimeout(() => {
-      if (!textareaRef.current || sections.length === 0) return;
-      const pos = textareaRef.current.selectionStart;
-      const cursorLine = rawText.substring(0, pos).split('\n').length - 1;
+  // Compute display text based on active section filter
+  const { displayText, sectionRange } = useMemo(() => {
+    if (activeSectionName === null || sections.length === 0) {
+      return { displayText: rawText, sectionRange: null };
+    }
+    const section = sections.find((s) => s.name === activeSectionName);
+    if (!section) return { displayText: rawText, sectionRange: null };
 
-      // Walk sections in reverse order to find the one containing the cursor
-      let found: string | null = null;
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const s = sections[i];
-        const sLine = s.startLine ?? rawText.split('\n').findIndex((line) => s.template.split('\n')[0] === line);
-        if (sLine >= 0 && cursorLine >= sLine) {
-          found = s.name;
-          break;
-        }
+    const lines = rawText.split('\n');
+    const startLine = section.startLine ?? 0;
+
+    // Find end line: either the END marker line + 1, or the start of next section
+    let endLine: number;
+    if (section.endDividerPattern) {
+      // Find the END marker line after startLine
+      endLine = lines.findIndex(
+        (l, i) => i > startLine && l === section.endDividerPattern,
+      );
+      endLine = endLine >= 0 ? endLine + 1 : lines.length;
+    } else {
+      // Legacy: find next section's start or EOF
+      const sortedSections = [...sections].sort((a, b) => (a.startLine ?? 0) - (b.startLine ?? 0));
+      const idx = sortedSections.findIndex((s) => s.name === section.name);
+      endLine = idx + 1 < sortedSections.length ? (sortedSections[idx + 1].startLine ?? lines.length) : lines.length;
+    }
+
+    return {
+      displayText: lines.slice(startLine, endLine).join('\n'),
+      sectionRange: { start: startLine, end: endLine },
+    };
+  }, [activeSectionName, sections, rawText]);
+
+  // Handle text changes in filtered mode — merge edits back into full rawText
+  const handleFilteredTextChange = useCallback(
+    (newDisplayText: string) => {
+      if (sectionRange === null) {
+        // All sections mode — direct pass-through
+        handleTextChange(newDisplayText);
+        return;
       }
-      setActiveSectionName(found);
-    }, 150);
-  }, [sections, rawText]);
+      // Replace the section's range in the full rawText
+      const lines = rawText.split('\n');
+      const before = lines.slice(0, sectionRange.start);
+      const after = lines.slice(sectionRange.end);
+      const newFullText = [...before, ...newDisplayText.split('\n'), ...after].join('\n');
+      handleTextChange(newFullText);
+    },
+    [rawText, sectionRange, handleTextChange],
+  );
+
+  // Right-click context menu handler
+  const handleContextMenu = useCallback((e: React.MouseEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    const ta = e.currentTarget;
+    setContextMenu({ x: e.clientX, y: e.clientY, cursorPos: ta.selectionStart });
+  }, []);
+
+  // Insert a section marker at a cursor position in displayText
+  const insertMarkerAtCursor = useCallback((marker: string, cursorPos: number) => {
+    const text = displayText;
+    // Find the line start for the cursor position
+    const beforeCursor = text.substring(0, cursorPos);
+    const lineStart = beforeCursor.lastIndexOf('\n') + 1;
+    const newText = text.substring(0, lineStart) + marker + '\n' + text.substring(lineStart);
+    handleFilteredTextChange(newText);
+  }, [displayText, handleFilteredTextChange]);
+
+  const handleInsertStart = useCallback(() => {
+    if (!contextMenu) return;
+    const name = prompt('Section name:');
+    if (!name?.trim()) { setContextMenu(null); return; }
+    const trimmed = name.trim();
+    setPendingSectionName(trimmed);
+    insertMarkerAtCursor(`!##### ${trimmed} - START #####`, contextMenu.cursorPos);
+    setContextMenu(null);
+  }, [contextMenu, insertMarkerAtCursor]);
+
+  const handleInsertEnd = useCallback(() => {
+    if (!contextMenu) return;
+    const name = pendingSectionName ?? prompt('Section name:');
+    if (!name?.trim()) { setContextMenu(null); return; }
+    insertMarkerAtCursor(`!##### ${name.trim()} - END #####`, contextMenu.cursorPos);
+    setPendingSectionName(null);
+    setContextMenu(null);
+  }, [contextMenu, pendingSectionName, insertMarkerAtCursor]);
+
+  // Close context menu on click outside
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [contextMenu]);
 
   // Build highlighted overlay text
+  const BANNER_RE = /^!#{3,}\s*.*\s*-\s*(?:START|END)\s*#{3,}$/i;
   const highlightedText = useMemo(() => {
-    if (!rawText) return null;
-    // Strip Cisco type-9 password hashes before scanning (same as parseVariables)
-    const sanitized = rawText.replace(/\$\d\$\S+/g, (match) => '_'.repeat(match.length));
-    // Split by variable patterns, keeping delimiters — braced form captured first
-    const parts = sanitized.split(/(\$\{[A-Za-z_]\w*\}|\$[A-Za-z_]\w*)/gm);
-    const globalVarPattern = /^\$\{[A-Za-z_]\w*\}$/;
-    const localVarPattern = /^\$[A-Za-z_]\w*$/;
+    if (!displayText) return null;
 
-    // Reconstruct spans using original text positions
-    let offset = 0;
-    return parts.map((part, i) => {
-      const original = rawText.substring(offset, offset + part.length);
-      offset += part.length;
-      if (globalVarPattern.test(part)) {
-        return (
-          <span key={i} className="bg-green-500/25 text-transparent rounded-sm border-b border-green-500/40">
-            {original}
+    // Process line-by-line to detect section banners, then highlight variables within non-banner lines
+    const rawLines = displayText.split('\n');
+    const result: React.ReactNode[] = [];
+
+    for (let lineIdx = 0; lineIdx < rawLines.length; lineIdx++) {
+      const rawLine = rawLines[lineIdx];
+
+      // Section banner lines get a blue background highlight
+      if (BANNER_RE.test(rawLine)) {
+        if (lineIdx > 0) result.push(<span key={`nl-${lineIdx}`} className="text-transparent">{'\n'}</span>);
+        result.push(
+          <span key={`banner-${lineIdx}`} className="bg-blue-500/15 text-transparent">
+            {rawLine}
           </span>
         );
+        continue;
       }
-      if (localVarPattern.test(part)) {
-        return (
-          <span key={i} className="bg-amber-500/25 text-transparent rounded-sm border-b border-amber-500/40">
-            {original}
-          </span>
-        );
+
+      if (lineIdx > 0) result.push(<span key={`nl-${lineIdx}`} className="text-transparent">{'\n'}</span>);
+
+      // Strip Cisco type-9 password hashes before scanning (same as parseVariables)
+      const sanitized = rawLine.replace(/\$\d\$\S+/g, (match) => '_'.repeat(match.length));
+      // Split by variable patterns, keeping delimiters — braced form captured first
+      const parts = sanitized.split(/(\$\{[A-Za-z_]\w*\}|\$[A-Za-z_]\w*)/);
+      const globalVarPattern = /^\$\{[A-Za-z_]\w*\}$/;
+      const localVarPattern = /^\$[A-Za-z_]\w*$/;
+
+      let offset = 0;
+      for (let pi = 0; pi < parts.length; pi++) {
+        const part = parts[pi];
+        const original = rawLine.substring(offset, offset + part.length);
+        offset += part.length;
+        if (globalVarPattern.test(part)) {
+          result.push(
+            <span key={`${lineIdx}-${pi}`} className="bg-green-500/25 text-transparent rounded-sm border-b border-green-500/40">
+              {original}
+            </span>
+          );
+        } else if (localVarPattern.test(part)) {
+          result.push(
+            <span key={`${lineIdx}-${pi}`} className="bg-amber-500/25 text-transparent rounded-sm border-b border-amber-500/40">
+              {original}
+            </span>
+          );
+        } else {
+          result.push(<span key={`${lineIdx}-${pi}`} className="text-transparent">{original}</span>);
+        }
       }
-      return <span key={i} className="text-transparent">{original}</span>;
-    });
-  }, [rawText]);
+    }
+
+    return result;
+  }, [displayText]);
 
   // Determine if sections are real (not just "Full Config")
   const hasRealSections = sections.length > 0 && sections[0].name !== 'Full Config';
@@ -451,20 +547,19 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
           <EditorSectionTabs
             sections={sections}
             activeSectionName={activeSectionName}
-            onJumpTo={handleJumpToSection}
+            onSelectSection={handleSelectSection}
           />
           <div className="flex-1 relative">
             {/* Textarea — renders visible text */}
             <textarea
               ref={textareaRef}
-              value={rawText}
-              onChange={(e) => handleTextChange(e.target.value)}
+              value={displayText}
+              onChange={(e) => handleFilteredTextChange(e.target.value)}
               onScroll={handleTextareaScroll}
-              onMouseUp={detectCursorSection}
-              onKeyUp={detectCursorSection}
+              onContextMenu={handleContextMenu}
               placeholder={`Paste your config template here...\n\nUse $variable_name or \${variable_name} for template variables.\n\nExample:\nhostname $hostname\ninterface vlan95\n ip address $vlan_95_ip_address 255.255.255.0`}
               spellCheck={false}
-              className="absolute inset-0 w-full h-full px-5 py-4 text-slate-200 font-mono text-[13px] leading-relaxed resize-none outline-none placeholder:text-slate-600 border-none relative z-10 bg-forge-obsidian"
+              className="absolute inset-0 w-full h-full px-5 py-4 text-slate-400 font-mono text-[13px] leading-relaxed resize-none outline-none placeholder:text-slate-600 border-none relative z-10 bg-forge-obsidian"
               style={{ caretColor: '#e2e8f0' }}
             />
             {/* Highlight overlay — above textarea, pointer-events-none, only shows background highlights */}
@@ -477,6 +572,33 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             </div>
           </div>
         </div>
+
+        {/* Context menu for section marker insertion */}
+        {contextMenu && (
+          <div
+            className="fixed z-[100] bg-forge-charcoal border border-forge-steel rounded-md shadow-xl py-1 min-w-[200px]"
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={handleInsertStart}
+              className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-forge-graphite flex items-center gap-2"
+            >
+              <Plus size={14} className="text-blue-400" />
+              Insert Section Start
+            </button>
+            <button
+              onClick={handleInsertEnd}
+              className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-forge-graphite flex items-center gap-2"
+            >
+              <Plus size={14} className="text-blue-400" />
+              Insert Section End
+              {pendingSectionName && (
+                <span className="ml-auto text-xs text-slate-500">({pendingSectionName})</span>
+              )}
+            </button>
+          </div>
+        )}
 
         {/* Right panel collapse toggle */}
         <button
@@ -658,7 +780,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
                         onDragStart={() => handleDragStart(i)}
                         onDragOver={(e) => handleDragOver(e, i)}
                         onDragEnd={handleDragEnd}
-                        onClick={() => handleJumpToSection(section)}
+                        onClick={() => handleSelectSection(section.name)}
                         className={`flex items-center gap-2 px-2.5 py-1.5 rounded bg-forge-obsidian border text-[12px] cursor-pointer active:cursor-grabbing transition-all ${
                           isDragging
                             ? 'opacity-40 border-forge-amber/40'

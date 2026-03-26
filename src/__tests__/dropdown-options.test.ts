@@ -1,4 +1,6 @@
 import { describe, test, expect } from 'vitest';
+import { normalizeOption } from '../types/index.ts';
+import type { DropdownOption } from '../types/index.ts';
 
 // Pure-function equivalents of the add/remove logic inside DropdownOptionsEditor.
 // Extracted here so we can unit-test the behavioral contract without rendering React.
@@ -66,6 +68,36 @@ describe('DropdownOptionsEditor logic', () => {
     test('removing last option returns empty array', () => {
       const result = removeOption(['only'], 0);
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('normalizeOption (label/value pairs)', () => {
+    test('normalizes plain string to { label, value }', () => {
+      expect(normalizeOption('access')).toEqual({ label: 'access', value: 'access' });
+    });
+
+    test('normalizes DropdownOption with label', () => {
+      const opt: DropdownOption = { label: 'Access Mode', value: 'access' };
+      expect(normalizeOption(opt)).toEqual({ label: 'Access Mode', value: 'access' });
+    });
+
+    test('uses value as label when label is omitted', () => {
+      const opt: DropdownOption = { value: 'trunk' };
+      expect(normalizeOption(opt)).toEqual({ label: 'trunk', value: 'trunk' });
+    });
+
+    test('mixed array of strings and objects normalizes correctly', () => {
+      const options: (string | DropdownOption)[] = [
+        'plain',
+        { label: 'Labeled', value: 'labeled-val' },
+        { value: 'no-label' },
+      ];
+      const normalized = options.map(normalizeOption);
+      expect(normalized).toEqual([
+        { label: 'plain', value: 'plain' },
+        { label: 'Labeled', value: 'labeled-val' },
+        { label: 'no-label', value: 'no-label' },
+      ]);
     });
   });
 });

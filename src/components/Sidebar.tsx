@@ -44,6 +44,8 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
     deleteNode,
     updateNode,
     toggleExpandedNode,
+    deleteGeneratedConfig,
+    renameGeneratedConfig,
   } = useForgeStore();
 
   const [modalContext, setModalContext] = useState<ModalContext | null>(null);
@@ -235,6 +237,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                           icon={<FileCode2 size={14} />}
                           depth={3}
                           hasChildren={model.variants.length > 0}
+                          onAdd={() => openCreate('variant', view.id, vendor.id, model.id)}
                         >
                           {model.variants.map((variant) => (
                             <TreeNode
@@ -282,6 +285,20 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                                 hasChildren={false}
                                 isSelected={selectedGeneratedConfigId === gc.id}
                                 onSelect={() => handleSelectGeneratedConfig(gc.id)}
+                                onEdit={() => {
+                                  const newName = prompt('Rename generated config:', gc.name);
+                                  if (newName?.trim() && newName.trim() !== gc.name) {
+                                    renameGeneratedConfig(gc.id, newName.trim());
+                                  }
+                                }}
+                                onDelete={() => {
+                                  if (confirm(`Delete "${gc.name}"?`)) {
+                                    deleteGeneratedConfig(gc.id);
+                                    if (selectedGeneratedConfigId === gc.id) {
+                                      setSelectedGeneratedConfigId(null);
+                                    }
+                                  }
+                                }}
                               />
                             ))}
                           </TreeNode>

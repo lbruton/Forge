@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { normalizeOption } from '../types/index.ts';
 import type { VariableDefinition } from '../types/index.ts';
 
 interface VariableInputProps {
@@ -60,9 +61,10 @@ export function VariableInput({ variableDefinition, value, onChange }: VariableI
           className={`${baseInputClasses} ${borderClass} cursor-pointer`}
         >
           <option value="">Select...</option>
-          {options.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
+          {options.map((opt, i) => {
+            const { label: optLabel, value: optValue } = normalizeOption(opt);
+            return <option key={`${optValue}-${i}`} value={optValue}>{optLabel}</option>;
+          })}
         </select>
       ) : type === 'integer' ? (
         <input
