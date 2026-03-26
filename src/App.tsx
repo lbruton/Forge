@@ -15,6 +15,7 @@ import PluginContentView from './components/PluginContentView.tsx';
 import { SectionCardView, type SectionSelection } from './components/SectionCardView.tsx';
 import { healthCheck } from './lib/plugin-service.ts';
 import { initBundledPlugins } from './plugins/init.ts';
+import { InfisicalProvider } from './plugins/infisical/provider.ts';
 
 type AppMode = 'generator' | 'editor';
 
@@ -51,6 +52,7 @@ function App() {
     editorDirty,
     pendingSaveCallback,
     setEditorDirty,
+    registerSecretsProvider,
   } = useForgeStore();
 
   const [mode, setMode] = useState<AppMode>('generator');
@@ -117,6 +119,25 @@ function App() {
           setPluginHealth(reg.manifest.name, result);
         }),
       );
+    }
+
+    // Initialize Infisical secrets provider if plugin is enabled and configured
+    const infisicalPlugin = getPlugin('forge-infisical');
+    if (infisicalPlugin?.enabled) {
+      const { endpoint, clientId, clientSecret } = infisicalPlugin.settings as Record<string, string>;
+      if (endpoint && clientId && clientSecret) {
+        const provider = new InfisicalProvider(endpoint, clientId, clientSecret);
+        void provider.connect().then((result) => {
+          setPluginHealth('forge-infisical', {
+            status: result.connected ? 'active' : 'inactive',
+            lastChecked: new Date().toISOString(),
+            error: result.error,
+          });
+          if (result.connected) {
+            registerSecretsProvider(provider);
+          }
+        });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
