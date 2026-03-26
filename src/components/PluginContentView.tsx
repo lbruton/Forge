@@ -15,11 +15,11 @@ type ContentState =
   | { kind: 'loaded'; html: string }
   | { kind: 'bundled' };
 
-export default function PluginContentView({ pluginName, nodeId, viewId }: PluginContentViewProps) {
+export default function PluginContentView({ pluginName, nodeId, viewId: _viewId }: PluginContentViewProps) {
   const [state, setState] = useState<ContentState>({ kind: 'loading' });
-  const getViewPlugins = useForgeStore((s) => s.getViewPlugins);
+  const getPlugin = useForgeStore((s) => s.getPlugin);
 
-  const registration = getViewPlugins(viewId).find((r) => r.manifest.name === pluginName);
+  const registration = getPlugin(pluginName);
   const displayName = registration?.manifest.displayName ?? pluginName;
   const nodeLabel = registration?.manifest.treeNodes.find((n) => n.id === nodeId)?.label ?? nodeId;
 

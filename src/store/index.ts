@@ -63,6 +63,7 @@ interface ForgeStore {
   templates: Record<string, Template>;
   variableValues: Record<string, VariableValues>;
   generatedConfigs: Record<string, GeneratedConfig>;
+  plugins: Record<string, PluginRegistration>;
   preferences: Preferences;
 
   // Selection
@@ -125,12 +126,13 @@ interface ForgeStore {
   selectedPluginNodeId: string | null;
   setSelectedPluginName: (name: string | null) => void;
   setSelectedPluginNodeId: (nodeId: string | null) => void;
-  registerPlugin: (viewId: string, manifest: PluginManifest, endpoint?: string, apiKey?: string) => void;
-  unregisterPlugin: (viewId: string, pluginName: string) => void;
-  setPluginEnabled: (viewId: string, pluginName: string, enabled: boolean) => void;
-  setPluginHealth: (viewId: string, pluginName: string, status: PluginHealthStatus) => void;
-  updatePluginSettings: (viewId: string, pluginName: string, settings: Record<string, string | number | boolean>) => void;
-  getViewPlugins: (viewId: string) => PluginRegistration[];
+  registerPlugin: (manifest: PluginManifest, endpoint?: string, apiKey?: string) => void;
+  unregisterPlugin: (pluginName: string) => void;
+  setPluginEnabled: (pluginName: string, enabled: boolean) => void;
+  setPluginHealth: (pluginName: string, status: PluginHealthStatus) => void;
+  updatePluginSettings: (pluginName: string, settings: Record<string, string | number | boolean>) => void;
+  getPlugins: () => PluginRegistration[];
+  getPlugin: (name: string) => PluginRegistration | undefined;
 
   // Helpers
   findVariant: (variantId: string) => { view: View; vendor: Vendor; model: Model; variant: Variant } | null;
@@ -147,6 +149,7 @@ export const useForgeStore = create<ForgeStore>()(
       templates: {},
       variableValues: {},
       generatedConfigs: {},
+      plugins: {},
       preferences: defaultPreferences,
       selectedVariantId: null,
       selectedGlobalVariablesViewId: null,
@@ -635,6 +638,7 @@ export const useForgeStore = create<ForgeStore>()(
           templates: {},
           variableValues: {},
           generatedConfigs: {},
+          plugins: {},
           preferences: defaultPreferences,
           selectedVariantId: null,
           selectedGlobalVariablesViewId: null,
@@ -647,6 +651,7 @@ export const useForgeStore = create<ForgeStore>()(
           const templates = { ...state.templates };
           const variableValues = { ...state.variableValues };
           const generatedConfigs = { ...state.generatedConfigs };
+          const currentPlugins = { ...state.plugins };
 
           // Merge templates (new only, don't overwrite existing)
           for (const [id, tmpl] of Object.entries(data.templates)) {
@@ -673,33 +678,51 @@ export const useForgeStore = create<ForgeStore>()(
           }
 
           // Merge views from the export
-          if (data.views) {
-            for (const importedView of data.views) {
-              const existingView = tree.views.find((v) => v.id === importedView.id);
-              if (!existingView) {
-                // Backward compat: old exports may lack globalVariables
-                tree.views.push({
-                  ...importedView,
-                  globalVariables: importedView.globalVariables ?? [],
-                });
-              } else {
-                // Merge globalVariables additively: imported values update existing,
-                // new names added, existing names not in import preserved
-                const importedGlobals = importedView.globalVariables ?? [];
-                if (importedGlobals.length > 0) {
-                  const existing = existingView.globalVariables ?? [];
-                  const existingByName = new Map(existing.map((gv) => [gv.name, gv]));
-                  for (const igv of importedGlobals) {
-                    existingByName.set(igv.name, igv);
-                  }
-                  existingView.globalVariables = Array.from(existingByName.values());
-                  existingView.updatedAt = now();
+          const importedViews = data.views ?? [];
+          for (const importedView of importedViews) {
+            // Migrate old View-scoped plugins to global
+            const viewPlugins = (importedView as any).plugins as Record<string, PluginRegistration> | undefined;
+            if (viewPlugins) {
+              for (const [name, reg] of Object.entries(viewPlugins)) {
+                if (!currentPlugins[name]) {
+                  currentPlugins[name] = reg;
                 }
+              }
+              delete (importedView as any).plugins;
+            }
+
+            const existingView = tree.views.find((v) => v.id === importedView.id);
+            if (!existingView) {
+              // Backward compat: old exports may lack globalVariables
+              tree.views.push({
+                ...importedView,
+                globalVariables: importedView.globalVariables ?? [],
+              });
+            } else {
+              // Merge globalVariables additively: imported values update existing,
+              // new names added, existing names not in import preserved
+              const importedGlobals = importedView.globalVariables ?? [];
+              if (importedGlobals.length > 0) {
+                const existing = existingView.globalVariables ?? [];
+                const existingByName = new Map(existing.map((gv) => [gv.name, gv]));
+                for (const igv of importedGlobals) {
+                  existingByName.set(igv.name, igv);
+                }
+                existingView.globalVariables = Array.from(existingByName.values());
+                existingView.updatedAt = now();
               }
             }
           }
 
-          return { tree, templates, variableValues, generatedConfigs };
+          // Also import root-level plugins (new format)
+          const importedPlugins = (data as any).plugins as Record<string, PluginRegistration> | undefined;
+          if (importedPlugins) {
+            for (const [name, reg] of Object.entries(importedPlugins)) {
+              currentPlugins[name] = reg; // new format takes precedence
+            }
+          }
+
+          return { tree, templates, variableValues, generatedConfigs, plugins: currentPlugins };
         });
       },
 
@@ -711,6 +734,7 @@ export const useForgeStore = create<ForgeStore>()(
           templates: state.templates,
           variableValues: state.variableValues,
           generatedConfigs: state.generatedConfigs,
+          plugins: state.plugins,
         };
       },
 
@@ -721,105 +745,69 @@ export const useForgeStore = create<ForgeStore>()(
       setSelectedPluginName: (name) => set({ selectedPluginName: name }),
       setSelectedPluginNodeId: (nodeId) => set({ selectedPluginNodeId: nodeId }),
 
-      registerPlugin: (viewId, manifest, endpoint, apiKey) => {
-        const ts = now();
-        const registration: PluginRegistration = {
-          manifest,
-          endpoint,
-          apiKey,
-          enabled: true,
-          settings: {},
-          health: { status: 'unknown', lastChecked: '' },
-        };
+      registerPlugin: (manifest, endpoint, apiKey) => {
         set((state) => ({
-          tree: {
-            views: state.tree.views.map((v) =>
-              v.id === viewId
-                ? {
-                    ...v,
-                    updatedAt: ts,
-                    plugins: { ...(v.plugins ?? {}), [manifest.name]: registration },
-                  }
-                : v,
-            ),
+          plugins: {
+            ...state.plugins,
+            [manifest.name]: {
+              manifest,
+              endpoint,
+              apiKey,
+              enabled: true,
+              settings: {},
+              health: { status: 'unknown', lastChecked: '' },
+            },
           },
         }));
       },
 
-      unregisterPlugin: (viewId, pluginName) => {
-        const ts = now();
-        set((state) => ({
-          tree: {
-            views: state.tree.views.map((v) => {
-              if (v.id !== viewId) return v;
-              const plugins = { ...(v.plugins ?? {}) };
-              delete plugins[pluginName];
-              return { ...v, plugins, updatedAt: ts };
-            }),
-          },
-        }));
+      unregisterPlugin: (pluginName) => {
+        set((state) => {
+          const plugins = { ...state.plugins };
+          delete plugins[pluginName];
+          return { plugins };
+        });
       },
 
-      setPluginEnabled: (viewId, pluginName, enabled) => {
-        const ts = now();
-        set((state) => ({
-          tree: {
-            views: state.tree.views.map((v) => {
-              if (v.id !== viewId) return v;
-              const existing = v.plugins?.[pluginName];
-              if (!existing) return v;
-              return {
-                ...v,
-                updatedAt: ts,
-                plugins: { ...(v.plugins ?? {}), [pluginName]: { ...existing, enabled } },
-              };
-            }),
-          },
-        }));
+      setPluginEnabled: (pluginName, enabled) => {
+        set((state) => {
+          const existing = state.plugins[pluginName];
+          if (!existing) return state;
+          return {
+            plugins: { ...state.plugins, [pluginName]: { ...existing, enabled } },
+          };
+        });
       },
 
-      setPluginHealth: (viewId, pluginName, status) => {
-        const ts = now();
-        set((state) => ({
-          tree: {
-            views: state.tree.views.map((v) => {
-              if (v.id !== viewId) return v;
-              const existing = v.plugins?.[pluginName];
-              if (!existing) return v;
-              return {
-                ...v,
-                updatedAt: ts,
-                plugins: { ...(v.plugins ?? {}), [pluginName]: { ...existing, health: status } },
-              };
-            }),
-          },
-        }));
+      setPluginHealth: (pluginName, status) => {
+        set((state) => {
+          const existing = state.plugins[pluginName];
+          if (!existing) return state;
+          return {
+            plugins: { ...state.plugins, [pluginName]: { ...existing, health: status } },
+          };
+        });
       },
 
-      updatePluginSettings: (viewId, pluginName, settings) => {
-        const ts = now();
-        set((state) => ({
-          tree: {
-            views: state.tree.views.map((v) => {
-              if (v.id !== viewId) return v;
-              const existing = v.plugins?.[pluginName];
-              if (!existing) return v;
-              return {
-                ...v,
-                updatedAt: ts,
-                plugins: {
-                  ...(v.plugins ?? {}),
-                  [pluginName]: { ...existing, settings: { ...existing.settings, ...settings } },
-                },
-              };
-            }),
-          },
-        }));
+      updatePluginSettings: (pluginName, settings) => {
+        set((state) => {
+          const existing = state.plugins[pluginName];
+          if (!existing) return state;
+          return {
+            plugins: {
+              ...state.plugins,
+              [pluginName]: { ...existing, settings: { ...existing.settings, ...settings } },
+            },
+          };
+        });
       },
 
-      getViewPlugins: (viewId) => {
-        const view = get().tree.views.find((v) => v.id === viewId);
-        return Object.values(view?.plugins ?? {});
+      getPlugins: () => {
+        return Object.values(get().plugins);
+      },
+
+      getPlugin: (name) => {
+        return get().plugins[name];
       },
 
       // --- Helpers ---

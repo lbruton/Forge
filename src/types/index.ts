@@ -1,6 +1,5 @@
 // Plugin types
 export * from './plugin.ts';
-import type { PluginRegistration } from './plugin.ts';
 
 // Navigation hierarchy
 export type ConfigFormat = 'cli' | 'xml' | 'json' | 'yaml';
@@ -15,7 +14,6 @@ export interface View {
   name: string;
   vendors: Vendor[];
   globalVariables?: VariableDefinition[];
-  plugins?: Record<string, PluginRegistration>;
   createdAt: string;
   updatedAt: string;
 }
@@ -160,4 +158,5 @@ export interface VaultExportData {
   templates: Record<string, Template>;
   variableValues: Record<string, VariableValues>;
   generatedConfigs?: Record<string, GeneratedConfig>;
+  plugins?: Record<string, import('./plugin.ts').PluginRegistration>;
 }
