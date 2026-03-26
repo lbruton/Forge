@@ -762,6 +762,8 @@ export const useForgeStore = create<ForgeStore>()(
       },
 
       unregisterPlugin: (pluginName) => {
+        const existing = get().plugins[pluginName];
+        if (existing?.manifest.type === 'bundled') return;
         set((state) => {
           const plugins = { ...state.plugins };
           delete plugins[pluginName];
