@@ -113,21 +113,6 @@ interface Divider {
 }
 
 /**
- * Deduplicate section names by appending " (2)", " (3)", etc. for repeats.
- * Order is always preserved.
- */
-function deduplicateNames(dividers: Divider[]): void {
-  const counts = new Map<string, number>();
-  for (const d of dividers) {
-    const count = (counts.get(d.name) ?? 0) + 1;
-    counts.set(d.name, count);
-    if (count > 1) {
-      d.name = `${d.name} (${count})`;
-    }
-  }
-}
-
-/**
  * Detect section boundaries from divider comment patterns.
  * Supports START/END markers, legacy DNAC dividers, and mixed usage.
  */
@@ -268,51 +253,97 @@ export function parseSections(text: string, format: ConfigFormat): TemplateSecti
     }];
   }
 
-  // Deduplicate section names
-  deduplicateNames(dividers);
-
-  // Build sections from dividers
+  // Build sections from dividers, filling gaps with "Generic Config" sections
   const sections: TemplateSection[] = [];
+  let cursor = 0; // tracks how far through the document we've processed
 
   for (let d = 0; d < dividers.length; d++) {
-    const startLine = dividers[d].lineIndex;
-    let endLine: number;
+    const div = dividers[d];
 
-    if (dividers[d].endLineIndex != null) {
-      // START/END mode: content is between START and END markers (exclusive)
-      const contentStart = startLine + dividers[d].spanLines;
-      const contentEnd = dividers[d].endLineIndex!;
-      endLine = dividers[d].endLineIndex! + 1; // keep for preamble calc
-      const sectionLines = lines.slice(contentStart, contentEnd);
+    // CHECK FOR GAP: content between cursor and this divider
+    if (cursor < div.lineIndex) {
+      const gapLines = lines.slice(cursor, div.lineIndex);
+      // Only create a section if there's non-whitespace content
+      const hasContent = gapLines.some(l => l.trim() !== '');
+      if (hasContent) {
+        // Trim leading/trailing blank lines
+        let gStart = 0;
+        while (gStart < gapLines.length && gapLines[gStart].trim() === '') gStart++;
+        let gEnd = gapLines.length - 1;
+        while (gEnd > gStart && gapLines[gEnd].trim() === '') gEnd--;
+
+        sections.push({
+          id: crypto.randomUUID(),
+          name: 'Generic Config',
+          template: gapLines.slice(gStart, gEnd + 1).join('\n'),
+          order: sections.length,
+          dividerPattern: '',
+          startLine: cursor + gStart,
+        });
+      }
+    }
+
+    // BUILD SECTION FROM DIVIDER
+    if (div.endLineIndex != null) {
+      // START/END mode
+      const contentStart = div.lineIndex + div.spanLines;
+      const contentEnd = div.endLineIndex;
       sections.push({
         id: crypto.randomUUID(),
-        name: dividers[d].name,
-        template: sectionLines.join('\n'),
-        order: d,
-        dividerPattern: dividers[d].pattern,
-        endDividerPattern: lines[dividers[d].endLineIndex!],
-        startLine: dividers[d].lineIndex,
+        name: div.name,
+        template: lines.slice(contentStart, contentEnd).join('\n'),
+        order: sections.length,
+        dividerPattern: div.pattern,
+        endDividerPattern: lines[div.endLineIndex],
+        startLine: div.lineIndex,
       });
+      cursor = div.endLineIndex + 1;
     } else {
-      endLine = d + 1 < dividers.length ? dividers[d + 1].lineIndex : lines.length;
-      // For non-START/END dividers, skip the divider lines themselves
-      const contentStart = startLine + dividers[d].spanLines;
-      const sectionLines = lines.slice(contentStart, endLine);
+      // Legacy divider mode
+      const contentStart = div.lineIndex + div.spanLines;
+      const nextDividerLine = d + 1 < dividers.length ? dividers[d + 1].lineIndex : lines.length;
       sections.push({
         id: crypto.randomUUID(),
-        name: dividers[d].name,
-        template: sectionLines.join('\n'),
-        order: d,
-        dividerPattern: dividers[d].pattern,
-        startLine: dividers[d].lineIndex,
+        name: div.name,
+        template: lines.slice(contentStart, nextDividerLine).join('\n'),
+        order: sections.length,
+        dividerPattern: div.pattern,
+        startLine: div.lineIndex,
+      });
+      cursor = nextDividerLine;
+    }
+  }
+
+  // CHECK FOR POSTAMBLE: content after the last section
+  if (cursor < lines.length) {
+    const postLines = lines.slice(cursor);
+    const hasContent = postLines.some(l => l.trim() !== '');
+    if (hasContent) {
+      let gStart = 0;
+      while (gStart < postLines.length && postLines[gStart].trim() === '') gStart++;
+      let gEnd = postLines.length - 1;
+      while (gEnd > gStart && postLines[gEnd].trim() === '') gEnd--;
+
+      sections.push({
+        id: crypto.randomUUID(),
+        name: 'Generic Config',
+        template: postLines.slice(gStart, gEnd + 1).join('\n'),
+        order: sections.length,
+        dividerPattern: '',
+        startLine: cursor + gStart,
       });
     }
   }
 
-  // If there's content before the first divider, prepend it to the first section
-  if (dividers[0].lineIndex > 0) {
-    const preamble = lines.slice(0, dividers[0].lineIndex).join('\n');
-    sections[0].template = preamble + '\n' + sections[0].template;
+  // Deduplicate section names (handles "Generic Config", "Generic Config (2)", etc.)
+  const nameCount = new Map<string, number>();
+  for (const section of sections) {
+    const lower = section.name.toLowerCase();
+    const count = nameCount.get(lower) ?? 0;
+    if (count > 0) {
+      section.name = `${section.name} (${count + 1})`;
+    }
+    nameCount.set(lower, count + 1);
   }
 
   return sections;

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, test } from 'vitest';
 import { parseVariables, parseSections, cleanUpSections, rebuildRawText } from '../lib/template-parser.ts';
 import type { TemplateSection } from '../types/index.ts';
 
@@ -665,5 +665,133 @@ vtp domain CORP`;
 
   it('returns empty string for empty rawText', () => {
     expect(rebuildRawText([sectionA], '')).toBe('');
+  });
+});
+
+// ── parseSections — orphan text preservation ────────────────────
+
+describe('parseSections — orphan text preservation', () => {
+  test('bare text + one START/END block creates 3 sections', () => {
+    const config = `line1
+line2
+!##### My Section - START #####
+inner content
+!##### My Section - END #####
+line3
+line4`;
+    const sections = parseSections(config, 'cli');
+    expect(sections.length).toBe(3);
+    expect(sections[0].name).toBe('Generic Config');
+    expect(sections[0].template).toContain('line1');
+    expect(sections[0].template).toContain('line2');
+    expect(sections[1].name).toBe('My Section');
+    expect(sections[1].template).toContain('inner content');
+    expect(sections[2].name).toMatch(/Generic Config/); // may be "Generic Config (2)"
+    expect(sections[2].template).toContain('line3');
+    expect(sections[2].template).toContain('line4');
+  });
+
+  test('START/END at start + bare postamble creates 2 sections', () => {
+    const config = `!##### AAA - START #####
+aaa content
+!##### AAA - END #####
+trailing line`;
+    const sections = parseSections(config, 'cli');
+    expect(sections.length).toBe(2);
+    expect(sections[0].name).toBe('AAA');
+    expect(sections[1].template).toContain('trailing line');
+  });
+
+  test('bare preamble + START/END at end creates 2 sections', () => {
+    const config = `leading line
+!##### BBB - START #####
+bbb content
+!##### BBB - END #####`;
+    const sections = parseSections(config, 'cli');
+    expect(sections.length).toBe(2);
+    expect(sections[0].name).toMatch(/Generic Config/);
+    expect(sections[0].template).toContain('leading line');
+    expect(sections[1].name).toBe('BBB');
+  });
+
+  test('two START/END blocks with gap content creates 3 sections', () => {
+    const config = `!##### First - START #####
+first content
+!##### First - END #####
+gap line 1
+gap line 2
+!##### Second - START #####
+second content
+!##### Second - END #####`;
+    const sections = parseSections(config, 'cli');
+    expect(sections.length).toBe(3);
+    expect(sections[0].name).toBe('First');
+    expect(sections[1].name).toMatch(/Generic Config/);
+    expect(sections[1].template).toContain('gap line 1');
+    expect(sections[1].template).toContain('gap line 2');
+    expect(sections[2].name).toBe('Second');
+  });
+
+  test('whitespace-only gap does not create extra section', () => {
+    const config = `!##### AAA - START #####
+aaa
+!##### AAA - END #####
+
+
+!##### BBB - START #####
+bbb
+!##### BBB - END #####`;
+    const sections = parseSections(config, 'cli');
+    expect(sections.length).toBe(2);
+    expect(sections[0].name).toBe('AAA');
+    expect(sections[1].name).toBe('BBB');
+  });
+
+  test('fully covered template produces same sections as before', () => {
+    const config = `!##### AAA - START #####
+aaa content
+!##### AAA - END #####
+!##### BBB - START #####
+bbb content
+!##### BBB - END #####`;
+    const sections = parseSections(config, 'cli');
+    expect(sections.length).toBe(2);
+    expect(sections[0].name).toBe('AAA');
+    expect(sections[1].name).toBe('BBB');
+  });
+});
+
+// ── cleanUpSections — no data loss ──────────────────────────────
+
+describe('cleanUpSections — no data loss', () => {
+  test('bare text + START/END block preserves all content lines', () => {
+    const config = `hostname switch01
+ip routing
+!##### AAA - START #####
+aaa new-model
+!##### AAA - END #####
+line con 0
+logging sync`;
+    const result = cleanUpSections(config, 'cli');
+    // Every non-whitespace, non-divider line should appear in output
+    expect(result).toContain('hostname switch01');
+    expect(result).toContain('ip routing');
+    expect(result).toContain('aaa new-model');
+    expect(result).toContain('line con 0');
+    expect(result).toContain('logging sync');
+  });
+
+  test('cleanUpSections output has START/END markers for all sections', () => {
+    const config = `preamble line
+!##### My Section - START #####
+inner
+!##### My Section - END #####
+postamble line`;
+    const result = cleanUpSections(config, 'cli');
+    // Should have START/END for Generic Config AND My Section
+    expect(result).toContain('!##### Generic Config - START #####');
+    expect(result).toContain('!##### Generic Config - END #####');
+    expect(result).toContain('!##### My Section - START #####');
+    expect(result).toContain('!##### My Section - END #####');
   });
 });
