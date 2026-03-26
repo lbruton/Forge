@@ -219,6 +219,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
               icon={<FolderOpen size={14} />}
               depth={0}
               hasChildren={true}
+              isSection
               onAdd={() => openCreate('vendor', view.id)}
               onEdit={() => handleEdit('view', { viewId: view.id }, view.name)}
               onDelete={() => handleDelete('view', { viewId: view.id })}
@@ -231,6 +232,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                   icon={<FileCode2 size={14} />}
                   depth={1}
                   hasChildren={true}
+                  isSection
                   onAdd={() => openCreate('vendor', view.id)}
                 >
                   <TreeNode
@@ -257,6 +259,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                       icon={<Server size={14} />}
                       depth={2}
                       hasChildren={vendor.models.length > 0}
+                      isSection
                       onAdd={() => openCreate('model', view.id, vendor.id)}
                       onEdit={() => handleEdit('vendor', { viewId: view.id, vendorId: vendor.id }, vendor.name)}
                       onDelete={() => handleDelete('vendor', { viewId: view.id, vendorId: vendor.id })}
@@ -273,6 +276,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                             icon={<Cpu size={14} />}
                             depth={3}
                             hasChildren={model.variants.length > 0 || hasGenerated}
+                            isSection
                             onAdd={() => openCreate('variant', view.id, vendor.id, model.id)}
                             onEdit={() => handleEdit('model', { viewId: view.id, vendorId: vendor.id, modelId: model.id }, model.name)}
                             onDelete={() => handleDelete('model', { viewId: view.id, vendorId: vendor.id, modelId: model.id })}
@@ -284,6 +288,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                               icon={<FileCode2 size={14} />}
                               depth={4}
                               hasChildren={model.variants.length > 0}
+                              isSection
                               onAdd={() => openCreate('variant', view.id, vendor.id, model.id)}
                             >
                               {model.variants.map((variant) => (
@@ -321,6 +326,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                                 icon={<FileCheck size={14} />}
                                 depth={4}
                                 hasChildren={true}
+                                isSection
                               >
                                 {generatedConfigs.map((gc) => (
                                   <TreeNode
@@ -396,6 +402,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                 icon={<Puzzle size={14} />}
                 depth={0}
                 hasChildren={allPlugins.length > 0}
+                isSection
                 onAdd={() => {
                   setSelectedPluginName('__add_plugin__');
                   setSelectedPluginNodeId(null);

@@ -15,6 +15,7 @@ interface TreeNodeProps {
   onDuplicate?: () => void;
   onDelete?: () => void;
   contextMenuExtras?: Array<{ label: string; onClick: () => void; className?: string }>;
+  isSection?: boolean;
   children?: ReactNode;
 }
 
@@ -31,6 +32,7 @@ export function TreeNode({
   onDuplicate,
   onDelete,
   contextMenuExtras,
+  isSection = false,
   children,
 }: TreeNodeProps) {
   const { preferences, toggleExpandedNode } = useForgeStore();
@@ -95,7 +97,7 @@ export function TreeNode({
         )}
 
         <span className="shrink-0">{icon}</span>
-        <span className="text-[13px] font-medium truncate flex-1">{label}</span>
+        <span className={`text-[13px] truncate flex-1 ${isSection ? 'font-normal text-slate-500' : 'font-medium'}`}>{label}</span>
 
         {onAdd && hovered && (
           <button
