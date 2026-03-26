@@ -97,7 +97,7 @@ export function TreeNode({
         )}
 
         <span className="shrink-0">{icon}</span>
-        <span className={`text-[13px] truncate flex-1 ${isSection ? 'font-semibold text-slate-300' : 'font-medium text-amber-200/80'}`}>{label}</span>
+        <span className={`text-[13px] truncate flex-1 ${isSelected ? 'text-inherit' : isSection ? 'font-semibold text-slate-300' : 'font-medium text-amber-200/80'}`}>{label}</span>
 
         {onAdd && hovered && (
           <button

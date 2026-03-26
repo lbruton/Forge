@@ -59,6 +59,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
     deleteGeneratedConfig,
     renameGeneratedConfig,
     getPlugins,
+    selectedPluginName,
     setSelectedPluginName,
     setSelectedPluginNodeId,
     unregisterPlugin,
@@ -419,6 +420,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                     icon={getPluginIcon(plugin.manifest.icon)}
                     depth={1}
                     hasChildren={false}
+                    isSelected={selectedPluginName === plugin.manifest.name}
                     onSelect={() => {
                       setSelectedPluginName(plugin.manifest.name);
                       setSelectedPluginNodeId(null);
