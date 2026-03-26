@@ -382,7 +382,10 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                   )}
                 </div>
                 {variable.type === 'dropdown' && (
-                  <div className="mt-2 ml-[40px]">
+                  <div className="mt-1.5 ml-[40px]">
+                    <label className="block text-[10px] uppercase tracking-wider text-slate-500 mb-1">
+                      Options
+                    </label>
                     <DropdownOptionsEditor
                       options={variable.options}
                       onChange={(newOptions) =>
