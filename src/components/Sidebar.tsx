@@ -7,6 +7,7 @@ import { CreateNodeModal, type CreateNodeType, type CreateNodeData } from './Cre
 const PLUGIN_ICONS: Record<string, typeof Puzzle> = {
   puzzle: Puzzle, shield: Shield, 'shield-alert': ShieldAlert,
   database: Database, 'hard-drive': HardDrive, network: Network, server: Server,
+  'file-code-2': FileCode2,
 };
 
 function getPluginIcon(name: string, size = 14) {
@@ -77,7 +78,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
         toggleExpandedNode(nodeId);
       }
     }
-  }, [configurationsEnabled, tree.views, preferences.expandedNodes, toggleExpandedNode]);
+  }, [configurationsEnabled, tree.views, toggleExpandedNode]);
 
   const [modalContext, setModalContext] = useState<ModalContext | null>(null);
   const [editContext, setEditContext] = useState<{ type: CreateNodeType; path: Record<string, string>; currentName: string } | null>(null);

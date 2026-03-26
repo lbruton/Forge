@@ -1,4 +1,4 @@
-import type { PluginManifest } from '../types/plugin';
+import type { PluginManifest } from '../types/plugin.ts';
 
 export const CONFIGURATIONS_MANIFEST: PluginManifest = {
   name: 'forge-configurations',
@@ -7,10 +7,5 @@ export const CONFIGURATIONS_MANIFEST: PluginManifest = {
   icon: 'file-code-2',
   type: 'bundled',
   vendors: [],
-  treeNodes: [{
-    id: 'configurations',
-    label: 'Configurations',
-    icon: 'file-code-2',
-    vendorScoped: false,
-  }],
+  treeNodes: [],
 };

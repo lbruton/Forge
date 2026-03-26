@@ -1,5 +1,5 @@
-import type { PluginManifest, PluginRegistration, PluginHealthStatus } from '../types/plugin';
-import { CONFIGURATIONS_MANIFEST } from './configurations';
+import type { PluginManifest, PluginRegistration, PluginHealthStatus } from '../types/plugin.ts';
+import { CONFIGURATIONS_MANIFEST } from './configurations.ts';
 
 const BUNDLED_MANIFESTS: PluginManifest[] = [
   CONFIGURATIONS_MANIFEST,
