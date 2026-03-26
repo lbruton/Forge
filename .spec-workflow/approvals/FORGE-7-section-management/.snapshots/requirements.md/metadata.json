@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-7-section-management/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-26T02:38:08.920Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774492688906_w01tccjx9",
+      "approvalTitle": "Requirements: FORGE-7 Section management"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-26T02:45:42.637Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774492688906_w01tccjx9",
+      "approvalTitle": "Requirements: FORGE-7 Section management"
+    }
+  ]
+}

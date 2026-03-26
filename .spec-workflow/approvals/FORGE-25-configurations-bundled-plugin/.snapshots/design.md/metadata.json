@@ -1,0 +1,30 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-25-configurations-bundled-plugin/design.md",
+  "currentVersion": 3,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-26T14:46:56.094Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774536416089_6px30vrys",
+      "approvalTitle": "Design: FORGE-25 — Configurations bundled plugin"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-26T14:50:53.577Z",
+      "trigger": "revision_requested",
+      "approvalId": "approval_1774536416089_6px30vrys",
+      "approvalTitle": "Design: FORGE-25 — Configurations bundled plugin"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-03-26T14:56:08.002Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774536707270_7mgawegmo",
+      "approvalTitle": "Design (revised): FORGE-25 — Configurations bundled plugin (Global Vars inside Configurations)"
+    }
+  ]
+}

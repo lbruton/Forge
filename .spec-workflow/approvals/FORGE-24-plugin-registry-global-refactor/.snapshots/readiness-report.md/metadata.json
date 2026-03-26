@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-24-plugin-registry-global-refactor/readiness-report.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-26T14:14:59.352Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774534499348_lzwmcls44",
+      "approvalTitle": "Readiness Report: FORGE-24 — PASS"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-26T14:15:13.704Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774534499348_lzwmcls44",
+      "approvalTitle": "Readiness Report: FORGE-24 — PASS"
+    }
+  ]
+}

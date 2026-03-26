@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-24-plugin-registry-global-refactor/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-26T14:06:39.582Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774533999578_yn9o380z6",
+      "approvalTitle": "Design: FORGE-24 — Global plugin registry refactor"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-26T14:12:00.335Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774533999578_yn9o380z6",
+      "approvalTitle": "Design: FORGE-24 — Global plugin registry refactor"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-14-cleanup-deletes-content-outside-markers/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-26T01:54:21.742Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774490061739_8ovlk7x6g",
+      "approvalTitle": "Design: FORGE-14 Clean Up data loss fix"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-26T01:56:39.009Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774490061739_8ovlk7x6g",
+      "approvalTitle": "Design: FORGE-14 Clean Up data loss fix"
+    }
+  ]
+}

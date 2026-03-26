@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-22-plugin-framework/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-26T06:20:27.841Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774506027833_tpzspc8n7",
+      "approvalTitle": "Design: Plugin framework — types, service, store, sidebar, panels"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-26T06:20:51.807Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774506027833_tpzspc8n7",
+      "approvalTitle": "Design: Plugin framework — types, service, store, sidebar, panels"
+    }
+  ]
+}
