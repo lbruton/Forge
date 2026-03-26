@@ -1,7 +1,7 @@
 // Infisical API client with token lifecycle management
 // Pure service module — no React imports
 
-import type { SecretProject, SecretEntry } from '../../types/secrets-provider';
+import type { SecretProject, SecretEntry } from '../../types/secrets-provider.ts';
 
 interface AuthResponse {
   accessToken: string;
