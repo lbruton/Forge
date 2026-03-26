@@ -1,12 +1,12 @@
 import { useState, useCallback } from 'react';
-import { FolderOpen, Server, Cpu, FileCode2, FileCheck, Globe, Puzzle, Shield, ShieldAlert, Database, HardDrive, Network, Server as ServerIcon } from 'lucide-react';
+import { FolderOpen, Cpu, FileCode2, FileCheck, Globe, Puzzle, Shield, ShieldAlert, Database, HardDrive, Network, Server } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { TreeNode } from './TreeNode.tsx';
 import { CreateNodeModal, type CreateNodeType, type CreateNodeData } from './CreateNodeModal.tsx';
 
 const PLUGIN_ICONS: Record<string, typeof Puzzle> = {
   puzzle: Puzzle, shield: Shield, 'shield-alert': ShieldAlert,
-  database: Database, 'hard-drive': HardDrive, network: Network, server: ServerIcon,
+  database: Database, 'hard-drive': HardDrive, network: Network, server: Server,
 };
 
 function getPluginIcon(name: string, size = 14) {
@@ -202,7 +202,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
               label={view.name}
               icon={<FolderOpen size={14} />}
               depth={0}
-              hasChildren={view.vendors.length > 0 || true /* always has Plugins node */}
+              hasChildren={true}
               onAdd={() => openCreate('vendor', view.id)}
               onEdit={() => handleEdit('view', { viewId: view.id }, view.name)}
               onDelete={() => handleDelete('view', { viewId: view.id })}

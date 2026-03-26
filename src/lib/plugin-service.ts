@@ -41,6 +41,20 @@ export function validateManifest(data: unknown): PluginManifest {
   if (!Array.isArray(obj.treeNodes)) {
     throw new Error("Invalid plugin manifest: missing required field 'treeNodes'");
   }
+  for (let i = 0; i < obj.treeNodes.length; i++) {
+    const node = obj.treeNodes[i];
+    if (node === null || typeof node !== 'object') {
+      throw new Error(`Invalid plugin manifest: treeNodes[${i}] must be an object`);
+    }
+    for (const field of ['id', 'label', 'icon'] as const) {
+      if (typeof node[field] !== 'string') {
+        throw new Error(`Invalid plugin manifest: treeNodes[${i}].${field} must be a string`);
+      }
+    }
+    if (typeof node.vendorScoped !== 'boolean') {
+      throw new Error(`Invalid plugin manifest: treeNodes[${i}].vendorScoped must be a boolean`);
+    }
+  }
 
   return data as PluginManifest;
 }
@@ -53,17 +67,25 @@ export async function fetchManifest(
   apiKey: string,
 ): Promise<PluginManifest> {
   let response: Response;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
   try {
     response = await fetch(`${endpoint}/forge/manifest`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${apiKey}` },
       credentials: 'omit',
+      signal: controller.signal,
     });
-  } catch {
+  } catch (err) {
+    clearTimeout(timeoutId);
+    const isAbort = err instanceof DOMException && err.name === 'AbortError';
     throw new Error(
-      `Cannot connect to ${endpoint} — check that the sidecar is running`,
+      isAbort
+        ? `Connection to ${endpoint} timed out after 5 seconds`
+        : `Cannot connect to ${endpoint} — check that the sidecar is running`,
     );
   }
+  clearTimeout(timeoutId);
 
   if (response.status === 401 || response.status === 403) {
     throw new Error('Authentication failed — check your API key');
