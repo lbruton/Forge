@@ -149,7 +149,7 @@ describe('getPlugin', () => {
 
 describe('importData plugin migration', () => {
   it('migrates old view-scoped plugins to the global registry', () => {
-    const viewId = createView('Existing View');
+    createView('Existing View');
 
     const oldFormatData: VaultExportData & { views: any[] } = {
       exportedAt: new Date().toISOString(),
@@ -159,7 +159,7 @@ describe('importData plugin migration', () => {
         {
           id: 'imported-view',
           name: 'Imported View',
-          models: [],
+          vendors: [],
           globalVariables: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
