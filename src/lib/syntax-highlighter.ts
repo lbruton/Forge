@@ -51,7 +51,15 @@ const VARIABLE_GLOBAL_RE = /(\$\{[a-zA-Z_]\w*\})/;
 const VARIABLE_LOCAL_RE = /(\$[a-zA-Z_]\w*)/;
 const NUMBER_RE = /\b(\d+)\b/;
 
+// START/END section banner pattern
+const SECTION_BANNER_RE = /^!#{3,}\s*.*\s*-\s*(START|END)\s*#{3,}$/i;
+
 function tokenizeCli(line: string): HighlightToken[] {
+  // Section banner lines (START/END markers) — highlight distinctly
+  if (SECTION_BANNER_RE.test(line)) {
+    return [{ text: line, className: 'section-banner' }];
+  }
+
   // Comment line
   if (line.trimStart().startsWith('!')) {
     return [{ text: line, className: 'comment' }];

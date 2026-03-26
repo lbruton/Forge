@@ -364,36 +364,61 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   }, [sections, rawText]);
 
   // Build highlighted overlay text
+  const BANNER_RE = /^!#{3,}\s*.*\s*-\s*(?:START|END)\s*#{3,}$/i;
   const highlightedText = useMemo(() => {
     if (!rawText) return null;
-    // Strip Cisco type-9 password hashes before scanning (same as parseVariables)
-    const sanitized = rawText.replace(/\$\d\$\S+/g, (match) => '_'.repeat(match.length));
-    // Split by variable patterns, keeping delimiters — braced form captured first
-    const parts = sanitized.split(/(\$\{[A-Za-z_]\w*\}|\$[A-Za-z_]\w*)/gm);
-    const globalVarPattern = /^\$\{[A-Za-z_]\w*\}$/;
-    const localVarPattern = /^\$[A-Za-z_]\w*$/;
 
-    // Reconstruct spans using original text positions
-    let offset = 0;
-    return parts.map((part, i) => {
-      const original = rawText.substring(offset, offset + part.length);
-      offset += part.length;
-      if (globalVarPattern.test(part)) {
-        return (
-          <span key={i} className="bg-green-500/25 text-transparent rounded-sm border-b border-green-500/40">
-            {original}
+    // Process line-by-line to detect section banners, then highlight variables within non-banner lines
+    const rawLines = rawText.split('\n');
+    const result: React.ReactNode[] = [];
+
+    for (let lineIdx = 0; lineIdx < rawLines.length; lineIdx++) {
+      const rawLine = rawLines[lineIdx];
+
+      // Section banner lines get a blue background highlight
+      if (BANNER_RE.test(rawLine)) {
+        if (lineIdx > 0) result.push(<span key={`nl-${lineIdx}`} className="text-transparent">{'\n'}</span>);
+        result.push(
+          <span key={`banner-${lineIdx}`} className="bg-blue-500/15 text-transparent">
+            {rawLine}
           </span>
         );
+        continue;
       }
-      if (localVarPattern.test(part)) {
-        return (
-          <span key={i} className="bg-amber-500/25 text-transparent rounded-sm border-b border-amber-500/40">
-            {original}
-          </span>
-        );
+
+      if (lineIdx > 0) result.push(<span key={`nl-${lineIdx}`} className="text-transparent">{'\n'}</span>);
+
+      // Strip Cisco type-9 password hashes before scanning (same as parseVariables)
+      const sanitized = rawLine.replace(/\$\d\$\S+/g, (match) => '_'.repeat(match.length));
+      // Split by variable patterns, keeping delimiters — braced form captured first
+      const parts = sanitized.split(/(\$\{[A-Za-z_]\w*\}|\$[A-Za-z_]\w*)/);
+      const globalVarPattern = /^\$\{[A-Za-z_]\w*\}$/;
+      const localVarPattern = /^\$[A-Za-z_]\w*$/;
+
+      let offset = 0;
+      for (let pi = 0; pi < parts.length; pi++) {
+        const part = parts[pi];
+        const original = rawLine.substring(offset, offset + part.length);
+        offset += part.length;
+        if (globalVarPattern.test(part)) {
+          result.push(
+            <span key={`${lineIdx}-${pi}`} className="bg-green-500/25 text-transparent rounded-sm border-b border-green-500/40">
+              {original}
+            </span>
+          );
+        } else if (localVarPattern.test(part)) {
+          result.push(
+            <span key={`${lineIdx}-${pi}`} className="bg-amber-500/25 text-transparent rounded-sm border-b border-amber-500/40">
+              {original}
+            </span>
+          );
+        } else {
+          result.push(<span key={`${lineIdx}-${pi}`} className="text-transparent">{original}</span>);
+        }
       }
-      return <span key={i} className="text-transparent">{original}</span>;
-    });
+    }
+
+    return result;
   }, [rawText]);
 
   // Determine if sections are real (not just "Full Config")

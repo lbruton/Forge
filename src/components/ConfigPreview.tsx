@@ -12,6 +12,7 @@ interface ConfigPreviewProps {
 const TOKEN_STYLES: Record<string, string> = {
   keyword: 'text-sky-400',
   'ip-address': 'text-violet-400',
+  'section-banner': 'text-blue-400 font-semibold',
   comment: 'text-slate-500 italic',
   'interface-name': 'text-green-400',
   number: 'text-orange-300',
@@ -57,7 +58,12 @@ export function ConfigPreview({ sections, activeSection, configFormat }: ConfigP
         .join('\n');
     }
     const section = sections.find((s) => s.name === activeSection);
-    return section?.content ?? '';
+    if (!section) return '';
+    const parts: string[] = [];
+    if (section.divider) parts.push(section.divider);
+    parts.push(section.content);
+    if (section.endDivider) parts.push(section.endDivider);
+    return parts.join('\n');
   }, [sections, activeSection]);
 
   // Tokenize lines
