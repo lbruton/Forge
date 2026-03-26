@@ -397,10 +397,10 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                 depth={0}
                 hasChildren={allPlugins.length > 0}
                 onAdd={() => {
-                  setSelectedPluginName(null);
+                  setSelectedPluginName('__add_plugin__');
                   setSelectedPluginNodeId(null);
                   if (onSelectPlugin) {
-                    onSelectPlugin(null, null);
+                    onSelectPlugin('__add_plugin__', null);
                   }
                 }}
               >

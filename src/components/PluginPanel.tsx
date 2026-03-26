@@ -16,6 +16,7 @@ import {
 interface PluginPanelProps {
   viewId?: string;
   pluginName: string | null;
+  autoAdd?: boolean;
 }
 
 // Shared input classes matching GlobalVariablesPage style
@@ -452,12 +453,12 @@ function PluginDetail({
 
 // --- Main PluginPanel ---
 
-export default function PluginPanel({ pluginName }: PluginPanelProps) {
+export default function PluginPanel({ pluginName, autoAdd }: PluginPanelProps) {
   const setSelectedPluginName = useForgeStore((s) => s.setSelectedPluginName);
   const getPlugins = useForgeStore((s) => s.getPlugins);
   const getPlugin = useForgeStore((s) => s.getPlugin);
 
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(autoAdd ?? false);
 
   const plugins = getPlugins();
 

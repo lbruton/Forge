@@ -253,6 +253,11 @@ function App() {
 
   // Determine main content
   const renderMainContent = () => {
+    // Plugin List — show add form when + is clicked on Plugins node
+    if (selectedPluginName === '__add_plugin__') {
+      return <PluginPanel pluginName={null} autoAdd />;
+    }
+
     // Plugin Panel — when a plugin name is selected but no specific node
     if (selectedPluginName && !selectedPluginNodeId) {
       const reg = getPlugin(selectedPluginName);
