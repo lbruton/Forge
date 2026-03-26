@@ -1,8 +1,18 @@
 import { useState, useCallback } from 'react';
-import { FolderOpen, Server, Cpu, FileCode2, FileCheck, Globe } from 'lucide-react';
+import { FolderOpen, Server, Cpu, FileCode2, FileCheck, Globe, Puzzle, Shield, ShieldAlert, Database, HardDrive, Network, Server as ServerIcon } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { TreeNode } from './TreeNode.tsx';
 import { CreateNodeModal, type CreateNodeType, type CreateNodeData } from './CreateNodeModal.tsx';
+
+const PLUGIN_ICONS: Record<string, typeof Puzzle> = {
+  puzzle: Puzzle, shield: Shield, 'shield-alert': ShieldAlert,
+  database: Database, 'hard-drive': HardDrive, network: Network, server: ServerIcon,
+};
+
+function getPluginIcon(name: string, size = 14) {
+  const Icon = PLUGIN_ICONS[name] ?? Puzzle;
+  return <Icon size={size} />;
+}
 
 interface ModalContext {
   type: CreateNodeType;
@@ -16,6 +26,7 @@ interface SidebarProps {
   onSelectGeneratedConfig?: (id: string) => void;
   onSelectVariant?: (variantId: string) => void;
   onSelectGlobalVariables?: (viewId: string) => void;
+  onSelectPlugin?: (viewId: string, pluginName: string | null, nodeId: string | null) => void;
 }
 
 function formatShortDate(iso: string): string {
@@ -27,7 +38,7 @@ function truncateName(name: string, max = 12): string {
   return name.length > max ? name.slice(0, max) + '...' : name;
 }
 
-export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVariant, onSelectGlobalVariables }: SidebarProps) {
+export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVariant, onSelectGlobalVariables, onSelectPlugin }: SidebarProps) {
   const {
     tree,
     selectedVariantId,
@@ -46,6 +57,10 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
     toggleExpandedNode,
     deleteGeneratedConfig,
     renameGeneratedConfig,
+    getViewPlugins,
+    setSelectedPluginName,
+    setSelectedPluginNodeId,
+    unregisterPlugin,
   } = useForgeStore();
 
   const [modalContext, setModalContext] = useState<ModalContext | null>(null);
@@ -133,6 +148,8 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
 
   const handleSelectGeneratedConfig = useCallback(
     (id: string) => {
+      setSelectedPluginName(null);
+      setSelectedPluginNodeId(null);
       if (onSelectGeneratedConfig) {
         onSelectGeneratedConfig(id);
       } else {
@@ -141,12 +158,14 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
         setSelectedGlobalVariablesViewId(null);
       }
     },
-    [setSelectedVariant, setSelectedGlobalVariablesViewId, onSelectGeneratedConfig],
+    [setSelectedVariant, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId, onSelectGeneratedConfig],
   );
 
   const handleSelectVariant = useCallback(
     (variantId: string) => {
       setSelectedGeneratedConfigId(null);
+      setSelectedPluginName(null);
+      setSelectedPluginNodeId(null);
       if (onSelectVariant) {
         onSelectVariant(variantId);
       } else {
@@ -154,7 +173,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
         setSelectedVariant(variantId);
       }
     },
-    [setSelectedVariant, setSelectedGlobalVariablesViewId, onSelectVariant],
+    [setSelectedVariant, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId, onSelectVariant],
   );
 
   return (
@@ -174,14 +193,16 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
             </div>
           )}
 
-          {tree.views.map((view) => (
+          {tree.views.map((view) => {
+            const viewPlugins = getViewPlugins(view.id);
+            return (
             <TreeNode
               key={view.id}
               id={view.id}
               label={view.name}
               icon={<FolderOpen size={14} />}
               depth={0}
-              hasChildren={view.vendors.length > 0}
+              hasChildren={view.vendors.length > 0 || true /* always has Plugins node */}
               onAdd={() => openCreate('vendor', view.id)}
               onEdit={() => handleEdit('view', { viewId: view.id }, view.name)}
               onDelete={() => handleDelete('view', { viewId: view.id })}
@@ -308,8 +329,74 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                   })}
                 </TreeNode>
               ))}
+
+              {/* Plugin-contributed tree nodes (vendorScoped: false) */}
+              {viewPlugins
+                .filter((p) => p.enabled)
+                .flatMap((plugin) =>
+                  plugin.manifest.treeNodes
+                    .filter((tn) => !tn.vendorScoped)
+                    .map((tn) => (
+                      <TreeNode
+                        key={`${plugin.manifest.name}__${tn.id}`}
+                        id={`${plugin.manifest.name}__${tn.id}`}
+                        label={tn.label}
+                        icon={getPluginIcon(tn.icon)}
+                        depth={1}
+                        hasChildren={false}
+                        onSelect={() => {
+                          setSelectedGeneratedConfigId(null);
+                          setSelectedPluginName(plugin.manifest.name);
+                          setSelectedPluginNodeId(tn.id);
+                          if (onSelectPlugin) {
+                            onSelectPlugin(view.id, plugin.manifest.name, tn.id);
+                          }
+                        }}
+                      />
+                    )),
+                )}
+
+              {/* Plugins management node — always last */}
+              <TreeNode
+                id={`${view.id}__plugins`}
+                label="Plugins"
+                icon={<Puzzle size={14} />}
+                depth={1}
+                hasChildren={viewPlugins.length > 0}
+                onAdd={() => {
+                  setSelectedPluginName(null);
+                  setSelectedPluginNodeId(null);
+                  if (onSelectPlugin) {
+                    onSelectPlugin(view.id, null, null);
+                  }
+                }}
+              >
+                {viewPlugins.map((plugin) => (
+                  <TreeNode
+                    key={plugin.manifest.name}
+                    id={`plugin-${plugin.manifest.name}`}
+                    label={`${plugin.manifest.displayName} ${plugin.health.status === 'active' ? '●' : '○'}`}
+                    icon={getPluginIcon(plugin.manifest.icon)}
+                    depth={2}
+                    hasChildren={false}
+                    onSelect={() => {
+                      setSelectedPluginName(plugin.manifest.name);
+                      setSelectedPluginNodeId(null);
+                      if (onSelectPlugin) {
+                        onSelectPlugin(view.id, plugin.manifest.name, null);
+                      }
+                    }}
+                    onDelete={() => {
+                      if (confirm(`Remove plugin "${plugin.manifest.displayName}"?`)) {
+                        unregisterPlugin(view.id, plugin.manifest.name);
+                      }
+                    }}
+                  />
+                ))}
+              </TreeNode>
             </TreeNode>
-          ))}
+            );
+          })}
         </div>
 
         {/* Footer: Add View button — sticky at bottom */}
