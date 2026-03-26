@@ -292,7 +292,10 @@ function PluginDetail({
     return (
       <SetupWizard
         pluginName={manifest.name}
-        onComplete={() => setShowWizard(false)}
+        onComplete={() => {
+          setShowWizard(false);
+          onBack();
+        }}
         onCancel={() => {
           setShowWizard(false);
           if (!hasEndpoint) onBack();

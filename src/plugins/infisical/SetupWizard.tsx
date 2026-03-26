@@ -79,7 +79,7 @@ function StepMachineIdentity() {
       <ol className="space-y-3 text-[13px] text-slate-300">
         {[
           'Open Infisical Admin Console',
-          'Go to Organization Settings \u2192 Machine Identities',
+          'Go to Organization Settings \u2192 Access Control \u2192 Machine Identities',
           'Click "Create" \u2192 name it "Forge"',
           'Under Authentication, select "Universal Auth"',
           'Click "Create Client Secret"',
