@@ -1,3 +1,4 @@
+import { Eye, EyeOff } from 'lucide-react';
 import { CopyButton, DownloadButton } from './CopyButton.tsx';
 import { stripSubMarkers } from '../lib/substitution-engine.ts';
 import type { GeneratedSection } from '../types/index.ts';
@@ -7,9 +8,12 @@ interface SectionTabsProps {
   activeSection: string | null; // null = "All Sections"
   onSelectSection: (sectionName: string | null) => void;
   hostname: string; // used for per-section download filename
+  showHiddenToggle?: boolean;
+  showHidden?: boolean;
+  onToggleHidden?: () => void;
 }
 
-export function SectionTabs({ sections, activeSection, onSelectSection, hostname }: SectionTabsProps) {
+export function SectionTabs({ sections, activeSection, onSelectSection, hostname, showHiddenToggle, showHidden, onToggleHidden }: SectionTabsProps) {
   const allText = sections
     .map((s, i) => {
       const parts: string[] = [];
@@ -59,8 +63,22 @@ export function SectionTabs({ sections, activeSection, onSelectSection, hostname
           </button>
         ))}
 
-        {/* Copy/download buttons — always visible */}
+        {/* Actions — hide toggle + copy/download */}
         <div className="flex items-center gap-1 py-1 ml-auto">
+        {showHiddenToggle && onToggleHidden && (
+          <button
+            onClick={onToggleHidden}
+            className={`inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded transition-colors duration-150 ${
+              showHidden
+                ? 'text-amber-400 bg-amber-500/10 hover:bg-amber-500/20'
+                : 'text-slate-500 hover:text-slate-300 hover:bg-forge-graphite/50'
+            }`}
+            title={showHidden ? 'Hide masked values' : 'Show masked values'}
+          >
+            {showHidden ? <Eye size={12} /> : <EyeOff size={12} />}
+            {showHidden ? 'Hide' : 'Unhide'}
+          </button>
+        )}
         {activeSection === null ? (
           <>
             <CopyButton text={stripSubMarkers(allText)} label="Copy" />

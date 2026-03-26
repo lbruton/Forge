@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Eye, EyeOff } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
-import { generateConfig, stripSubMarkers } from '../lib/substitution-engine.ts';
+import { generateConfig, stripSubMarkers, SUB_START, SUB_END } from '../lib/substitution-engine.ts';
 import { parseSections } from '../lib/template-parser.ts';
 import { VariableForm } from './VariableForm.tsx';
 import { ConfigPreview } from './ConfigPreview.tsx';
@@ -23,6 +23,7 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [debouncedValues, setDebouncedValues] = useState<Record<string, string>>({});
   const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [showHidden, setShowHidden] = useState(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const found = selectedVariantId ? findVariant(selectedVariantId) : null;
@@ -76,6 +77,31 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
     if (!template) return { fullConfig: '', sections: [] };
     return generateConfig(freshSections, debouncedValues, globalValues);
   }, [freshSections, template, debouncedValues, globalValues]);
+
+  // Build set of masked global variable values for display masking
+  const maskedValues = useMemo(() => {
+    const vals = new Set<string>();
+    for (const g of globalVariables) {
+      if (g.masked && g.defaultValue) vals.add(g.defaultValue);
+    }
+    return vals;
+  }, [globalVariables]);
+
+  const hasMaskedVars = maskedValues.size > 0;
+
+  // Display sections: mask hidden values when showHidden is false
+  const displaySections = useMemo(() => {
+    if (showHidden || !hasMaskedVars) return generated.sections;
+    // Replace sentinel-wrapped masked values with masked placeholder
+    const maskedMarker = `${SUB_START}${'••••••••'}${SUB_END}`;
+    return generated.sections.map((s) => {
+      let content = s.content;
+      for (const val of maskedValues) {
+        content = content.replaceAll(`${SUB_START}${val}${SUB_END}`, maskedMarker);
+      }
+      return { ...s, content };
+    });
+  }, [generated.sections, showHidden, hasMaskedVars, maskedValues]);
 
   // Derive hostname from variable values for download filenames
   const hostname = debouncedValues['hostname'] || debouncedValues['HOSTNAME'] || 'config';
@@ -141,12 +167,15 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
             activeSection={activeSection}
             onSelectSection={setActiveSection}
             hostname={hostname}
+            showHiddenToggle={hasMaskedVars}
+            showHidden={showHidden}
+            onToggleHidden={() => setShowHidden((v) => !v)}
           />
 
           {/* Config preview */}
           <div className="flex-1 min-h-0">
             <ConfigPreview
-              sections={generated.sections}
+              sections={displaySections}
               activeSection={activeSection}
               configFormat={configFormat}
             />
