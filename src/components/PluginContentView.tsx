@@ -15,7 +15,7 @@ type ContentState =
   | { kind: 'loaded'; html: string }
   | { kind: 'bundled' };
 
-export default function PluginContentView({ pluginName, nodeId, viewId }: PluginContentViewProps) {
+export default function PluginContentView({ pluginName, nodeId, viewId: _viewId }: PluginContentViewProps) {
   const [state, setState] = useState<ContentState>({ kind: 'loading' });
   const getPlugin = useForgeStore((s) => s.getPlugin);
 
