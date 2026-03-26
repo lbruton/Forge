@@ -1,8 +1,10 @@
 import type { PluginManifest, PluginRegistration, PluginHealthStatus } from '../types/plugin.ts';
 import { CONFIGURATIONS_MANIFEST } from './configurations.ts';
+import { INFISICAL_MANIFEST } from './infisical/manifest.ts';
 
 const BUNDLED_MANIFESTS: PluginManifest[] = [
   CONFIGURATIONS_MANIFEST,
+  INFISICAL_MANIFEST,
 ];
 
 /**
