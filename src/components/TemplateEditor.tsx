@@ -85,7 +85,6 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const addSectionInputRef = useRef<HTMLInputElement>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cursorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Build variable-to-section mapping
   const buildVariableSectionMap = useCallback(
@@ -329,47 +328,71 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   }, []);
 
   // Jump to a section in the textarea
-  const handleJumpToSection = useCallback((section: TemplateSection) => {
-    if (!textareaRef.current) return;
-    const ta = textareaRef.current;
-    const computedLineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 26.4;
-    const lineIndex = section.startLine ?? rawText.split('\n').findIndex((line) => section.template.split('\n')[0] === line);
-    if (lineIndex < 0) return;
-    const scrollTop = lineIndex * computedLineHeight;
-    ta.scrollTop = scrollTop;
-    if (overlayRef.current) overlayRef.current.scrollTop = scrollTop;
-    setActiveSectionName(section.name);
-  }, [rawText]);
+  // Section selection handler — sets active section for filtering
+  const handleSelectSection = useCallback((sectionName: string | null) => {
+    setActiveSectionName(sectionName);
+    // Scroll textarea to top when switching sections
+    if (textareaRef.current) textareaRef.current.scrollTop = 0;
+    if (overlayRef.current) overlayRef.current.scrollTop = 0;
+  }, []);
 
-  // Detect which section the cursor is in (debounced)
-  const detectCursorSection = useCallback(() => {
-    if (cursorDebounceRef.current) clearTimeout(cursorDebounceRef.current);
-    cursorDebounceRef.current = setTimeout(() => {
-      if (!textareaRef.current || sections.length === 0) return;
-      const pos = textareaRef.current.selectionStart;
-      const cursorLine = rawText.substring(0, pos).split('\n').length - 1;
+  // Compute display text based on active section filter
+  const { displayText, sectionRange } = useMemo(() => {
+    if (activeSectionName === null || sections.length === 0) {
+      return { displayText: rawText, sectionRange: null };
+    }
+    const section = sections.find((s) => s.name === activeSectionName);
+    if (!section) return { displayText: rawText, sectionRange: null };
 
-      // Walk sections in reverse order to find the one containing the cursor
-      let found: string | null = null;
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const s = sections[i];
-        const sLine = s.startLine ?? rawText.split('\n').findIndex((line) => s.template.split('\n')[0] === line);
-        if (sLine >= 0 && cursorLine >= sLine) {
-          found = s.name;
-          break;
-        }
+    const lines = rawText.split('\n');
+    const startLine = section.startLine ?? 0;
+
+    // Find end line: either the END marker line + 1, or the start of next section
+    let endLine: number;
+    if (section.endDividerPattern) {
+      // Find the END marker line after startLine
+      endLine = lines.findIndex(
+        (l, i) => i > startLine && l === section.endDividerPattern,
+      );
+      endLine = endLine >= 0 ? endLine + 1 : lines.length;
+    } else {
+      // Legacy: find next section's start or EOF
+      const sortedSections = [...sections].sort((a, b) => (a.startLine ?? 0) - (b.startLine ?? 0));
+      const idx = sortedSections.findIndex((s) => s.name === section.name);
+      endLine = idx + 1 < sortedSections.length ? (sortedSections[idx + 1].startLine ?? lines.length) : lines.length;
+    }
+
+    return {
+      displayText: lines.slice(startLine, endLine).join('\n'),
+      sectionRange: { start: startLine, end: endLine },
+    };
+  }, [activeSectionName, sections, rawText]);
+
+  // Handle text changes in filtered mode — merge edits back into full rawText
+  const handleFilteredTextChange = useCallback(
+    (newDisplayText: string) => {
+      if (sectionRange === null) {
+        // All sections mode — direct pass-through
+        handleTextChange(newDisplayText);
+        return;
       }
-      setActiveSectionName(found);
-    }, 150);
-  }, [sections, rawText]);
+      // Replace the section's range in the full rawText
+      const lines = rawText.split('\n');
+      const before = lines.slice(0, sectionRange.start);
+      const after = lines.slice(sectionRange.end);
+      const newFullText = [...before, ...newDisplayText.split('\n'), ...after].join('\n');
+      handleTextChange(newFullText);
+    },
+    [rawText, sectionRange, handleTextChange],
+  );
 
   // Build highlighted overlay text
   const BANNER_RE = /^!#{3,}\s*.*\s*-\s*(?:START|END)\s*#{3,}$/i;
   const highlightedText = useMemo(() => {
-    if (!rawText) return null;
+    if (!displayText) return null;
 
     // Process line-by-line to detect section banners, then highlight variables within non-banner lines
-    const rawLines = rawText.split('\n');
+    const rawLines = displayText.split('\n');
     const result: React.ReactNode[] = [];
 
     for (let lineIdx = 0; lineIdx < rawLines.length; lineIdx++) {
@@ -419,7 +442,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     }
 
     return result;
-  }, [rawText]);
+  }, [displayText]);
 
   // Determine if sections are real (not just "Full Config")
   const hasRealSections = sections.length > 0 && sections[0].name !== 'Full Config';
@@ -476,17 +499,15 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
           <EditorSectionTabs
             sections={sections}
             activeSectionName={activeSectionName}
-            onJumpTo={handleJumpToSection}
+            onSelectSection={handleSelectSection}
           />
           <div className="flex-1 relative">
             {/* Textarea — renders visible text */}
             <textarea
               ref={textareaRef}
-              value={rawText}
-              onChange={(e) => handleTextChange(e.target.value)}
+              value={displayText}
+              onChange={(e) => handleFilteredTextChange(e.target.value)}
               onScroll={handleTextareaScroll}
-              onMouseUp={detectCursorSection}
-              onKeyUp={detectCursorSection}
               placeholder={`Paste your config template here...\n\nUse $variable_name or \${variable_name} for template variables.\n\nExample:\nhostname $hostname\ninterface vlan95\n ip address $vlan_95_ip_address 255.255.255.0`}
               spellCheck={false}
               className="absolute inset-0 w-full h-full px-5 py-4 text-slate-400 font-mono text-[13px] leading-relaxed resize-none outline-none placeholder:text-slate-600 border-none relative z-10 bg-forge-obsidian"
@@ -683,7 +704,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
                         onDragStart={() => handleDragStart(i)}
                         onDragOver={(e) => handleDragOver(e, i)}
                         onDragEnd={handleDragEnd}
-                        onClick={() => handleJumpToSection(section)}
+                        onClick={() => handleSelectSection(section.name)}
                         className={`flex items-center gap-2 px-2.5 py-1.5 rounded bg-forge-obsidian border text-[12px] cursor-pointer active:cursor-grabbing transition-all ${
                           isDragging
                             ? 'opacity-40 border-forge-amber/40'
