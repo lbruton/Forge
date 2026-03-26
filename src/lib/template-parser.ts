@@ -336,14 +336,14 @@ export function parseSections(text: string, format: ConfigFormat): TemplateSecti
   }
 
   // Deduplicate section names (handles "Generic Config", "Generic Config (2)", etc.)
+  // Strip existing (N) suffixes before counting so re-parsed names don't double-up
   const nameCount = new Map<string, number>();
   for (const section of sections) {
-    const lower = section.name.toLowerCase();
-    const count = nameCount.get(lower) ?? 0;
-    if (count > 0) {
-      section.name = `${section.name} (${count + 1})`;
-    }
-    nameCount.set(lower, count + 1);
+    const baseName = section.name.replace(/\s*\(\d+\)\s*$/, '');
+    const baseKey = baseName.toLowerCase();
+    const count = (nameCount.get(baseKey) ?? 0) + 1;
+    nameCount.set(baseKey, count);
+    section.name = count === 1 ? baseName : `${baseName} (${count})`;
   }
 
   return sections;
