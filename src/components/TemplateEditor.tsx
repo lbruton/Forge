@@ -172,22 +172,6 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     }
   }, [globalNames, context?.view.id, autoSyncGlobals]);
 
-  // Register save callback for unsaved-changes guard (re-registers when handleSave changes)
-  useEffect(() => {
-    setPendingSaveCallback(() => handleSave);
-    return () => {
-      setPendingSaveCallback(null);
-    };
-  }, [handleSave, setPendingSaveCallback]);
-
-  // Clear dirty flag only on unmount (navigating away from editor)
-  useEffect(() => {
-    return () => {
-      setEditorDirty(false);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleVariableReorder = useCallback(() => {
     setCustomVariableOrder(true);
     setEditorDirty(true);
@@ -212,6 +196,22 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }, [existingTemplate, sections, variables, customVariableOrder, rawText, saveTemplate, setEditorDirty]);
+
+  // Register save callback for unsaved-changes guard (re-registers when handleSave changes)
+  useEffect(() => {
+    setPendingSaveCallback(() => handleSave);
+    return () => {
+      setPendingSaveCallback(null);
+    };
+  }, [handleSave, setPendingSaveCallback]);
+
+  // Clear dirty flag only on unmount (navigating away from editor)
+  useEffect(() => {
+    return () => {
+      setEditorDirty(false);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Clean up sections handler
   const handleCleanUp = useCallback(() => {
