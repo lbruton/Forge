@@ -1,3 +1,6 @@
+// Plugin types
+export * from './plugin.ts';
+
 // Navigation hierarchy
 export type ConfigFormat = 'cli' | 'xml' | 'json' | 'yaml';
 export type VariableType = 'string' | 'ip' | 'integer' | 'dropdown';
@@ -11,6 +14,7 @@ export interface View {
   name: string;
   vendors: Vendor[];
   globalVariables?: VariableDefinition[];
+  plugins?: Record<string, PluginRegistration>;
   createdAt: string;
   updatedAt: string;
 }
