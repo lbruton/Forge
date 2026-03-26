@@ -113,184 +113,161 @@ interface Divider {
 }
 
 /**
- * Detect section boundaries from divider comment patterns.
- * Supports START/END markers, legacy DNAC dividers, and mixed usage.
+ * Detect CLI dividers: START/END marker pairs and legacy DNAC comment dividers.
  */
-export function parseSections(text: string, format: ConfigFormat): TemplateSection[] {
-  if (!text) {
-    return [{
-      id: crypto.randomUUID(),
-      name: 'Full Config',
-      template: '',
-      order: 0,
-      dividerPattern: '',
-    }];
-  }
-
-  if (format === 'json') {
-    return [{
-      id: crypto.randomUUID(),
-      name: 'Full Config',
-      template: text,
-      order: 0,
-      dividerPattern: '',
-    }];
-  }
-
-  const lines = text.split('\n');
+function detectCliDividers(lines: string[]): Divider[] {
   const dividers: Divider[] = [];
+  const startMarkers: { lineIndex: number; name: string }[] = [];
+  const endMarkers: { lineIndex: number; name: string }[] = [];
+  const usedLines = new Set<number>();
 
-  if (format === 'cli') {
-    // First pass: detect START/END marker pairs
-    const startMarkers: { lineIndex: number; name: string }[] = [];
-    const endMarkers: { lineIndex: number; name: string }[] = [];
-    const usedLines = new Set<number>();
+  // First pass: detect START/END marker pairs
+  for (let i = 0; i < lines.length; i++) {
+    const startMatch = lines[i].match(START_MARKER_RE);
+    if (startMatch) {
+      startMarkers.push({ lineIndex: i, name: startMatch[1].trim() });
+      usedLines.add(i);
+      continue;
+    }
+    const endMatch = lines[i].match(END_MARKER_RE);
+    if (endMatch) {
+      endMarkers.push({ lineIndex: i, name: endMatch[1].trim() });
+      usedLines.add(i);
+    }
+  }
 
-    for (let i = 0; i < lines.length; i++) {
-      const startMatch = lines[i].match(START_MARKER_RE);
-      if (startMatch) {
-        startMarkers.push({ lineIndex: i, name: startMatch[1].trim() });
-        usedLines.add(i);
-        continue;
-      }
-      const endMatch = lines[i].match(END_MARKER_RE);
-      if (endMatch) {
-        endMarkers.push({ lineIndex: i, name: endMatch[1].trim() });
-        usedLines.add(i);
-      }
+  // Match START markers with their END markers
+  for (const start of startMarkers) {
+    const matchingEnd = endMarkers.find(
+      (e) => e.name.toLowerCase() === start.name.toLowerCase() && e.lineIndex > start.lineIndex
+    );
+    dividers.push({
+      lineIndex: start.lineIndex,
+      name: start.name,
+      pattern: lines[start.lineIndex],
+      spanLines: 1,
+      endLineIndex: matchingEnd?.lineIndex,
+    });
+    if (matchingEnd) {
+      usedLines.add(matchingEnd.lineIndex);
+    }
+  }
+
+  // Second pass: detect legacy dividers on lines NOT consumed by START/END
+  for (let i = 0; i < lines.length; i++) {
+    if (usedLines.has(i)) continue;
+    const line = lines[i];
+
+    // Pattern 1: !########## SECTION NAME ##########
+    const inlineMatch = line.match(/^[!]?\s*(#{3,})\s+(.+?)\s+#{3,}\s*$/);
+    if (inlineMatch) {
+      const name = inlineMatch[2].trim();
+      if (/\s*-\s*(START|END)\s*$/i.test(name)) continue;
+      dividers.push({ lineIndex: i, name, pattern: line, spanLines: 1 });
+      usedLines.add(i);
+      continue;
     }
 
-    // Match START markers with their END markers
-    for (const start of startMarkers) {
-      const matchingEnd = endMarkers.find(
-        (e) => e.name.toLowerCase() === start.name.toLowerCase() && e.lineIndex > start.lineIndex
-      );
-      dividers.push({
-        lineIndex: start.lineIndex,
-        name: start.name,
-        pattern: lines[start.lineIndex],
-        spanLines: 1,
-        endLineIndex: matchingEnd?.lineIndex,
-      });
-      if (matchingEnd) {
-        usedLines.add(matchingEnd.lineIndex);
-      }
-    }
-
-    // Second pass: detect legacy dividers on lines NOT consumed by START/END
-    for (let i = 0; i < lines.length; i++) {
-      if (usedLines.has(i)) continue;
-      const line = lines[i];
-
-      // Pattern 1: !########## SECTION NAME ########## or ########## SECTION NAME ##########
-      const inlineMatch = line.match(/^[!]?\s*(#{3,})\s+(.+?)\s+#{3,}\s*$/);
-      if (inlineMatch) {
-        const name = inlineMatch[2].trim();
-        // Skip if this looks like a START or END marker (already handled)
-        if (/\s*-\s*(START|END)\s*$/i.test(name)) continue;
-        dividers.push({ lineIndex: i, name, pattern: line, spanLines: 1 });
-        usedLines.add(i);
-        continue;
-      }
-
-      // Pattern 2: !############################## followed by ! SECTION NAME on next line
-      const solidMatch = line.match(/^[!]?\s*#{10,}\s*$/);
-      if (solidMatch && i + 1 < lines.length && !usedLines.has(i + 1)) {
-        const nextLine = lines[i + 1];
-        const nameMatch = nextLine.match(/^!\s+(.+?)\s*$/);
-        if (nameMatch) {
-          const name = nameMatch[1].trim();
-          if (i + 2 < lines.length && /^[!]?\s*#{10,}\s*$/.test(lines[i + 2])) {
-            dividers.push({
-              lineIndex: i,
-              name,
-              pattern: line + '\n' + nextLine + '\n' + lines[i + 2],
-              spanLines: 3,
-            });
-            usedLines.add(i);
-            usedLines.add(i + 1);
-            usedLines.add(i + 2);
-          } else {
-            dividers.push({
-              lineIndex: i,
-              name,
-              pattern: line + '\n' + nextLine,
-              spanLines: 2,
-            });
-            usedLines.add(i);
-            usedLines.add(i + 1);
-          }
+    // Pattern 2: !############################## followed by ! SECTION NAME on next line
+    const solidMatch = line.match(/^[!]?\s*#{10,}\s*$/);
+    if (solidMatch && i + 1 < lines.length && !usedLines.has(i + 1)) {
+      const nextLine = lines[i + 1];
+      const nameMatch = nextLine.match(/^!\s+(.+?)\s*$/);
+      if (nameMatch) {
+        const name = nameMatch[1].trim();
+        if (i + 2 < lines.length && /^[!]?\s*#{10,}\s*$/.test(lines[i + 2])) {
+          dividers.push({
+            lineIndex: i,
+            name,
+            pattern: line + '\n' + nextLine + '\n' + lines[i + 2],
+            spanLines: 3,
+          });
+          usedLines.add(i);
+          usedLines.add(i + 1);
+          usedLines.add(i + 2);
+        } else {
+          dividers.push({
+            lineIndex: i,
+            name,
+            pattern: line + '\n' + nextLine,
+            spanLines: 2,
+          });
+          usedLines.add(i);
+          usedLines.add(i + 1);
         }
-      }
-    }
-
-    // Sort dividers by line index to preserve document order
-    dividers.sort((a, b) => a.lineIndex - b.lineIndex);
-
-    // Remove outer START/END pairs that fully contain inner START/END pairs.
-    // When a user nests markers, the intent is to break the outer block apart —
-    // the inner blocks become their own sections, and the gaps become Generic Config.
-    const toRemove = new Set<number>();
-    for (let i = 0; i < dividers.length; i++) {
-      const outer = dividers[i];
-      if (outer.endLineIndex == null) continue; // legacy divider, skip
-      for (let j = 0; j < dividers.length; j++) {
-        if (i === j) continue;
-        const inner = dividers[j];
-        // Check if inner divider is fully contained within outer's range
-        if (inner.lineIndex > outer.lineIndex && inner.lineIndex < outer.endLineIndex!) {
-          toRemove.add(i); // remove the outer, keep the inner
-          break;
-        }
-      }
-    }
-    if (toRemove.size > 0) {
-      const filtered = dividers.filter((_, i) => !toRemove.has(i));
-      dividers.length = 0;
-      dividers.push(...filtered);
-    }
-  } else if (format === 'xml') {
-    for (let i = 0; i < lines.length; i++) {
-      const match = lines[i].match(/^<!--\s+(.+?)\s+-->$/);
-      if (match) {
-        dividers.push({ lineIndex: i, name: match[1].trim(), pattern: lines[i], spanLines: 1 });
-      }
-    }
-  } else if (format === 'yaml') {
-    for (let i = 0; i < lines.length; i++) {
-      const match = lines[i].match(/^#\s+[=\-]{3,}\s+(.+?)\s+[=\-]{3,}\s*$/);
-      if (match) {
-        dividers.push({ lineIndex: i, name: match[1].trim(), pattern: lines[i], spanLines: 1 });
       }
     }
   }
 
-  // No dividers found → single section
-  if (dividers.length === 0) {
-    return [{
-      id: crypto.randomUUID(),
-      name: 'Full Config',
-      template: text,
-      order: 0,
-      dividerPattern: '',
-    }];
+  // Sort by line index to preserve document order
+  dividers.sort((a, b) => a.lineIndex - b.lineIndex);
+
+  // Remove outer START/END pairs that fully contain inner START/END pairs.
+  // When a user nests markers, the intent is to break the outer block apart —
+  // the inner blocks become their own sections, and the gaps become Generic Config.
+  const toRemove = new Set<number>();
+  for (let i = 0; i < dividers.length; i++) {
+    const outer = dividers[i];
+    if (outer.endLineIndex == null) continue;
+    for (let j = 0; j < dividers.length; j++) {
+      if (i === j) continue;
+      if (dividers[j].lineIndex > outer.lineIndex && dividers[j].lineIndex < outer.endLineIndex!) {
+        toRemove.add(i);
+        break;
+      }
+    }
+  }
+  if (toRemove.size > 0) {
+    return dividers.filter((_, i) => !toRemove.has(i));
   }
 
-  // Build sections from dividers, filling gaps with "Generic Config" sections
+  return dividers;
+}
+
+/**
+ * Detect XML comment dividers: <!-- SECTION NAME -->
+ */
+function detectXmlDividers(lines: string[]): Divider[] {
+  const dividers: Divider[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const match = lines[i].match(/^<!--\s+(.+?)\s+-->$/);
+    if (match) {
+      dividers.push({ lineIndex: i, name: match[1].trim(), pattern: lines[i], spanLines: 1 });
+    }
+  }
+  return dividers;
+}
+
+/**
+ * Detect YAML comment dividers: # === SECTION NAME === or # --- SECTION NAME ---
+ */
+function detectYamlDividers(lines: string[]): Divider[] {
+  const dividers: Divider[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const match = lines[i].match(/^#\s+[=\-]{3,}\s+(.+?)\s+[=\-]{3,}\s*$/);
+    if (match) {
+      dividers.push({ lineIndex: i, name: match[1].trim(), pattern: lines[i], spanLines: 1 });
+    }
+  }
+  return dividers;
+}
+
+/**
+ * Build TemplateSection[] from dividers, filling gaps with "Generic Config" sections
+ * and deduplicating section names.
+ */
+function buildSectionsFromDividers(lines: string[], dividers: Divider[]): TemplateSection[] {
   const sections: TemplateSection[] = [];
-  let cursor = 0; // tracks how far through the document we've processed
+  let cursor = 0;
 
   for (let d = 0; d < dividers.length; d++) {
     const div = dividers[d];
 
-    // CHECK FOR GAP: content between cursor and this divider
+    // Gap: content between cursor and this divider
     if (cursor < div.lineIndex) {
       const gapLines = lines.slice(cursor, div.lineIndex);
-      // Only create a section if there's meaningful content
-      // (standalone '!' lines are IOS comment separators — treat as whitespace)
       const hasContent = gapLines.some(l => l.trim() !== '' && l.trim() !== '!');
       if (hasContent) {
-        // Trim leading/trailing blank lines
         let gStart = 0;
         while (gStart < gapLines.length && gapLines[gStart].trim() === '') gStart++;
         let gEnd = gapLines.length - 1;
@@ -307,9 +284,8 @@ export function parseSections(text: string, format: ConfigFormat): TemplateSecti
       }
     }
 
-    // BUILD SECTION FROM DIVIDER
+    // Build section from divider
     if (div.endLineIndex != null) {
-      // START/END mode
       const contentStart = div.lineIndex + div.spanLines;
       const contentEnd = div.endLineIndex;
       sections.push({
@@ -323,7 +299,6 @@ export function parseSections(text: string, format: ConfigFormat): TemplateSecti
       });
       cursor = div.endLineIndex + 1;
     } else {
-      // Legacy divider mode
       const contentStart = div.lineIndex + div.spanLines;
       const nextDividerLine = d + 1 < dividers.length ? dividers[d + 1].lineIndex : lines.length;
       sections.push({
@@ -338,7 +313,7 @@ export function parseSections(text: string, format: ConfigFormat): TemplateSecti
     }
   }
 
-  // CHECK FOR POSTAMBLE: content after the last section
+  // Postamble: content after the last section
   if (cursor < lines.length) {
     const postLines = lines.slice(cursor);
     const hasContent = postLines.some(l => l.trim() !== '' && l.trim() !== '!');
@@ -359,8 +334,7 @@ export function parseSections(text: string, format: ConfigFormat): TemplateSecti
     }
   }
 
-  // Deduplicate section names (handles "Generic Config", "Generic Config (2)", etc.)
-  // Strip existing (N) suffixes before counting so re-parsed names don't double-up
+  // Deduplicate section names — strip existing (N) suffixes before counting
   const nameCount = new Map<string, number>();
   for (const section of sections) {
     const baseName = section.name.replace(/\s*\(\d+\)\s*$/, '');
@@ -371,6 +345,40 @@ export function parseSections(text: string, format: ConfigFormat): TemplateSecti
   }
 
   return sections;
+}
+
+const FULL_CONFIG_SECTION = (template: string): TemplateSection[] => [{
+  id: crypto.randomUUID(),
+  name: 'Full Config',
+  template,
+  order: 0,
+  dividerPattern: '',
+}];
+
+/**
+ * Detect section boundaries from divider comment patterns.
+ * Supports START/END markers, legacy DNAC dividers, and mixed usage.
+ */
+export function parseSections(text: string, format: ConfigFormat): TemplateSection[] {
+  if (!text) return FULL_CONFIG_SECTION('');
+  if (format === 'json') return FULL_CONFIG_SECTION(text);
+
+  const lines = text.split('\n');
+
+  let dividers: Divider[];
+  if (format === 'cli') {
+    dividers = detectCliDividers(lines);
+  } else if (format === 'xml') {
+    dividers = detectXmlDividers(lines);
+  } else if (format === 'yaml') {
+    dividers = detectYamlDividers(lines);
+  } else {
+    dividers = [];
+  }
+
+  if (dividers.length === 0) return FULL_CONFIG_SECTION(text);
+
+  return buildSectionsFromDividers(lines, dividers);
 }
 
 /**
