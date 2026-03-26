@@ -140,11 +140,14 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
           className={`${inputClasses} cursor-pointer`}
         >
           <option value="">Select...</option>
-          {variable.options.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
+          {variable.options.map((opt, i) => {
+            const { label: optLabel, value: optValue } = typeof opt === 'string' ? { label: opt, value: opt } : { label: opt.label ?? opt.value, value: opt.value };
+            return (
+              <option key={`${optValue}-${i}`} value={optValue}>
+                {optLabel}
+              </option>
+            );
+          })}
         </select>
       );
     }

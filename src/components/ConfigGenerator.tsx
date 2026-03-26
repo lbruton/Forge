@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { ArrowLeft, Save, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { generateConfig, stripSubMarkers, SUB_START, SUB_END } from '../lib/substitution-engine.ts';
 import { parseSections } from '../lib/template-parser.ts';
