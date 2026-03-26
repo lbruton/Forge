@@ -1,0 +1,30 @@
+// Secrets provider interface for integration plugins (e.g., Infisical)
+
+/** SecretsProvider — abstraction over external secrets managers */
+export interface SecretsProvider {
+  name: string;
+  displayName: string;
+  isConnected(): boolean;
+  capabilities(): { read: boolean; write: boolean };
+  listProjects(): Promise<SecretProject[]>;
+  listSecrets(projectId: string, environment: string, path?: string): Promise<SecretEntry[]>;
+  getSecret(projectId: string, environment: string, key: string): Promise<string>;
+  setSecret?(projectId: string, environment: string, key: string, value: string): Promise<void>;
+}
+
+/** SecretProject — a project in the secrets manager */
+export interface SecretProject {
+  id: string;
+  name: string;
+  environments: { name: string; slug: string }[];
+}
+
+/** SecretEntry — a single secret entry (value not included, must be fetched) */
+export interface SecretEntry {
+  id: string;
+  key: string;
+  masked: boolean;
+  comment?: string;
+  updatedAt: string;
+  tags: string[];
+}

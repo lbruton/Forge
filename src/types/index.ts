@@ -1,6 +1,9 @@
 // Plugin types
 export * from './plugin.ts';
 
+// Secrets provider types
+export * from './secrets-provider.ts';
+
 // Navigation hierarchy
 export type ConfigFormat = 'cli' | 'xml' | 'json' | 'yaml';
 export type VariableType = 'string' | 'ip' | 'integer' | 'dropdown';
@@ -79,6 +82,12 @@ export interface VariableDefinition {
   required: boolean;
   description: string;
   masked?: boolean;
+  syncToSecrets?: {
+    provider: string;
+    projectId: string;
+    environment: string;
+    secretKey: string;
+  };
 }
 
 /** Normalize a dropdown option to { label, value } form */
