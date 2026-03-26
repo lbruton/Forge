@@ -309,6 +309,7 @@ function App() {
         <WelcomeScreen
           onRequestImport={openVaultImport}
           onRequestAddTemplate={handleAddTemplate}
+          onRequestPlugins={() => handleSelectPlugin('__add_plugin__', null)}
         />
       );
     }
@@ -339,7 +340,7 @@ function App() {
         <div className="flex items-center gap-2">
           <span className="font-mono font-bold text-lg tracking-[0.2em] text-slate-100">FORGE</span>
           <span className="hidden sm:inline text-[9px] font-medium tracking-[0.25em] uppercase text-slate-500 mt-0.5">
-            Config Generator
+            Network Workshop
           </span>
         </div>
 
