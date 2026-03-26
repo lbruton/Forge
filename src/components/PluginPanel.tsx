@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useForgeStore } from '../store/index.ts';
 import { fetchManifest, healthCheck } from '../lib/plugin-service.ts';
 import type { PluginRegistration, SettingsField } from '../types/plugin.ts';
+import SetupWizard from '../plugins/infisical/SetupWizard.tsx';
 import {
   ArrowLeft,
   Eye,
@@ -10,6 +11,7 @@ import {
   Plus,
   Puzzle,
   RefreshCw,
+  Settings,
   Trash2,
 } from 'lucide-react';
 
@@ -276,9 +278,28 @@ function PluginDetail({
   const [refreshing, setRefreshing] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [apiKeyRevealed, setApiKeyRevealed] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
 
   const { manifest } = registration;
   const isSidecar = manifest.type === 'sidecar';
+  const isIntegration = manifest.type === 'integration';
+
+  // Auto-show wizard for integration plugins with no endpoint configured
+  const hasEndpoint = Boolean(registration.settings?.endpoint);
+  const shouldShowWizard = isIntegration && (!hasEndpoint || showWizard);
+
+  if (shouldShowWizard) {
+    return (
+      <SetupWizard
+        pluginName={manifest.name}
+        onComplete={() => setShowWizard(false)}
+        onCancel={() => {
+          setShowWizard(false);
+          if (!hasEndpoint) onBack();
+        }}
+      />
+    );
+  }
 
   const handleRefreshHealth = useCallback(async () => {
     if (!registration.endpoint || !registration.apiKey) return;
@@ -318,6 +339,11 @@ function PluginDetail({
             {manifest.type === 'bundled' && (
               <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-forge-graphite text-slate-400">
                 Built-in
+              </span>
+            )}
+            {manifest.type === 'integration' && (
+              <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-forge-amber/15 text-forge-amber">
+                Integration
               </span>
             )}
           </div>
@@ -405,8 +431,19 @@ function PluginDetail({
           </div>
         )}
 
-        {/* Dynamic settings form */}
-        {manifest.settingsSchema && Object.keys(manifest.settingsSchema).length > 0 && (
+        {/* Integration reconfigure button */}
+        {isIntegration && hasEndpoint && (
+          <button
+            onClick={() => setShowWizard(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-forge-charcoal border border-forge-graphite text-[12px] text-slate-300 rounded hover:border-forge-amber transition-colors"
+          >
+            <Settings size={12} />
+            Reconfigure
+          </button>
+        )}
+
+        {/* Dynamic settings form (hidden for integration plugins — wizard handles settings) */}
+        {!isIntegration && manifest.settingsSchema && Object.keys(manifest.settingsSchema).length > 0 && (
           <SettingsForm
             pluginName={manifest.name}
             schema={manifest.settingsSchema}
@@ -546,6 +583,11 @@ export default function PluginPanel({ pluginName, autoAdd }: PluginPanelProps) {
                     {reg.manifest.type === 'bundled' && (
                       <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-forge-graphite text-slate-400 shrink-0">
                         Built-in
+                      </span>
+                    )}
+                    {reg.manifest.type === 'integration' && (
+                      <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-forge-amber/15 text-forge-amber shrink-0">
+                        Integration
                       </span>
                     )}
                   </div>
