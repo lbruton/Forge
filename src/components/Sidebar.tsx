@@ -26,7 +26,7 @@ interface SidebarProps {
   onSelectGeneratedConfig?: (id: string) => void;
   onSelectVariant?: (variantId: string) => void;
   onSelectGlobalVariables?: (viewId: string) => void;
-  onSelectPlugin?: (viewId: string, pluginName: string | null, nodeId: string | null) => void;
+  onSelectPlugin?: (pluginName: string | null, nodeId: string | null) => void;
 }
 
 function formatShortDate(iso: string): string {
@@ -57,7 +57,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
     toggleExpandedNode,
     deleteGeneratedConfig,
     renameGeneratedConfig,
-    getViewPlugins,
+    getPlugins,
     setSelectedPluginName,
     setSelectedPluginNodeId,
     unregisterPlugin,
@@ -193,9 +193,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
             </div>
           )}
 
-          {tree.views.map((view) => {
-            const viewPlugins = getViewPlugins(view.id);
-            return (
+          {tree.views.map((view) => (
             <TreeNode
               key={view.id}
               id={view.id}
@@ -331,7 +329,7 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
               ))}
 
               {/* Plugin-contributed tree nodes (vendorScoped: false) */}
-              {viewPlugins
+              {getPlugins()
                 .filter((p) => p.enabled)
                 .flatMap((plugin) =>
                   plugin.manifest.treeNodes
@@ -349,41 +347,46 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                           setSelectedPluginName(plugin.manifest.name);
                           setSelectedPluginNodeId(tn.id);
                           if (onSelectPlugin) {
-                            onSelectPlugin(view.id, plugin.manifest.name, tn.id);
+                            onSelectPlugin(plugin.manifest.name, tn.id);
                           }
                         }}
                       />
                     )),
                 )}
+            </TreeNode>
+          ))}
 
-              {/* Plugins management node — always last */}
+          {/* Global Plugins node — top-level */}
+          {(() => {
+            const allPlugins = getPlugins();
+            return (
               <TreeNode
-                id={`${view.id}__plugins`}
+                id="__plugins"
                 label="Plugins"
                 icon={<Puzzle size={14} />}
-                depth={1}
-                hasChildren={viewPlugins.length > 0}
+                depth={0}
+                hasChildren={allPlugins.length > 0}
                 onAdd={() => {
                   setSelectedPluginName(null);
                   setSelectedPluginNodeId(null);
                   if (onSelectPlugin) {
-                    onSelectPlugin(view.id, null, null);
+                    onSelectPlugin(null, null);
                   }
                 }}
               >
-                {viewPlugins.map((plugin) => (
+                {allPlugins.map((plugin) => (
                   <TreeNode
                     key={plugin.manifest.name}
                     id={`plugin-${plugin.manifest.name}`}
                     label={`${plugin.manifest.displayName} ${plugin.health.status === 'active' ? '●' : '○'}`}
                     icon={getPluginIcon(plugin.manifest.icon)}
-                    depth={2}
+                    depth={1}
                     hasChildren={false}
                     onSelect={() => {
                       setSelectedPluginName(plugin.manifest.name);
                       setSelectedPluginNodeId(null);
                       if (onSelectPlugin) {
-                        onSelectPlugin(view.id, plugin.manifest.name, null);
+                        onSelectPlugin(plugin.manifest.name, null);
                       }
                     }}
                     onDelete={() => {
@@ -393,15 +396,14 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                           setSelectedPluginName(null);
                           setSelectedPluginNodeId(null);
                         }
-                        unregisterPlugin(view.id, plugin.manifest.name);
+                        unregisterPlugin(plugin.manifest.name);
                       }
                     }}
                   />
                 ))}
               </TreeNode>
-            </TreeNode>
             );
-          })}
+          })()}
         </div>
 
         {/* Footer: Add View button — sticky at bottom */}
