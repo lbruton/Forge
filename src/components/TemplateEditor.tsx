@@ -172,14 +172,21 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     }
   }, [globalNames, context?.view.id, autoSyncGlobals]);
 
-  // Register save callback for unsaved-changes guard
+  // Register save callback for unsaved-changes guard (re-registers when handleSave changes)
   useEffect(() => {
     setPendingSaveCallback(() => handleSave);
     return () => {
       setPendingSaveCallback(null);
+    };
+  }, [handleSave, setPendingSaveCallback]);
+
+  // Clear dirty flag only on unmount (navigating away from editor)
+  useEffect(() => {
+    return () => {
       setEditorDirty(false);
     };
-  }, [handleSave, setPendingSaveCallback, setEditorDirty]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleVariableReorder = useCallback(() => {
     setCustomVariableOrder(true);
