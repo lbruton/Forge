@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Save, FileText, Layers, GripVertical, Sparkles, ChevronLeft, ChevronRight, ChevronDown, Plus, Globe, ExternalLink } from 'lucide-react';
+import { Save, FileText, Layers, GripVertical, Sparkles, ChevronLeft, ChevronRight, ChevronDown, Plus, Globe, ExternalLink, Scissors, Copy, ClipboardPaste } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { parseVariables, parseSections, cleanUpSections, rebuildRawText } from '../lib/template-parser.ts';
 import { VariableDetectionPanel } from './VariableDetectionPanel.tsx';
@@ -71,7 +71,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   );
 
   // Context menu state for section marker insertion
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; cursorPos: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; cursorPos: number; selStart: number; selEnd: number } | null>(null);
   const [pendingSectionName, setPendingSectionName] = useState<string | null>(null);
 
   // All global variables from the View (not just detected ones)
@@ -394,7 +394,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const handleContextMenu = useCallback((e: React.MouseEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
     const ta = e.currentTarget;
-    setContextMenu({ x: e.clientX, y: e.clientY, cursorPos: ta.selectionStart });
+    setContextMenu({ x: e.clientX, y: e.clientY, cursorPos: ta.selectionStart, selStart: ta.selectionStart, selEnd: ta.selectionEnd });
   }, []);
 
   // Insert a section marker at a cursor position in displayText
@@ -425,6 +425,46 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     setPendingSectionName(null);
     setContextMenu(null);
   }, [contextMenu, pendingSectionName, insertMarkerAtCursor]);
+
+  const handleCut = useCallback(async () => {
+    if (!contextMenu) return;
+    const { selStart, selEnd } = contextMenu;
+    if (selStart === selEnd) { setContextMenu(null); return; }
+    try {
+      await navigator.clipboard.writeText(displayText.substring(selStart, selEnd));
+      handleFilteredTextChange(displayText.substring(0, selStart) + displayText.substring(selEnd));
+    } catch {
+      // Clipboard write failed — don't delete text
+    } finally {
+      setContextMenu(null);
+    }
+  }, [contextMenu, displayText, handleFilteredTextChange]);
+
+  const handleCopy = useCallback(async () => {
+    if (!contextMenu) return;
+    const { selStart, selEnd } = contextMenu;
+    if (selStart === selEnd) { setContextMenu(null); return; }
+    try {
+      await navigator.clipboard.writeText(displayText.substring(selStart, selEnd));
+    } catch {
+      // Clipboard write failed silently
+    } finally {
+      setContextMenu(null);
+    }
+  }, [contextMenu, displayText]);
+
+  const handlePaste = useCallback(async () => {
+    if (!contextMenu) return;
+    const { selStart, selEnd } = contextMenu;
+    try {
+      const text = await navigator.clipboard.readText();
+      handleFilteredTextChange(displayText.substring(0, selStart) + text + displayText.substring(selEnd));
+    } catch {
+      // Clipboard read failed (permissions or non-HTTPS)
+    } finally {
+      setContextMenu(null);
+    }
+  }, [contextMenu, displayText, handleFilteredTextChange]);
 
   // Close context menu on click outside
   useEffect(() => {
@@ -580,6 +620,30 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             style={{ left: contextMenu.x, top: contextMenu.y }}
             onClick={(e) => e.stopPropagation()}
           >
+            <button
+              onClick={handleCut}
+              disabled={contextMenu.selStart === contextMenu.selEnd}
+              className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-forge-graphite flex items-center gap-2 disabled:text-slate-600 disabled:cursor-default disabled:hover:bg-transparent"
+            >
+              <Scissors size={14} className="text-slate-400" />
+              Cut
+            </button>
+            <button
+              onClick={handleCopy}
+              disabled={contextMenu.selStart === contextMenu.selEnd}
+              className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-forge-graphite flex items-center gap-2 disabled:text-slate-600 disabled:cursor-default disabled:hover:bg-transparent"
+            >
+              <Copy size={14} className="text-slate-400" />
+              Copy
+            </button>
+            <button
+              onClick={handlePaste}
+              className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-forge-graphite flex items-center gap-2"
+            >
+              <ClipboardPaste size={14} className="text-slate-400" />
+              Paste
+            </button>
+            <div className="my-1 border-t border-forge-steel" />
             <button
               onClick={handleInsertStart}
               className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-forge-graphite flex items-center gap-2"
