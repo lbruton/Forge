@@ -464,7 +464,7 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                         onClick={() => void handleSyncToggle(variable)}
                         className={`inline-flex items-center justify-center w-7 h-7 rounded border-none cursor-pointer transition-colors ${
                           variable.syncToSecrets
-                            ? 'text-amber-500 bg-slate-700/50'
+                            ? 'text-green-500 bg-slate-700/50'
                             : 'text-slate-500 bg-transparent hover:bg-slate-700/50 hover:text-slate-400'
                         }`}
                         title={variable.syncToSecrets ? 'Stop syncing to Infisical' : 'Sync to Infisical'}
