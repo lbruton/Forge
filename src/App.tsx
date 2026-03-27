@@ -429,14 +429,16 @@ function App() {
           </div>
         )}
 
-        {/* Action buttons */}
-        <button
-          onClick={handleAddTemplate}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold bg-forge-amber text-forge-obsidian rounded-md hover:bg-forge-amber-bright transition-colors"
-        >
-          <Plus size={14} />
-          <span className="hidden sm:inline">Add Template</span>
-        </button>
+        {/* Action buttons — Add Template only in Configurations context */}
+        {(!selectedPluginName || selectedPluginName === 'forge-configurations') && (
+          <button
+            onClick={handleAddTemplate}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold bg-forge-amber text-forge-obsidian rounded-md hover:bg-forge-amber-bright transition-colors"
+          >
+            <Plus size={14} />
+            <span className="hidden sm:inline">Add Template</span>
+          </button>
+        )}
 
         <button
           onClick={openVaultExport}
