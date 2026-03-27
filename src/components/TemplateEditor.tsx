@@ -426,31 +426,44 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     setContextMenu(null);
   }, [contextMenu, pendingSectionName, insertMarkerAtCursor]);
 
-  const handleCut = useCallback(() => {
+  const handleCut = useCallback(async () => {
     if (!contextMenu) return;
     const { selStart, selEnd } = contextMenu;
     if (selStart === selEnd) { setContextMenu(null); return; }
-    const selected = displayText.substring(selStart, selEnd);
-    void navigator.clipboard.writeText(selected);
-    handleFilteredTextChange(displayText.substring(0, selStart) + displayText.substring(selEnd));
-    setContextMenu(null);
+    try {
+      await navigator.clipboard.writeText(displayText.substring(selStart, selEnd));
+      handleFilteredTextChange(displayText.substring(0, selStart) + displayText.substring(selEnd));
+    } catch {
+      // Clipboard write failed — don't delete text
+    } finally {
+      setContextMenu(null);
+    }
   }, [contextMenu, displayText, handleFilteredTextChange]);
 
-  const handleCopy = useCallback(() => {
+  const handleCopy = useCallback(async () => {
     if (!contextMenu) return;
     const { selStart, selEnd } = contextMenu;
     if (selStart === selEnd) { setContextMenu(null); return; }
-    void navigator.clipboard.writeText(displayText.substring(selStart, selEnd));
-    setContextMenu(null);
+    try {
+      await navigator.clipboard.writeText(displayText.substring(selStart, selEnd));
+    } catch {
+      // Clipboard write failed silently
+    } finally {
+      setContextMenu(null);
+    }
   }, [contextMenu, displayText]);
 
-  const handlePaste = useCallback(() => {
+  const handlePaste = useCallback(async () => {
     if (!contextMenu) return;
     const { selStart, selEnd } = contextMenu;
-    void navigator.clipboard.readText().then((text) => {
+    try {
+      const text = await navigator.clipboard.readText();
       handleFilteredTextChange(displayText.substring(0, selStart) + text + displayText.substring(selEnd));
+    } catch {
+      // Clipboard read failed (permissions or non-HTTPS)
+    } finally {
       setContextMenu(null);
-    });
+    }
   }, [contextMenu, displayText, handleFilteredTextChange]);
 
   // Close context menu on click outside
