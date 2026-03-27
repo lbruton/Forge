@@ -23,7 +23,7 @@ export interface SetupWizardProps {
 
 const STEP_TITLES = [
   'Prerequisites',
-  'Create Machine Identity',
+  'Create API Credentials',
   'Configure Infisical Project',
   'Choose Access Level',
   'Connect to Infisical',
@@ -57,7 +57,7 @@ function StepPrerequisites() {
             2
           </span>
           <span>
-            An <strong className="text-slate-200">NPM reverse proxy</strong> configured for CORS
+            A <strong className="text-slate-200">reverse proxy</strong> (e.g. Nginx Proxy Manager) in front of the Infisical API with CORS headers enabled
           </span>
         </li>
         <li className="flex items-start gap-3">
@@ -65,17 +65,28 @@ function StepPrerequisites() {
             3
           </span>
           <span>
-            <strong className="text-slate-200">Admin access</strong> to create a Machine Identity
+            <strong className="text-slate-200">Admin access</strong> to create API credentials (Machine Identity)
           </span>
         </li>
       </ol>
+      <div className="bg-forge-charcoal border border-forge-steel rounded-lg p-3 mt-2">
+        <p className="text-[12px] text-slate-400 leading-relaxed">
+          <strong className="text-slate-300">CORS setup:</strong>{' '}
+          In your reverse proxy, add a custom header{' '}
+          <code className="text-forge-amber font-mono text-[11px]">Access-Control-Allow-Origin: *</code>{' '}
+          to the Infisical API proxy host. Forge calls the API directly from the browser, so this header is required.
+        </p>
+      </div>
     </div>
   );
 }
 
-function StepMachineIdentity() {
+function StepCreateCredentials() {
   return (
     <div className="space-y-4">
+      <p className="text-[13px] text-slate-400 leading-relaxed">
+        Infisical uses <em>Machine Identities</em> for API access. Follow these steps to create one:
+      </p>
       <ol className="space-y-3 text-[13px] text-slate-300">
         {[
           'Open Infisical Admin Console',
@@ -233,13 +244,13 @@ function StepConnect({
     <div className="space-y-4">
       <div>
         <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">
-          Proxy Endpoint URL
+          Infisical API URL
         </label>
         <input
           type="text"
           value={endpoint}
           onChange={(e) => setEndpoint(e.target.value)}
-          placeholder="https://infisical-api.lbruton.cc"
+          placeholder="https://infisical-api.example.com"
           className={INPUT_CLASSES}
         />
       </div>
@@ -252,7 +263,7 @@ function StepConnect({
           type="text"
           value={clientId}
           onChange={(e) => setClientId(e.target.value)}
-          placeholder="Machine Identity Client ID"
+          placeholder="Client ID from step 2"
           className={INPUT_CLASSES}
         />
       </div>
@@ -266,7 +277,7 @@ function StepConnect({
             type={secretRevealed ? 'text' : 'password'}
             value={clientSecret}
             onChange={(e) => setClientSecret(e.target.value)}
-            placeholder="Machine Identity Client Secret"
+            placeholder="Client Secret from step 2"
             className={INPUT_CLASSES}
           />
           <button
@@ -558,7 +569,7 @@ export default function SetupWizard({
         </h3>
 
         {step === 0 && <StepPrerequisites />}
-        {step === 1 && <StepMachineIdentity />}
+        {step === 1 && <StepCreateCredentials />}
         {step === 2 && <StepProjectSetup />}
         {step === 3 && (
           <StepAccessLevel

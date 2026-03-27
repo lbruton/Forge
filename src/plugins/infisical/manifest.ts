@@ -14,9 +14,9 @@ export const INFISICAL_MANIFEST: PluginManifest = {
     vendorScoped: false,
   }],
   settingsSchema: {
-    endpoint: { type: 'string', label: 'Proxy Endpoint URL', required: true },
-    clientId: { type: 'string', label: 'Machine Identity Client ID', required: true },
-    clientSecret: { type: 'password', label: 'Machine Identity Client Secret', required: true },
+    endpoint: { type: 'string', label: 'Infisical API URL', required: true },
+    clientId: { type: 'string', label: 'Client ID', required: true },
+    clientSecret: { type: 'password', label: 'Client Secret', required: true },
     defaultProjectId: { type: 'string', label: 'Default Project ID' },
     defaultEnvironment: { type: 'string', label: 'Default Environment', default: 'dev' },
   },
