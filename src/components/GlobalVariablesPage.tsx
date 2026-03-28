@@ -71,7 +71,8 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
     (key: string, value: string) => {
       if (!readableProvider) return;
 
-      const varName = key.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '');
+      const stripped = key.replace(/^FORGE_/i, '');
+      const varName = stripped.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '');
       if (!varName) return;
 
       const existingNames = new Set(globalVariables.map((v) => v.name));

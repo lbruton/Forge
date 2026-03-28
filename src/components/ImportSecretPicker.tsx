@@ -69,7 +69,7 @@ export function ImportSecretPicker({
     ? secrets.filter((s) => s.key.toLowerCase().includes(filter.toLowerCase()))
     : secrets;
 
-  const toVarName = (key: string) => key.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '');
+  const toVarName = (key: string) => key.replace(/^FORGE_/i, '').toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '');
   const alreadyImported = (key: string) => existingNames.has(toVarName(key));
 
   return (
