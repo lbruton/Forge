@@ -47,3 +47,11 @@ export interface DeviceSummary {
   severity?: SeveritySummary;
   scanCount: number;
 }
+
+/** Tracks an in-flight scan — lives in Zustand (not persisted) so it survives component unmount. */
+export interface ActiveScan {
+  scanId: string;
+  device: VulnDevice;
+  status: ScanStatus;
+  startedAt: number; // Date.now() — used to compute elapsed time on remount
+}
