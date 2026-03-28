@@ -72,9 +72,7 @@ export function CreateNodeModal({ open, nodeType, onClose, onSubmit }: CreateNod
       <div className="bg-forge-charcoal border border-forge-steel rounded-xl shadow-2xl w-full max-w-md mx-4">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-forge-graphite">
-          <h3 className="text-base font-semibold text-slate-200">
-            Create {nodeLabels[nodeType]}
-          </h3>
+          <h3 className="text-base font-semibold text-slate-200">Create {nodeLabels[nodeType]}</h3>
           <button
             onClick={onClose}
             className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-forge-graphite transition-colors"

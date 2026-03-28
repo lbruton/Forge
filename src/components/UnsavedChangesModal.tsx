@@ -33,9 +33,7 @@ export function UnsavedChangesModal({ open, onSave, onDiscard, onCancel }: Unsav
       <div className="bg-forge-obsidian border border-forge-steel rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-200">
-            Unsaved Changes
-          </h3>
+          <h3 className="text-lg font-semibold text-slate-200">Unsaved Changes</h3>
           <button
             onClick={onCancel}
             className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-forge-graphite transition-colors"

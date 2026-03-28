@@ -16,9 +16,7 @@ function makeVar(name: string, overrides?: Partial<VariableDefinition>): Variabl
   };
 }
 
-function makeSection(
-  overrides: Partial<TemplateSection> & Pick<TemplateSection, 'id' | 'name'>,
-): TemplateSection {
+function makeSection(overrides: Partial<TemplateSection> & Pick<TemplateSection, 'id' | 'name'>): TemplateSection {
   return {
     template: '',
     order: 0,

@@ -7,12 +7,14 @@ export const INFISICAL_MANIFEST: PluginManifest = {
   icon: 'shield',
   type: 'integration',
   vendors: [],
-  treeNodes: [{
-    id: 'secrets',
-    label: 'Secrets',
-    icon: 'shield',
-    vendorScoped: false,
-  }],
+  treeNodes: [
+    {
+      id: 'secrets',
+      label: 'Secrets',
+      icon: 'shield',
+      vendorScoped: false,
+    },
+  ],
   settingsSchema: {
     endpoint: { type: 'string', label: 'Infisical API URL', required: true },
     clientId: { type: 'string', label: 'Client ID', required: true },

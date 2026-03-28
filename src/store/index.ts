@@ -200,9 +200,7 @@ export const useForgeStore = create<ForgeStore>()(
         set((state) => ({
           tree: {
             views: state.tree.views.map((v) =>
-              v.id === viewId
-                ? { ...v, vendors: [...v.vendors, vendor], updatedAt: ts }
-                : v,
+              v.id === viewId ? { ...v, vendors: [...v.vendors, vendor], updatedAt: ts } : v,
             ),
           },
         }));
@@ -227,9 +225,7 @@ export const useForgeStore = create<ForgeStore>()(
                     ...v,
                     updatedAt: ts,
                     vendors: v.vendors.map((vn) =>
-                      vn.id === vendorId
-                        ? { ...vn, models: [...vn.models, model], updatedAt: ts }
-                        : vn,
+                      vn.id === vendorId ? { ...vn, models: [...vn.models, model], updatedAt: ts } : vn,
                     ),
                   }
                 : v,
@@ -261,9 +257,7 @@ export const useForgeStore = create<ForgeStore>()(
                             ...vn,
                             updatedAt: ts,
                             models: vn.models.map((m) =>
-                              m.id === modelId
-                                ? { ...m, variants: [...m.variants, variant], updatedAt: ts }
-                                : m,
+                              m.id === modelId ? { ...m, variants: [...m.variants, variant], updatedAt: ts } : m,
                             ),
                           }
                         : vn,
@@ -326,9 +320,7 @@ export const useForgeStore = create<ForgeStore>()(
               const allVariants = tree.views.flatMap((v) =>
                 v.vendors.flatMap((vn) => vn.models.flatMap((m) => m.variants)),
               );
-              const otherRefs = allVariants.filter(
-                (other) => other.id !== va.id && other.templateId === va.templateId,
-              );
+              const otherRefs = allVariants.filter((other) => other.id !== va.id && other.templateId === va.templateId);
               if (otherRefs.length === 0) {
                 delete templates[va.templateId];
               }
@@ -399,9 +391,7 @@ export const useForgeStore = create<ForgeStore>()(
         set((state) => ({
           tree: {
             views: state.tree.views.map((v) =>
-              v.id === viewId
-                ? { ...v, globalVariables: [...(v.globalVariables ?? []), variable], updatedAt: ts }
-                : v,
+              v.id === viewId ? { ...v, globalVariables: [...(v.globalVariables ?? []), variable], updatedAt: ts } : v,
             ),
           },
         }));
@@ -470,21 +460,21 @@ export const useForgeStore = create<ForgeStore>()(
               const existing = v.globalVariables ?? [];
               const existingNames = new Set(existing.map((gv) => gv.name));
               // Remove stale auto-added globals (no value, no description) that are no longer detected
-              const kept = existing.filter((gv) =>
-                detected.has(gv.name) || gv.defaultValue || gv.description
-              );
+              const kept = existing.filter((gv) => detected.has(gv.name) || gv.defaultValue || gv.description);
               // Add newly detected globals
               const newGlobals = detectedNames
                 .filter((n) => !existingNames.has(n))
-                .map((n): VariableDefinition => ({
-                  name: n,
-                  label: n.replace(/[_-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-                  type: 'string',
-                  defaultValue: '',
-                  options: [],
-                  required: false,
-                  description: '',
-                }));
+                .map(
+                  (n): VariableDefinition => ({
+                    name: n,
+                    label: n.replace(/[_-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+                    type: 'string',
+                    defaultValue: '',
+                    options: [],
+                    required: false,
+                    description: '',
+                  }),
+                );
               if (newGlobals.length === 0 && kept.length === existing.length) return v;
               return { ...v, globalVariables: [...kept, ...newGlobals], updatedAt: ts };
             }),
@@ -607,9 +597,7 @@ export const useForgeStore = create<ForgeStore>()(
       toggleExpandedNode: (nodeId) => {
         set((state) => {
           const expanded = state.preferences.expandedNodes;
-          const next = expanded.includes(nodeId)
-            ? expanded.filter((id) => id !== nodeId)
-            : [...expanded, nodeId];
+          const next = expanded.includes(nodeId) ? expanded.filter((id) => id !== nodeId) : [...expanded, nodeId];
           return {
             preferences: { ...state.preferences, expandedNodes: next },
           };
@@ -691,14 +679,15 @@ export const useForgeStore = create<ForgeStore>()(
           const importedViews = data.views ?? [];
           for (const importedView of importedViews) {
             // Migrate old View-scoped plugins to global
-            const viewPlugins = (importedView as any).plugins as Record<string, PluginRegistration> | undefined;
+            const legacyView = importedView as unknown as Record<string, unknown>;
+            const viewPlugins = legacyView.plugins as Record<string, PluginRegistration> | undefined;
             if (viewPlugins) {
               for (const [name, reg] of Object.entries(viewPlugins)) {
                 if (!currentPlugins[name]) {
                   currentPlugins[name] = reg;
                 }
               }
-              delete (importedView as any).plugins;
+              delete legacyView.plugins;
             }
 
             const existingView = tree.views.find((v) => v.id === importedView.id);
@@ -725,7 +714,8 @@ export const useForgeStore = create<ForgeStore>()(
           }
 
           // Also import root-level plugins (new format)
-          const importedPlugins = (data as any).plugins as Record<string, PluginRegistration> | undefined;
+          const legacyData = data as unknown as Record<string, unknown>;
+          const importedPlugins = legacyData.plugins as Record<string, PluginRegistration> | undefined;
           if (importedPlugins) {
             for (const [name, reg] of Object.entries(importedPlugins)) {
               currentPlugins[name] = reg; // new format takes precedence
@@ -736,7 +726,7 @@ export const useForgeStore = create<ForgeStore>()(
         });
       },
 
-      exportData: (_scope?) => {
+      exportData: () => {
         const state = get();
         return {
           exportedAt: now(),
@@ -872,11 +862,16 @@ export const useForgeStore = create<ForgeStore>()(
     {
       name: 'forge-store',
       storage: createJSONStorage(() => forgeStorage),
-      partialize: (state) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { editorDirty, pendingSaveCallback, setEditorDirty, setPendingSaveCallback, selectedPluginName, selectedPluginNodeId, secretsProviders, ...rest } = state;
-        return rest;
-      },
+      partialize: ({
+        editorDirty: _editorDirty,
+        pendingSaveCallback: _pendingSaveCallback,
+        setEditorDirty: _setEditorDirty,
+        setPendingSaveCallback: _setPendingSaveCallback,
+        selectedPluginName: _selectedPluginName,
+        selectedPluginNodeId: _selectedPluginNodeId,
+        secretsProviders: _secretsProviders,
+        ...rest
+      }) => rest,
     },
   ),
 );

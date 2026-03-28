@@ -22,11 +22,7 @@ function createMatcher(source: string) {
 }
 
 /** Consume bestMatch, push tokens, return new remaining string */
-function consumeMatch(
-  best: MatchResult,
-  remaining: string,
-  tokens: HighlightToken[],
-): string {
+function consumeMatch(best: MatchResult, remaining: string, tokens: HighlightToken[]): string {
   if (best.index > 0) {
     tokens.push({ text: remaining.slice(0, best.index), className: 'text' });
   }
@@ -37,13 +33,45 @@ function consumeMatch(
 // --- Cisco CLI ---
 
 const CLI_KEYWORDS = new Set([
-  'hostname', 'interface', 'ip', 'address', 'switchport', 'vlan',
-  'access-list', 'permit', 'deny', 'shutdown', 'no', 'service',
-  'aaa', 'radius', 'tacacs', 'dot1x', 'snmp-server', 'logging',
-  'ntp', 'banner', 'line', 'crypto', 'spanning-tree', 'description',
-  'clock', 'username', 'enable', 'secret', 'key', 'timeout',
-  'transport', 'authentication', 'authorization', 'accounting',
-  'device-tracking', 'mac', 'lldp', 'cdp', 'epm',
+  'hostname',
+  'interface',
+  'ip',
+  'address',
+  'switchport',
+  'vlan',
+  'access-list',
+  'permit',
+  'deny',
+  'shutdown',
+  'no',
+  'service',
+  'aaa',
+  'radius',
+  'tacacs',
+  'dot1x',
+  'snmp-server',
+  'logging',
+  'ntp',
+  'banner',
+  'line',
+  'crypto',
+  'spanning-tree',
+  'description',
+  'clock',
+  'username',
+  'enable',
+  'secret',
+  'key',
+  'timeout',
+  'transport',
+  'authentication',
+  'authorization',
+  'accounting',
+  'device-tracking',
+  'mac',
+  'lldp',
+  'cdp',
+  'epm',
 ]);
 
 const IPV4_RE = /\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/;
@@ -290,5 +318,7 @@ function tokenizeWithSubstitutions(line: string, tokenizer: (l: string) => Highl
 export function highlight(text: string, format: ConfigFormat): HighlightToken[][] {
   const lines = text.split('\n');
   const tokenizer = tokenizers[format];
-  return lines.map((line) => (line.length === 0 ? [{ text: '', className: 'text' }] : tokenizeWithSubstitutions(line, tokenizer)));
+  return lines.map((line) =>
+    line.length === 0 ? [{ text: '', className: 'text' }] : tokenizeWithSubstitutions(line, tokenizer),
+  );
 }

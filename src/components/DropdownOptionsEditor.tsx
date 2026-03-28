@@ -18,9 +18,10 @@ export function DropdownOptionsEditor({ options, onChange }: DropdownOptionsEdit
     // Check for duplicate values
     if (options.some((o) => normalizeOption(o).value === trimmedValue)) return;
     const trimmedLabel = labelInput.trim();
-    const newOpt: DropdownOption = trimmedLabel && trimmedLabel !== trimmedValue
-      ? { label: trimmedLabel, value: trimmedValue }
-      : { value: trimmedValue };
+    const newOpt: DropdownOption =
+      trimmedLabel && trimmedLabel !== trimmedValue
+        ? { label: trimmedLabel, value: trimmedValue }
+        : { value: trimmedValue };
     onChange([...options, newOpt]);
     setValueInput('');
     setLabelInput('');

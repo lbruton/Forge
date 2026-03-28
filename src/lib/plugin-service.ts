@@ -62,10 +62,7 @@ export function validateManifest(data: unknown): PluginManifest {
 /**
  * Fetch and validate a plugin manifest from a sidecar endpoint.
  */
-export async function fetchManifest(
-  endpoint: string,
-  apiKey: string,
-): Promise<PluginManifest> {
+export async function fetchManifest(endpoint: string, apiKey: string): Promise<PluginManifest> {
   let response: Response;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -92,9 +89,7 @@ export async function fetchManifest(
   }
 
   if (!response.ok) {
-    throw new Error(
-      `Plugin at ${endpoint} returned status ${response.status}`,
-    );
+    throw new Error(`Plugin at ${endpoint} returned status ${response.status}`);
   }
 
   const json: unknown = await response.json();
@@ -105,10 +100,7 @@ export async function fetchManifest(
  * Non-throwing health check against a sidecar endpoint.
  * Returns inactive status with an error message on any failure.
  */
-export async function healthCheck(
-  endpoint: string,
-  apiKey: string,
-): Promise<PluginHealthStatus> {
+export async function healthCheck(endpoint: string, apiKey: string): Promise<PluginHealthStatus> {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -139,16 +131,11 @@ export async function healthCheck(
       throw err;
     }
   } catch (err: unknown) {
-    const isAbort =
-      err instanceof DOMException && err.name === 'AbortError';
+    const isAbort = err instanceof DOMException && err.name === 'AbortError';
     return {
       status: 'inactive',
       lastChecked: new Date().toISOString(),
-      error: isAbort
-        ? 'Connection timed out after 5 seconds'
-        : err instanceof Error
-          ? err.message
-          : 'Unknown error',
+      error: isAbort ? 'Connection timed out after 5 seconds' : err instanceof Error ? err.message : 'Unknown error',
     };
   }
 }

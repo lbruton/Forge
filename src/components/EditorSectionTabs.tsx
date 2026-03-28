@@ -17,9 +17,10 @@ export function EditorSectionTabs({ sections, activeSectionName, onSelectSection
           onClick={() => onSelectSection(null)}
           className={`
             px-3 py-2 text-xs font-medium transition-colors duration-150 border-b-2
-            ${activeSectionName === null
-              ? 'border-amber-500 text-amber-400 bg-amber-500/20'
-              : 'border-transparent text-slate-500 hover:text-slate-300'
+            ${
+              activeSectionName === null
+                ? 'border-amber-500 text-amber-400 bg-amber-500/20'
+                : 'border-transparent text-slate-500 hover:text-slate-300'
             }
           `}
         >
@@ -34,9 +35,10 @@ export function EditorSectionTabs({ sections, activeSectionName, onSelectSection
               onClick={() => onSelectSection(section.name)}
               className={`
                 px-3 py-2 text-xs font-medium transition-colors duration-150 border-b-2
-                ${isActive
-                  ? 'border-amber-500 text-amber-400 bg-amber-500/20'
-                  : 'border-transparent text-slate-500 hover:text-slate-300'
+                ${
+                  isActive
+                    ? 'border-amber-500 text-amber-400 bg-amber-500/20'
+                    : 'border-transparent text-slate-500 hover:text-slate-300'
                 }
               `}
             >

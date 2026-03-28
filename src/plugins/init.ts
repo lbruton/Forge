@@ -2,10 +2,7 @@ import type { PluginManifest, PluginRegistration, PluginHealthStatus } from '../
 import { CONFIGURATIONS_MANIFEST } from './configurations.ts';
 import { INFISICAL_MANIFEST } from './infisical/manifest.ts';
 
-const BUNDLED_MANIFESTS: PluginManifest[] = [
-  CONFIGURATIONS_MANIFEST,
-  INFISICAL_MANIFEST,
-];
+const BUNDLED_MANIFESTS: PluginManifest[] = [CONFIGURATIONS_MANIFEST, INFISICAL_MANIFEST];
 
 /**
  * Register all bundled plugins that are not yet registered.

@@ -206,9 +206,7 @@ describe('InfisicalClient.getSecretValue', () => {
     mockJsonResponse({ secrets: [] });
     const client = createClient();
 
-    await expect(client.getSecretValue('proj-1', 'dev', 'MISSING')).rejects.toThrow(
-      'Secret "MISSING" not found',
-    );
+    await expect(client.getSecretValue('proj-1', 'dev', 'MISSING')).rejects.toThrow('Secret "MISSING" not found');
   });
 
   it('returns empty string when secretValue is undefined', async () => {
@@ -247,9 +245,7 @@ describe('InfisicalClient.createSecret', () => {
     mockErrorResponse(409, 'already exists');
     const client = createClient();
 
-    await expect(client.createSecret('proj-1', 'dev', 'DUP', 'val')).rejects.toThrow(
-      'Failed to create secret (409)',
-    );
+    await expect(client.createSecret('proj-1', 'dev', 'DUP', 'val')).rejects.toThrow('Failed to create secret (409)');
   });
 });
 

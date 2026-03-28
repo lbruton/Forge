@@ -86,40 +86,35 @@ export function VariableDetectionPanel({
   });
 
   // Order groups by sectionNames, then Ungrouped at end
-  const orderedGroups = [
-    ...sectionNames.filter((s) => grouped[s]),
-    ...(grouped['Ungrouped'] ? ['Ungrouped'] : []),
-  ];
+  const orderedGroups = [...sectionNames.filter((s) => grouped[s]), ...(grouped['Ungrouped'] ? ['Ungrouped'] : [])];
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       {!hideHeader && (
-      <div className="px-5 py-2.5 text-[11px] font-semibold tracking-widest uppercase text-slate-500 border-b border-forge-graphite flex items-center justify-between">
-        <span>
-          Detected Variables
-          {variables.length > 0 && (
-            <span className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-forge-amber/20 text-forge-amber text-[11px] font-bold">
-              {variables.length}
-            </span>
-          )}
-        </span>
-        <button
-          onClick={addVariable}
-          className="p-1 rounded text-slate-500 hover:text-forge-amber hover:bg-forge-graphite transition-colors"
-          title="Add variable manually"
-        >
-          <Plus size={14} />
-        </button>
-      </div>
+        <div className="px-5 py-2.5 text-[11px] font-semibold tracking-widest uppercase text-slate-500 border-b border-forge-graphite flex items-center justify-between">
+          <span>
+            Detected Variables
+            {variables.length > 0 && (
+              <span className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-forge-amber/20 text-forge-amber text-[11px] font-bold">
+                {variables.length}
+              </span>
+            )}
+          </span>
+          <button
+            onClick={addVariable}
+            className="p-1 rounded text-slate-500 hover:text-forge-amber hover:bg-forge-graphite transition-colors"
+            title="Add variable manually"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
       )}
 
       {/* Variable list */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
         {variables.length === 0 ? (
-          <p className="text-slate-500 text-[13px] italic text-center py-5">
-            Paste a template to detect variables
-          </p>
+          <p className="text-slate-500 text-[13px] italic text-center py-5">Paste a template to detect variables</p>
         ) : (
           orderedGroups.map((sectionName) => (
             <div key={sectionName}>
@@ -184,9 +179,7 @@ export function VariableDetectionPanel({
                             </label>
                             <select
                               value={variable.type}
-                              onChange={(e) =>
-                                updateVariable(index, { type: e.target.value as VariableType })
-                              }
+                              onChange={(e) => updateVariable(index, { type: e.target.value as VariableType })}
                               className="w-full bg-forge-charcoal border border-forge-graphite rounded px-2 py-1.5 text-[13px] text-slate-200 outline-none focus:border-forge-amber/50 appearance-none cursor-pointer"
                             >
                               {VARIABLE_TYPES.map((t) => (

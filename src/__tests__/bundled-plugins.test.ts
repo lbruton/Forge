@@ -22,10 +22,7 @@ describe('initBundledPlugins', () => {
     initBundledPlugins(getPlugin, registerPlugin, setPluginHealth);
 
     expect(registerPlugin).toHaveBeenCalledWith(CONFIGURATIONS_MANIFEST);
-    expect(setPluginHealth).toHaveBeenCalledWith(
-      'forge-configurations',
-      expect.objectContaining({ status: 'active' }),
-    );
+    expect(setPluginHealth).toHaveBeenCalledWith('forge-configurations', expect.objectContaining({ status: 'active' }));
   });
 
   it('skips registration when already registered', () => {
@@ -40,10 +37,7 @@ describe('initBundledPlugins', () => {
     initBundledPlugins(getPlugin, registerPlugin, setPluginHealth);
 
     expect(registerPlugin).not.toHaveBeenCalled();
-    expect(setPluginHealth).toHaveBeenCalledWith(
-      'forge-configurations',
-      expect.objectContaining({ status: 'active' }),
-    );
+    expect(setPluginHealth).toHaveBeenCalledWith('forge-configurations', expect.objectContaining({ status: 'active' }));
   });
 });
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useForgeStore } from '../store/index.ts';
 import type { PluginManifest } from '../types/plugin.ts';
-import type { VaultExportData } from '../types/index.ts';
+import type { VaultExportData, View } from '../types/index.ts';
 
 // --- Helpers ---
 
@@ -151,7 +151,7 @@ describe('importData plugin migration', () => {
   it('migrates old view-scoped plugins to the global registry', () => {
     createView('Existing View');
 
-    const oldFormatData: VaultExportData & { views: any[] } = {
+    const oldFormatData: VaultExportData & { views: (View & { plugins?: Record<string, unknown> })[] } = {
       exportedAt: new Date().toISOString(),
       templates: {},
       variableValues: {},

@@ -69,13 +69,16 @@ function App() {
   // Navigation guard state
   const [pendingNavAction, setPendingNavAction] = useState<(() => void) | null>(null);
 
-  const guardNavigation = useCallback((action: () => void) => {
-    if (editorDirty && mode === 'editor') {
-      setPendingNavAction(() => action);
-    } else {
-      action();
-    }
-  }, [editorDirty, mode]);
+  const guardNavigation = useCallback(
+    (action: () => void) => {
+      if (editorDirty && mode === 'editor') {
+        setPendingNavAction(() => action);
+      } else {
+        action();
+      }
+    },
+    [editorDirty, mode],
+  );
 
   // Modal handlers for unsaved changes
   const handleSaveAndContinue = useCallback(() => {
@@ -110,9 +113,7 @@ function App() {
     initBundledPlugins(getPlugin, registerPlugin, setPluginHealth);
 
     const allPlugins = getPlugins();
-    const sidecarPlugins = allPlugins.filter(
-      (p) => p.manifest.type === 'sidecar' && p.endpoint && p.apiKey,
-    );
+    const sidecarPlugins = allPlugins.filter((p) => p.manifest.type === 'sidecar' && p.endpoint && p.apiKey);
     if (sidecarPlugins.length > 0) {
       void Promise.allSettled(
         sidecarPlugins.map(async (reg) => {
@@ -128,30 +129,31 @@ function App() {
       const { endpoint, clientId, clientSecret } = infisicalPlugin.settings as Record<string, string>;
       if (endpoint && clientId && clientSecret) {
         const provider = new InfisicalProvider(endpoint, clientId, clientSecret);
-        void provider.connect().then((result) => {
-          setPluginHealth(INFISICAL_MANIFEST.name, {
-            status: result.connected ? 'active' : 'inactive',
-            lastChecked: new Date().toISOString(),
-            error: result.error,
+        void provider
+          .connect()
+          .then((result) => {
+            setPluginHealth(INFISICAL_MANIFEST.name, {
+              status: result.connected ? 'active' : 'inactive',
+              lastChecked: new Date().toISOString(),
+              error: result.error,
+            });
+            if (result.connected) {
+              registerSecretsProvider(provider);
+            }
+          })
+          .catch((err: unknown) => {
+            setPluginHealth(INFISICAL_MANIFEST.name, {
+              status: 'inactive',
+              lastChecked: new Date().toISOString(),
+              error: err instanceof Error ? err.message : 'Connection failed',
+            });
           });
-          if (result.connected) {
-            registerSecretsProvider(provider);
-          }
-        }).catch((err: unknown) => {
-          setPluginHealth(INFISICAL_MANIFEST.name, {
-            status: 'inactive',
-            lastChecked: new Date().toISOString(),
-            error: err instanceof Error ? err.message : 'Connection failed',
-          });
-        });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const hasVariants = tree.views.some((v) =>
-    v.vendors.some((vn) => vn.models.some((m) => m.variants.length > 0)),
-  );
+  const hasVariants = tree.views.some((v) => v.vendors.some((vn) => vn.models.some((m) => m.variants.length > 0)));
 
   const handleAddTemplate = useCallback(() => {
     // If no views exist, start from view creation
@@ -240,61 +242,100 @@ function App() {
     setVaultOpen(true);
   }, []);
 
-  const handleSelectGeneratedConfig = useCallback((configId: string) => {
-    guardNavigation(() => {
-      setSelectedGeneratedConfigId(configId);
-      setSelectedVariant(null);
-      setSelectedGlobalVariablesViewId(null);
-      setSelectedPluginName(null);
-      setSelectedPluginNodeId(null);
-      setSelectedSection(null);
-    });
-  }, [guardNavigation, setSelectedVariant, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId]);
+  const handleSelectGeneratedConfig = useCallback(
+    (configId: string) => {
+      guardNavigation(() => {
+        setSelectedGeneratedConfigId(configId);
+        setSelectedVariant(null);
+        setSelectedGlobalVariablesViewId(null);
+        setSelectedPluginName(null);
+        setSelectedPluginNodeId(null);
+        setSelectedSection(null);
+      });
+    },
+    [
+      guardNavigation,
+      setSelectedVariant,
+      setSelectedGlobalVariablesViewId,
+      setSelectedPluginName,
+      setSelectedPluginNodeId,
+    ],
+  );
 
   const handleBackFromViewer = useCallback(() => {
     setSelectedGeneratedConfigId(null);
   }, []);
 
-  const handleSelectVariant = useCallback((variantId: string) => {
-    guardNavigation(() => {
-      setSelectedGlobalVariablesViewId(null);
-      setSelectedVariant(variantId);
-      setSelectedPluginName(null);
-      setSelectedPluginNodeId(null);
-      setSelectedSection(null);
-    });
-  }, [guardNavigation, setSelectedVariant, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId]);
+  const handleSelectVariant = useCallback(
+    (variantId: string) => {
+      guardNavigation(() => {
+        setSelectedGlobalVariablesViewId(null);
+        setSelectedVariant(variantId);
+        setSelectedPluginName(null);
+        setSelectedPluginNodeId(null);
+        setSelectedSection(null);
+      });
+    },
+    [
+      guardNavigation,
+      setSelectedVariant,
+      setSelectedGlobalVariablesViewId,
+      setSelectedPluginName,
+      setSelectedPluginNodeId,
+    ],
+  );
 
-  const handleSelectGlobalVariables = useCallback((viewId: string) => {
-    guardNavigation(() => {
-      setSelectedGlobalVariablesViewId(viewId);
-      setSelectedPluginName(null);
-      setSelectedPluginNodeId(null);
-      setSelectedSection(null);
-    });
-  }, [guardNavigation, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId]);
+  const handleSelectGlobalVariables = useCallback(
+    (viewId: string) => {
+      guardNavigation(() => {
+        setSelectedGlobalVariablesViewId(viewId);
+        setSelectedPluginName(null);
+        setSelectedPluginNodeId(null);
+        setSelectedSection(null);
+      });
+    },
+    [guardNavigation, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId],
+  );
 
-  const handleSelectPlugin = useCallback((pluginName: string | null, nodeId: string | null) => {
-    guardNavigation(() => {
-      setSelectedPluginName(pluginName);
-      setSelectedPluginNodeId(nodeId);
-      setSelectedVariant(null);
-      setSelectedGlobalVariablesViewId(null);
-      setSelectedGeneratedConfigId(null);
-      setSelectedSection(null);
-    });
-  }, [guardNavigation, setSelectedPluginName, setSelectedPluginNodeId, setSelectedVariant, setSelectedGlobalVariablesViewId]);
+  const handleSelectPlugin = useCallback(
+    (pluginName: string | null, nodeId: string | null) => {
+      guardNavigation(() => {
+        setSelectedPluginName(pluginName);
+        setSelectedPluginNodeId(nodeId);
+        setSelectedVariant(null);
+        setSelectedGlobalVariablesViewId(null);
+        setSelectedGeneratedConfigId(null);
+        setSelectedSection(null);
+      });
+    },
+    [
+      guardNavigation,
+      setSelectedPluginName,
+      setSelectedPluginNodeId,
+      setSelectedVariant,
+      setSelectedGlobalVariablesViewId,
+    ],
+  );
 
-  const handleSelectSection = useCallback((sel: SectionSelection) => {
-    guardNavigation(() => {
-      setSelectedSection(sel);
-      setSelectedVariant(null);
-      setSelectedGlobalVariablesViewId(null);
-      setSelectedPluginName(null);
-      setSelectedPluginNodeId(null);
-      setSelectedGeneratedConfigId(null);
-    });
-  }, [guardNavigation, setSelectedVariant, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId]);
+  const handleSelectSection = useCallback(
+    (sel: SectionSelection) => {
+      guardNavigation(() => {
+        setSelectedSection(sel);
+        setSelectedVariant(null);
+        setSelectedGlobalVariablesViewId(null);
+        setSelectedPluginName(null);
+        setSelectedPluginNodeId(null);
+        setSelectedGeneratedConfigId(null);
+      });
+    },
+    [
+      guardNavigation,
+      setSelectedVariant,
+      setSelectedGlobalVariablesViewId,
+      setSelectedPluginName,
+      setSelectedPluginNodeId,
+    ],
+  );
 
   // Determine main content
   const renderMainContent = () => {
@@ -321,11 +362,15 @@ function App() {
       const reg = getPlugin(selectedPluginName);
       if (reg) {
         // Derive viewId for content context: use the selected variant's view, or fall back to first view
-        const variantInfo = selectedVariantId ? tree.views.find(v =>
-          v.vendors.some(vn => vn.models.some(m => m.variants.some(va => va.id === selectedVariantId)))
-        ) : null;
+        const variantInfo = selectedVariantId
+          ? tree.views.find((v) =>
+              v.vendors.some((vn) => vn.models.some((m) => m.variants.some((va) => va.id === selectedVariantId))),
+            )
+          : null;
         const contextViewId = variantInfo?.id ?? tree.views[0]?.id ?? '';
-        return <PluginContentView pluginName={selectedPluginName} nodeId={selectedPluginNodeId} viewId={contextViewId} />;
+        return (
+          <PluginContentView pluginName={selectedPluginName} nodeId={selectedPluginNodeId} viewId={contextViewId} />
+        );
       }
       return (
         <div className="flex-1 flex items-center justify-center text-slate-500">
@@ -336,12 +381,7 @@ function App() {
 
     // Generated config viewer takes priority when a config is selected
     if (selectedGeneratedConfigId) {
-      return (
-        <GeneratedConfigViewer
-          configId={selectedGeneratedConfigId}
-          onBack={handleBackFromViewer}
-        />
-      );
+      return <GeneratedConfigViewer configId={selectedGeneratedConfigId} onBack={handleBackFromViewer} />;
     }
 
     // Section card view when a section node is selected
@@ -430,7 +470,7 @@ function App() {
         )}
 
         {/* Action buttons — Add Template only in Configurations context */}
-        {(!selectedPluginName || selectedPluginName === 'forge-configurations') && (
+        {!selectedPluginName && (
           <button
             onClick={handleAddTemplate}
             className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold bg-forge-amber text-forge-obsidian rounded-md hover:bg-forge-amber-bright transition-colors"
@@ -491,9 +531,7 @@ function App() {
         )}
 
         {/* Main content */}
-        <main className="flex-1 flex flex-col overflow-hidden">
-          {renderMainContent()}
-        </main>
+        <main className="flex-1 flex flex-col overflow-hidden">{renderMainContent()}</main>
       </div>
 
       {/* Wizard modal for Add Template flow */}
@@ -505,11 +543,7 @@ function App() {
       />
 
       {/* Vault Import/Export modal */}
-      <VaultModal
-        isOpen={vaultOpen}
-        onClose={() => setVaultOpen(false)}
-        initialTab={vaultInitialTab}
-      />
+      <VaultModal isOpen={vaultOpen} onClose={() => setVaultOpen(false)} initialTab={vaultInitialTab} />
 
       {/* Unsaved changes confirmation */}
       <UnsavedChangesModal

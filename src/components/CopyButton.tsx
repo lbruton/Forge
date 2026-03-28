@@ -48,9 +48,11 @@ export function CopyButton({ text, label }: CopyButtonProps) {
         {label && <span>{label}</span>}
       </button>
       {copied && (
-        <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1
+        <span
+          className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1
           text-xs text-forge-amber bg-forge-charcoal border border-forge-steel
-          rounded shadow-lg whitespace-nowrap z-50 pointer-events-none">
+          rounded shadow-lg whitespace-nowrap z-50 pointer-events-none"
+        >
           Copied!
         </span>
       )}

@@ -31,11 +31,7 @@ export function VariableInput({ variableDefinition, value, onChange }: VariableI
     focus:ring-1 focus:ring-forge-amber/50 focus:border-forge-amber
   `;
 
-  const borderClass = ipError
-    ? 'border-red-500'
-    : isEmpty
-      ? 'border-amber-500/60'
-      : 'border-forge-steel';
+  const borderClass = ipError ? 'border-red-500' : isEmpty ? 'border-amber-500/60' : 'border-forge-steel';
 
   return (
     <div className="mb-3">
@@ -54,7 +50,11 @@ export function VariableInput({ variableDefinition, value, onChange }: VariableI
           <option value="">Select...</option>
           {options.map((opt, i) => {
             const { label: optLabel, value: optValue } = normalizeOption(opt);
-            return <option key={`${optValue}-${i}`} value={optValue}>{optLabel}</option>;
+            return (
+              <option key={`${optValue}-${i}`} value={optValue}>
+                {optLabel}
+              </option>
+            );
           })}
         </select>
       ) : type === 'integer' ? (
@@ -78,15 +78,9 @@ export function VariableInput({ variableDefinition, value, onChange }: VariableI
         />
       )}
 
-      {ipError && (
-        <p className="mt-1 text-xs text-red-400">Invalid IPv4 address</p>
-      )}
-      {isEmpty && !ipError && (
-        <p className="mt-1 text-xs text-amber-500/80">Required field</p>
-      )}
-      {description && !ipError && !isEmpty && (
-        <p className="mt-1 text-xs text-slate-500">{description}</p>
-      )}
+      {ipError && <p className="mt-1 text-xs text-red-400">Invalid IPv4 address</p>}
+      {isEmpty && !ipError && <p className="mt-1 text-xs text-amber-500/80">Required field</p>}
+      {description && !ipError && !isEmpty && <p className="mt-1 text-xs text-slate-500">{description}</p>}
     </div>
   );
 }

@@ -21,10 +21,7 @@ export function groupVariablesBySection(
     for (const v of variables) {
       if (assigned.has(v.name)) continue;
       // Check if $variable or ${variable} appears in section template
-      if (
-        section.template.includes(`$${v.name}`) ||
-        section.template.includes(`\${${v.name}}`)
-      ) {
+      if (section.template.includes(`$${v.name}`) || section.template.includes(`\${${v.name}}`)) {
         sectionVars.push(v);
         assigned.add(v.name);
       }
@@ -62,11 +59,7 @@ export function VariableForm() {
   }, [template]);
 
   if (!selectedVariantId || !template) {
-    return (
-      <div className="flex items-center justify-center h-full text-slate-500 text-sm">
-        No variant selected
-      </div>
-    );
+    return <div className="flex items-center justify-center h-full text-slate-500 text-sm">No variant selected</div>;
   }
 
   const values = variableValues[selectedVariantId]?.values ?? {};
@@ -78,9 +71,7 @@ export function VariableForm() {
         <div className="mb-4 p-3.5 bg-emerald-500/[0.06] border border-emerald-500/20 rounded-lg">
           <div className="flex items-center gap-2 mb-2.5">
             <Globe size={16} className="text-emerald-500 shrink-0" />
-            <h3 className="text-[13px] font-semibold text-emerald-500 flex-1">
-              Global Variables
-            </h3>
+            <h3 className="text-[13px] font-semibold text-emerald-500 flex-1">Global Variables</h3>
             <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-500">
               {globalVariables.length}
             </span>
@@ -117,13 +108,9 @@ export function VariableForm() {
         </div>
       )}
 
-      {globalVariables.length > 0 && (
-        <div className="h-px bg-forge-graphite mx-0 mb-4" />
-      )}
+      {globalVariables.length > 0 && <div className="h-px bg-forge-graphite mx-0 mb-4" />}
 
-      <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">
-        Variables
-      </h3>
+      <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Variables</h3>
 
       {groups === null ? (
         // Custom variable order: flat list without section headers

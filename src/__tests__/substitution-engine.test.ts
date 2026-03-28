@@ -5,9 +5,7 @@ import type { TemplateSection } from '../types/index.ts';
 /** Strip substitution sentinels for clean assertions */
 const strip = stripSubMarkers;
 
-function makeSection(
-  overrides: Partial<TemplateSection> & Pick<TemplateSection, 'template'>,
-): TemplateSection {
+function makeSection(overrides: Partial<TemplateSection> & Pick<TemplateSection, 'template'>): TemplateSection {
   return {
     id: overrides.id ?? 'sec-1',
     name: overrides.name ?? 'Section',
@@ -19,9 +17,7 @@ function makeSection(
 
 describe('generateConfig', () => {
   it('replaces a single variable in all occurrences', () => {
-    const sections = [
-      makeSection({ template: 'hostname $hostname\nbanner motd $hostname' }),
-    ];
+    const sections = [makeSection({ template: 'hostname $hostname\nbanner motd $hostname' })];
     const result = generateConfig(sections, { hostname: 'SWITCH01' });
 
     expect(strip(result.sections[0].content)).toBe('hostname SWITCH01\nbanner motd SWITCH01');
@@ -87,9 +83,7 @@ describe('generateConfig', () => {
     ];
     const result = generateConfig(sections, {});
 
-    expect(strip(result.sections[0].content)).toBe(
-      'enable secret $9$abc123def456\nusername admin secret $9$xyz',
-    );
+    expect(strip(result.sections[0].content)).toBe('enable secret $9$abc123def456\nusername admin secret $9$xyz');
   });
 
   it('reconstructs fullConfig with dividers between sections', () => {
@@ -118,18 +112,14 @@ describe('generateConfig', () => {
   });
 
   it('replaces both $var and ${var} syntax for the same variable', () => {
-    const sections = [
-      makeSection({ template: 'name $hostname alias ${hostname}' }),
-    ];
+    const sections = [makeSection({ template: 'name $hostname alias ${hostname}' })];
     const result = generateConfig(sections, { hostname: 'CORE01' });
 
     expect(strip(result.sections[0].content)).toBe('name CORE01 alias CORE01');
   });
 
   it('resolves ${var} from globalValues parameter', () => {
-    const sections = [
-      makeSection({ template: 'ntp server ${ntp_server}\nhostname $hostname' }),
-    ];
+    const sections = [makeSection({ template: 'ntp server ${ntp_server}\nhostname $hostname' })];
     const result = generateConfig(sections, { hostname: 'SWITCH01' }, { ntp_server: '10.0.0.1' });
 
     expect(strip(result.sections[0].content)).toBe('ntp server 10.0.0.1\nhostname SWITCH01');
@@ -143,40 +133,28 @@ describe('generateConfig', () => {
   });
 
   it('resolves only global values when no local values match', () => {
-    const sections = [
-      makeSection({ template: 'ntp server ${ntp_server}\nenable secret ${enable_password}' }),
-    ];
+    const sections = [makeSection({ template: 'ntp server ${ntp_server}\nenable secret ${enable_password}' })];
     const result = generateConfig(sections, {}, { ntp_server: '10.0.0.1', enable_password: 'secret123' });
 
     expect(strip(result.sections[0].content)).toBe('ntp server 10.0.0.1\nenable secret secret123');
   });
 
   it('leaves unfilled ${var} as-is when no global or local value provided', () => {
-    const sections = [
-      makeSection({ template: 'ntp server ${ntp_server}\nhostname $hostname' }),
-    ];
+    const sections = [makeSection({ template: 'ntp server ${ntp_server}\nhostname $hostname' })];
     const result = generateConfig(sections, {}, {});
 
     expect(strip(result.sections[0].content)).toBe('ntp server ${ntp_server}\nhostname $hostname');
   });
 
   it('${var} resolved from globalValues takes priority over localValues', () => {
-    const sections = [
-      makeSection({ template: 'server ${shared_var}' }),
-    ];
-    const result = generateConfig(
-      sections,
-      { shared_var: 'local_value' },
-      { shared_var: 'global_value' },
-    );
+    const sections = [makeSection({ template: 'server ${shared_var}' })];
+    const result = generateConfig(sections, { shared_var: 'local_value' }, { shared_var: 'global_value' });
 
     expect(strip(result.sections[0].content)).toBe('server global_value');
   });
 
   it('matches longest variable name (greedy word chars)', () => {
-    const sections = [
-      makeSection({ template: 'ip address $vlan_95_ip_address\nvlan $vlan' }),
-    ];
+    const sections = [makeSection({ template: 'ip address $vlan_95_ip_address\nvlan $vlan' })];
     const result = generateConfig(sections, {
       vlan: '95',
       vlan_95_ip_address: '10.0.95.1',

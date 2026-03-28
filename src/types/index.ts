@@ -131,16 +131,16 @@ export interface GeneratedConfigOutput {
 
 export interface GeneratedConfig {
   id: string;
-  name: string;              // e.g., "tulsapipeconswan01"
-  modelId: string;           // parent model
-  sourceVariantId: string;   // which variant was used
-  sourceTemplateId: string;  // template snapshot reference
-  variableValues: Record<string, string>;  // exact values used
-  globalVariableValues?: Record<string, string>;  // global values used at generation time
-  fullConfig: string;        // final substituted output (may include manual edits)
-  sections: GeneratedSection[];  // per-section output
-  notes: string;             // optional user notes
-  createdAt: string;         // ISO timestamp
+  name: string; // e.g., "tulsapipeconswan01"
+  modelId: string; // parent model
+  sourceVariantId: string; // which variant was used
+  sourceTemplateId: string; // template snapshot reference
+  variableValues: Record<string, string>; // exact values used
+  globalVariableValues?: Record<string, string>; // global values used at generation time
+  fullConfig: string; // final substituted output (may include manual edits)
+  sections: GeneratedSection[]; // per-section output
+  notes: string; // optional user notes
+  createdAt: string; // ISO timestamp
 }
 
 // Syntax highlighting

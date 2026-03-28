@@ -26,19 +26,9 @@ function base64ToArray(base64: string): Uint8Array {
   return bytes;
 }
 
-async function deriveKey(
-  password: string,
-  salt: Uint8Array,
-  iterations: number,
-): Promise<CryptoKey> {
+async function deriveKey(password: string, salt: Uint8Array, iterations: number): Promise<CryptoKey> {
   const encoder = new TextEncoder();
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(password),
-    'PBKDF2',
-    false,
-    ['deriveKey'],
-  );
+  const keyMaterial = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveKey']);
 
   return crypto.subtle.deriveKey(
     {
@@ -58,10 +48,7 @@ async function deriveKey(
 // Public API
 // ---------------------------------------------------------------------------
 
-export async function encryptVault(
-  data: VaultExportData,
-  password: string,
-): Promise<Blob> {
+export async function encryptVault(data: VaultExportData, password: string): Promise<Blob> {
   const encoder = new TextEncoder();
   const plaintext = encoder.encode(JSON.stringify(data));
 
@@ -89,10 +76,7 @@ export async function encryptVault(
   });
 }
 
-export async function decryptVault(
-  file: File,
-  password: string,
-): Promise<VaultExportData> {
+export async function decryptVault(file: File, password: string): Promise<VaultExportData> {
   // 1. Read file contents
   let text: string;
   try {

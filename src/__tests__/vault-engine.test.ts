@@ -17,7 +17,7 @@ const sampleData: VaultExportData = {
     },
   ],
   templates: {
-    't1': {
+    t1: {
       id: 't1',
       sections: [],
       variables: [],
@@ -27,7 +27,7 @@ const sampleData: VaultExportData = {
     },
   },
   variableValues: {
-    'var1': {
+    var1: {
       variantId: 'variant1',
       values: { HOSTNAME: 'router01' },
       updatedAt: '2026-01-01T00:00:00.000Z',
@@ -59,25 +59,19 @@ describe('vault-engine', () => {
     const blob = await encryptVault(sampleData, 'pass1');
     const file = new File([blob], 'test.stvault', { type: blob.type });
 
-    await expect(decryptVault(file, 'pass2')).rejects.toThrow(
-      'Incorrect password or corrupted file',
-    );
+    await expect(decryptVault(file, 'pass2')).rejects.toThrow('Incorrect password or corrupted file');
   });
 
   test.skipIf(!hasCrypto)('malformed file (invalid JSON) throws format error', async () => {
     const file = makeFile('this is not json at all');
 
-    await expect(decryptVault(file, 'password')).rejects.toThrow(
-      'Invalid .stvault file format',
-    );
+    await expect(decryptVault(file, 'password')).rejects.toThrow('Invalid .stvault file format');
   });
 
   test.skipIf(!hasCrypto)('malformed file (missing fields) throws format error', async () => {
     const file = makeFile(JSON.stringify({ version: 1, iv: 'abc' }));
 
-    await expect(decryptVault(file, 'password')).rejects.toThrow(
-      'Invalid .stvault file format',
-    );
+    await expect(decryptVault(file, 'password')).rejects.toThrow('Invalid .stvault file format');
   });
 
   test.skipIf(!hasCrypto)('envelope structure has required fields', async () => {
@@ -124,8 +118,6 @@ describe('vault-engine', () => {
     envelope.version = 2;
     const file = makeFile(JSON.stringify(envelope));
 
-    await expect(decryptVault(file, 'password')).rejects.toThrow(
-      'Invalid .stvault file format',
-    );
+    await expect(decryptVault(file, 'password')).rejects.toThrow('Invalid .stvault file format');
   });
 });

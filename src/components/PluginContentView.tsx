@@ -50,11 +50,7 @@ export default function PluginContentView({ pluginName, nodeId, viewId }: Plugin
     setState({ kind: 'loading' });
 
     try {
-      const response = await pluginFetch(
-        registration.endpoint,
-        registration.apiKey,
-        '/content/' + nodeId,
-      );
+      const response = await pluginFetch(registration.endpoint, registration.apiKey, '/content/' + nodeId);
 
       if (!response.ok) {
         setState({ kind: 'error', message: `Unable to load data from ${displayName}` });
@@ -118,18 +114,11 @@ export default function PluginContentView({ pluginName, nodeId, viewId }: Plugin
           </div>
         )}
 
-        {state.kind === 'loaded' && (
-          <div
-            className="p-6"
-            dangerouslySetInnerHTML={{ __html: state.html }}
-          />
-        )}
+        {state.kind === 'loaded' && <div className="p-6" dangerouslySetInnerHTML={{ __html: state.html }} />}
 
         {state.kind === 'bundled' && (
           <div className="flex items-center justify-center h-full">
-            <p className="text-sm text-slate-500">
-              Content not available for bundled plugins
-            </p>
+            <p className="text-sm text-slate-500">Content not available for bundled plugins</p>
           </div>
         )}
       </div>
