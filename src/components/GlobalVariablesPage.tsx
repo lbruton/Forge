@@ -75,7 +75,9 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
       const varName = secretKeyToVarName(key);
       if (!varName) return;
 
-      const existingNames = new Set(globalVariables.map((v) => v.name));
+      // Case-insensitive lookup: varName is lowercase, existing names may be any case
+      const nameMap = new Map(globalVariables.map((v) => [v.name.toLowerCase(), v.name]));
+      const existingMatch = nameMap.get(varName);
 
       const plugin = getPlugin(INFISICAL_MANIFEST.name);
       const settings = (plugin?.settings ?? {}) as Record<string, string>;
@@ -86,8 +88,8 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
         secretKey: key,
       };
 
-      if (existingNames.has(varName)) {
-        handleUpdate(varName, { defaultValue: value, syncToSecrets: syncMeta });
+      if (existingMatch) {
+        handleUpdate(existingMatch, { defaultValue: value, syncToSecrets: syncMeta });
       } else {
         const newVar: VariableDefinition = {
           name: varName,
@@ -595,7 +597,7 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
             provider={readableProvider}
             projectId={settings.defaultProjectId || ''}
             environment={settings.defaultEnvironment || 'dev'}
-            existingNames={new Set(globalVariables.map((v) => v.name))}
+            existingNames={new Set(globalVariables.map((v) => v.name.toLowerCase()))}
             onImport={handleImportSecret}
             onClose={() => setShowImportPicker(false)}
           />
