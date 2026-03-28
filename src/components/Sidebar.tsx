@@ -12,11 +12,13 @@ import {
   HardDrive,
   Network,
   Server,
+  Clock,
 } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { TreeNode } from './TreeNode.tsx';
 import { CreateNodeModal, type CreateNodeType, type CreateNodeData } from './CreateNodeModal.tsx';
 import type { SectionSelection } from './SectionCardView.tsx';
+import { VULN_CISCO_MANIFEST } from '../plugins/vuln-cisco/manifest.ts';
 
 const PLUGIN_ICONS: Record<string, typeof Puzzle> = {
   puzzle: Puzzle,
@@ -97,6 +99,12 @@ export function Sidebar({
 
   const configurationsPlugin = getPlugin('forge-configurations');
   const configurationsEnabled = configurationsPlugin?.enabled ?? false;
+
+  const vulnPlugin = getPlugin(VULN_CISCO_MANIFEST.name);
+  const vulnEnabled = vulnPlugin?.enabled ?? false;
+  const vulnDevices = useForgeStore((s) => s.vulnDevices);
+  const vulnScanCache = useForgeStore((s) => s.vulnScanCache);
+  const deleteVulnDevice = useForgeStore((s) => s.deleteVulnDevice);
 
   // Auto-expand Configurations nodes for each view when plugin is enabled
   useEffect(() => {
@@ -467,9 +475,119 @@ export function Sidebar({
                 </TreeNode>
               )}
 
-              {/* Plugin-contributed tree nodes (vendorScoped: false) */}
+              {/* Vuln-cisco hierarchical tree */}
+              {vulnEnabled && (
+                <TreeNode
+                  id={`${view.id}__vulnerabilities`}
+                  label="Vulnerabilities"
+                  icon={<ShieldAlert size={14} />}
+                  depth={1}
+                  hasChildren={true}
+                  isSection
+                  onSelect={() => {
+                    setSelectedGeneratedConfigId(null);
+                    setSelectedPluginName(VULN_CISCO_MANIFEST.name);
+                    setSelectedPluginNodeId('vulnerabilities');
+                    onSelectPlugin?.(VULN_CISCO_MANIFEST.name, 'vulnerabilities');
+                  }}
+                >
+                  <TreeNode
+                    id={`${view.id}__vuln-cisco`}
+                    label="Cisco"
+                    icon={<Server size={14} />}
+                    depth={2}
+                    hasChildren={vulnDevices.length > 0}
+                    isSection
+                    onAdd={() => {
+                      setSelectedGeneratedConfigId(null);
+                      setSelectedPluginName(VULN_CISCO_MANIFEST.name);
+                      setSelectedPluginNodeId('add-device');
+                      onSelectPlugin?.(VULN_CISCO_MANIFEST.name, 'add-device');
+                    }}
+                    onSelect={() => {
+                      setSelectedGeneratedConfigId(null);
+                      setSelectedPluginName(VULN_CISCO_MANIFEST.name);
+                      setSelectedPluginNodeId('cisco');
+                      onSelectPlugin?.(VULN_CISCO_MANIFEST.name, 'cisco');
+                    }}
+                  >
+                    {vulnDevices.map((device) => (
+                      <TreeNode
+                        key={device.id}
+                        id={`vuln-device-${device.id}`}
+                        label={device.hostname}
+                        icon={<Cpu size={14} />}
+                        depth={3}
+                        hasChildren={!!device.lastScanAt}
+                        onSelect={() => {
+                          setSelectedGeneratedConfigId(null);
+                          setSelectedPluginName(VULN_CISCO_MANIFEST.name);
+                          setSelectedPluginNodeId(`device:${device.id}`);
+                          onSelectPlugin?.(VULN_CISCO_MANIFEST.name, `device:${device.id}`);
+                        }}
+                        onEdit={() => {
+                          setSelectedGeneratedConfigId(null);
+                          setSelectedPluginName(VULN_CISCO_MANIFEST.name);
+                          setSelectedPluginNodeId(`edit-device:${device.id}`);
+                          onSelectPlugin?.(VULN_CISCO_MANIFEST.name, `edit-device:${device.id}`);
+                        }}
+                        onDelete={() => {
+                          if (confirm(`Delete device "${device.hostname}"?`)) {
+                            deleteVulnDevice(device.id);
+                          }
+                        }}
+                        contextMenuExtras={[
+                          {
+                            label: 'Scan Now',
+                            onClick: () => {
+                              setSelectedGeneratedConfigId(null);
+                              setSelectedPluginName(VULN_CISCO_MANIFEST.name);
+                              setSelectedPluginNodeId(`scan:${device.id}`);
+                              onSelectPlugin?.(VULN_CISCO_MANIFEST.name, `scan:${device.id}`);
+                            },
+                          },
+                        ]}
+                      >
+                        {(() => {
+                          const scans = vulnScanCache[device.id] ?? [];
+                          if (scans.length === 0 && !device.lastScanAt) return null;
+                          return (
+                            <TreeNode
+                              id={`vuln-scans-${device.id}`}
+                              label="Scans"
+                              icon={<Clock size={14} />}
+                              depth={4}
+                              hasChildren={scans.length > 0}
+                              isSection
+                            >
+                              {scans.map((scan) => (
+                                <TreeNode
+                                  key={scan.timestamp}
+                                  id={`vuln-scan-${device.id}-${scan.timestamp}`}
+                                  label={formatShortDate(scan.timestamp)}
+                                  icon={<FileCheck size={14} />}
+                                  depth={5}
+                                  hasChildren={false}
+                                  onSelect={() => {
+                                    setSelectedGeneratedConfigId(null);
+                                    setSelectedPluginName(VULN_CISCO_MANIFEST.name);
+                                    setSelectedPluginNodeId(`report:${device.ip}:${scan.timestamp}`);
+                                    onSelectPlugin?.(VULN_CISCO_MANIFEST.name, `report:${device.ip}:${scan.timestamp}`);
+                                  }}
+                                />
+                              ))}
+                            </TreeNode>
+                          );
+                        })()}
+                      </TreeNode>
+                    ))}
+                  </TreeNode>
+                </TreeNode>
+              )}
+
+              {/* Plugin-contributed tree nodes (vendorScoped: false) — excludes vuln-cisco */}
               {getPlugins()
-                .filter((p) => p.enabled)
+                .filter((p) => p.enabled && p.manifest.name !== VULN_CISCO_MANIFEST.name)
                 .flatMap((plugin) =>
                   plugin.manifest.treeNodes
                     .filter((tn) => !tn.vendorScoped)

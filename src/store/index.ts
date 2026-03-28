@@ -17,6 +17,7 @@ import type {
 } from '../types/index.ts';
 import type { PluginManifest, PluginRegistration, PluginHealthStatus } from '../types/plugin.ts';
 import type { SecretsProvider } from '../types/secrets-provider.ts';
+import type { VulnDevice, ScanEntry } from '../plugins/vuln-cisco/types.ts';
 
 // --- Custom storage adapter for zustand persist ---
 
@@ -141,6 +142,15 @@ interface ForgeStore {
   unregisterSecretsProvider: (name: string) => void;
   getSecretsProvider: (name: string) => SecretsProvider | undefined;
   getSecretsProviders: () => SecretsProvider[];
+
+  // Vuln device state (persisted)
+  vulnDevices: VulnDevice[];
+  vulnScanCache: Record<string, ScanEntry[]>; // deviceId -> scan entries (from sidecar)
+  addVulnDevice: (device: VulnDevice) => void;
+  updateVulnDevice: (id: string, updates: Partial<VulnDevice>) => void;
+  deleteVulnDevice: (id: string) => void;
+  getVulnDevice: (id: string) => VulnDevice | undefined;
+  setVulnScanCache: (deviceId: string, scans: ScanEntry[]) => void;
 
   // Helpers
   findVariant: (variantId: string) => { view: View; vendor: Vendor; model: Model; variant: Variant } | null;
@@ -834,6 +844,39 @@ export const useForgeStore = create<ForgeStore>()(
 
       getSecretsProviders: () => {
         return Object.values(get().secretsProviders);
+      },
+
+      // --- Vuln device state ---
+
+      vulnDevices: [],
+      vulnScanCache: {},
+
+      addVulnDevice: (device) => {
+        set((state) => ({
+          vulnDevices: [...state.vulnDevices, device],
+        }));
+      },
+
+      updateVulnDevice: (id, updates) => {
+        set((state) => ({
+          vulnDevices: state.vulnDevices.map((d) => (d.id === id ? { ...d, ...updates } : d)),
+        }));
+      },
+
+      deleteVulnDevice: (id) => {
+        set((state) => ({
+          vulnDevices: state.vulnDevices.filter((d) => d.id !== id),
+        }));
+      },
+
+      getVulnDevice: (id) => {
+        return get().vulnDevices.find((d) => d.id === id);
+      },
+
+      setVulnScanCache: (deviceId, scans) => {
+        set((state) => ({
+          vulnScanCache: { ...state.vulnScanCache, [deviceId]: scans },
+        }));
       },
 
       // --- Helpers ---
