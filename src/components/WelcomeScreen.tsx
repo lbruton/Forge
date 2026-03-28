@@ -71,11 +71,35 @@ function WelcomeScreen({ onRequestImport, onRequestAddTemplate, onRequestPlugins
             <circle cx="256" cy="280" r="200" fill="url(#welcomeEmberGlow)" />
 
             {/* Anvil body */}
-            <rect x="176" y="370" width="160" height="30" rx="4" fill="url(#welcomeAnvilGrad)" stroke="#1E293B" strokeWidth="2" />
-            <path d="M 206 370 L 216 320 L 296 320 L 306 370 Z" fill="url(#welcomeAnvilGrad)" stroke="#1E293B" strokeWidth="2" />
-            <path d="M 156 320 L 156 280 Q 156 265 171 265 L 341 265 Q 356 265 356 280 L 356 320 Q 356 325 341 325 L 171 325 Q 156 325 156 320 Z" fill="url(#welcomeAnvilGrad)" stroke="#1E293B" strokeWidth="2" />
+            <rect
+              x="176"
+              y="370"
+              width="160"
+              height="30"
+              rx="4"
+              fill="url(#welcomeAnvilGrad)"
+              stroke="#1E293B"
+              strokeWidth="2"
+            />
+            <path
+              d="M 206 370 L 216 320 L 296 320 L 306 370 Z"
+              fill="url(#welcomeAnvilGrad)"
+              stroke="#1E293B"
+              strokeWidth="2"
+            />
+            <path
+              d="M 156 320 L 156 280 Q 156 265 171 265 L 341 265 Q 356 265 356 280 L 356 320 Q 356 325 341 325 L 171 325 Q 156 325 156 320 Z"
+              fill="url(#welcomeAnvilGrad)"
+              stroke="#1E293B"
+              strokeWidth="2"
+            />
             <rect x="166" y="270" width="180" height="8" rx="3" fill="url(#welcomeAnvilHighlight)" />
-            <path d="M 156 280 Q 156 265 171 265 L 156 272 Q 120 280 110 290 Q 100 300 110 310 L 156 320 Q 156 325 156 320 L 156 280 Z" fill="url(#welcomeAnvilGrad)" stroke="#1E293B" strokeWidth="2" />
+            <path
+              d="M 156 280 Q 156 265 171 265 L 156 272 Q 120 280 110 290 Q 100 300 110 310 L 156 320 Q 156 325 156 320 L 156 280 Z"
+              fill="url(#welcomeAnvilGrad)"
+              stroke="#1E293B"
+              strokeWidth="2"
+            />
 
             {/* Sparks */}
             <g fill="#FBBF24">
@@ -96,21 +120,53 @@ function WelcomeScreen({ onRequestImport, onRequestAddTemplate, onRequestPlugins
 
             {/* Flame tongues */}
             <g opacity="0.7">
-              <path d="M 240 265 Q 235 240 240 220 Q 245 200 250 215 Q 255 230 250 265 Z" fill="url(#welcomeFlameGrad)" opacity="0.5" />
-              <path d="M 260 265 Q 255 235 260 210 Q 268 185 272 210 Q 276 235 270 265 Z" fill="url(#welcomeFlameGrad)" opacity="0.6" />
-              <path d="M 280 265 Q 278 245 282 230 Q 286 218 288 232 Q 290 245 286 265 Z" fill="url(#welcomeFlameGrad)" opacity="0.4" />
+              <path
+                d="M 240 265 Q 235 240 240 220 Q 245 200 250 215 Q 255 230 250 265 Z"
+                fill="url(#welcomeFlameGrad)"
+                opacity="0.5"
+              />
+              <path
+                d="M 260 265 Q 255 235 260 210 Q 268 185 272 210 Q 276 235 270 265 Z"
+                fill="url(#welcomeFlameGrad)"
+                opacity="0.6"
+              />
+              <path
+                d="M 280 265 Q 278 245 282 230 Q 286 218 288 232 Q 290 245 286 265 Z"
+                fill="url(#welcomeFlameGrad)"
+                opacity="0.4"
+              />
             </g>
 
             {/* FORGE text */}
-            <text x="256" y="448" textAnchor="middle" fontFamily="'JetBrains Mono', 'Fira Code', 'Consolas', monospace" fontSize="56" fontWeight="700" letterSpacing="12" fill="#E2E8F0">FORGE</text>
-            <text x="256" y="478" textAnchor="middle" fontFamily="'Inter', 'Segoe UI', sans-serif" fontSize="14" fontWeight="400" letterSpacing="4" fill="#94A3B8">NETWORK WORKSHOP</text>
+            <text
+              x="256"
+              y="448"
+              textAnchor="middle"
+              fontFamily="'JetBrains Mono', 'Fira Code', 'Consolas', monospace"
+              fontSize="56"
+              fontWeight="700"
+              letterSpacing="12"
+              fill="#E2E8F0"
+            >
+              FORGE
+            </text>
+            <text
+              x="256"
+              y="478"
+              textAnchor="middle"
+              fontFamily="'Inter', 'Segoe UI', sans-serif"
+              fontSize="14"
+              fontWeight="400"
+              letterSpacing="4"
+              fill="#94A3B8"
+            >
+              NETWORK WORKSHOP
+            </text>
           </svg>
         </div>
 
         {/* Tagline */}
-        <p className="text-slate-400 italic text-base leading-relaxed">
-          The forge is cold. Light it up.
-        </p>
+        <p className="text-slate-400 italic text-base leading-relaxed">The forge is cold. Light it up.</p>
 
         {/* CTA buttons */}
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">

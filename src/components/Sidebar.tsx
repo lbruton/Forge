@@ -1,13 +1,31 @@
 import { useState, useCallback, useEffect } from 'react';
-import { FolderOpen, Cpu, FileCode2, FileCheck, Globe, Puzzle, Shield, ShieldAlert, Database, HardDrive, Network, Server } from 'lucide-react';
+import {
+  FolderOpen,
+  Cpu,
+  FileCode2,
+  FileCheck,
+  Globe,
+  Puzzle,
+  Shield,
+  ShieldAlert,
+  Database,
+  HardDrive,
+  Network,
+  Server,
+} from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { TreeNode } from './TreeNode.tsx';
 import { CreateNodeModal, type CreateNodeType, type CreateNodeData } from './CreateNodeModal.tsx';
 import type { SectionSelection } from './SectionCardView.tsx';
 
 const PLUGIN_ICONS: Record<string, typeof Puzzle> = {
-  puzzle: Puzzle, shield: Shield, 'shield-alert': ShieldAlert,
-  database: Database, 'hard-drive': HardDrive, network: Network, server: Server,
+  puzzle: Puzzle,
+  shield: Shield,
+  'shield-alert': ShieldAlert,
+  database: Database,
+  'hard-drive': HardDrive,
+  network: Network,
+  server: Server,
   'file-code-2': FileCode2,
 };
 
@@ -41,7 +59,14 @@ function truncateName(name: string, max = 12): string {
   return name.length > max ? name.slice(0, max) + '...' : name;
 }
 
-export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVariant, onSelectGlobalVariables, onSelectPlugin, onSelectSection }: SidebarProps) {
+export function Sidebar({
+  onSwitchToEditor,
+  onSelectGeneratedConfig,
+  onSelectVariant,
+  onSelectGlobalVariables,
+  onSelectPlugin,
+  onSelectSection,
+}: SidebarProps) {
   const {
     tree,
     selectedVariantId,
@@ -85,7 +110,11 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
   }, [configurationsEnabled, tree.views, toggleExpandedNode]);
 
   const [modalContext, setModalContext] = useState<ModalContext | null>(null);
-  const [editContext, setEditContext] = useState<{ type: CreateNodeType; path: Record<string, string>; currentName: string } | null>(null);
+  const [editContext, setEditContext] = useState<{
+    type: CreateNodeType;
+    path: Record<string, string>;
+    currentName: string;
+  } | null>(null);
   const [selectedGeneratedConfigId, setSelectedGeneratedConfigId] = useState<string | null>(null);
 
   const openCreate = useCallback((type: CreateNodeType, viewId?: string, vendorId?: string, modelId?: string) => {
@@ -138,15 +167,22 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
       }
       setModalContext(null);
     },
-    [modalContext, addView, addVendor, addModel, addVariant, saveTemplate, setSelectedVariant, toggleExpandedNode, onSwitchToEditor],
+    [
+      modalContext,
+      addView,
+      addVendor,
+      addModel,
+      addVariant,
+      saveTemplate,
+      setSelectedVariant,
+      toggleExpandedNode,
+      onSwitchToEditor,
+    ],
   );
 
-  const handleEdit = useCallback(
-    (type: CreateNodeType, path: Record<string, string>, currentName: string) => {
-      setEditContext({ type, path, currentName });
-    },
-    [],
-  );
+  const handleEdit = useCallback((type: CreateNodeType, path: Record<string, string>, currentName: string) => {
+    setEditContext({ type, path, currentName });
+  }, []);
 
   const handleEditSubmit = useCallback(
     (data: CreateNodeData) => {
@@ -179,7 +215,13 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
         setSelectedGlobalVariablesViewId(null);
       }
     },
-    [setSelectedVariant, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId, onSelectGeneratedConfig],
+    [
+      setSelectedVariant,
+      setSelectedGlobalVariablesViewId,
+      setSelectedPluginName,
+      setSelectedPluginNodeId,
+      onSelectGeneratedConfig,
+    ],
   );
 
   const handleSelectVariant = useCallback(
@@ -194,7 +236,13 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
         setSelectedVariant(variantId);
       }
     },
-    [setSelectedVariant, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId, onSelectVariant],
+    [
+      setSelectedVariant,
+      setSelectedGlobalVariablesViewId,
+      setSelectedPluginName,
+      setSelectedPluginNodeId,
+      onSelectVariant,
+    ],
   );
 
   return (
@@ -283,9 +331,24 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                             hasChildren={model.variants.length > 0 || hasGenerated}
                             isSection
                             onAdd={() => openCreate('variant', view.id, vendor.id, model.id)}
-                            onEdit={() => handleEdit('model', { viewId: view.id, vendorId: vendor.id, modelId: model.id }, model.name)}
-                            onDelete={() => handleDelete('model', { viewId: view.id, vendorId: vendor.id, modelId: model.id })}
-                            onSelect={() => onSelectSection?.({ type: 'model', viewId: view.id, vendorId: vendor.id, modelId: model.id })}
+                            onEdit={() =>
+                              handleEdit(
+                                'model',
+                                { viewId: view.id, vendorId: vendor.id, modelId: model.id },
+                                model.name,
+                              )
+                            }
+                            onDelete={() =>
+                              handleDelete('model', { viewId: view.id, vendorId: vendor.id, modelId: model.id })
+                            }
+                            onSelect={() =>
+                              onSelectSection?.({
+                                type: 'model',
+                                viewId: view.id,
+                                vendorId: vendor.id,
+                                modelId: model.id,
+                              })
+                            }
                           >
                             {/* Templates sub-folder */}
                             <TreeNode
@@ -296,7 +359,14 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                               hasChildren={model.variants.length > 0}
                               isSection
                               onAdd={() => openCreate('variant', view.id, vendor.id, model.id)}
-                              onSelect={() => onSelectSection?.({ type: 'templates', viewId: view.id, vendorId: vendor.id, modelId: model.id })}
+                              onSelect={() =>
+                                onSelectSection?.({
+                                  type: 'templates',
+                                  viewId: view.id,
+                                  vendorId: vendor.id,
+                                  modelId: model.id,
+                                })
+                              }
                             >
                               {model.variants.map((variant) => (
                                 <TreeNode
@@ -308,7 +378,18 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                                   hasChildren={false}
                                   isSelected={selectedVariantId === variant.id && selectedGeneratedConfigId === null}
                                   onSelect={() => handleSelectVariant(variant.id)}
-                                  onEdit={() => handleEdit('variant', { viewId: view.id, vendorId: vendor.id, modelId: model.id, variantId: variant.id }, variant.name)}
+                                  onEdit={() =>
+                                    handleEdit(
+                                      'variant',
+                                      {
+                                        viewId: view.id,
+                                        vendorId: vendor.id,
+                                        modelId: model.id,
+                                        variantId: variant.id,
+                                      },
+                                      variant.name,
+                                    )
+                                  }
                                   onDuplicate={() => {
                                     const source = getTemplate(variant.templateId);
                                     if (!source) return;
@@ -320,7 +401,14 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                                     saveTemplate(clone);
                                     addVariant(view.id, vendor.id, model.id, `${variant.name} (copy)`, clone.id);
                                   }}
-                                  onDelete={() => handleDelete('variant', { viewId: view.id, vendorId: vendor.id, modelId: model.id, variantId: variant.id })}
+                                  onDelete={() =>
+                                    handleDelete('variant', {
+                                      viewId: view.id,
+                                      vendorId: vendor.id,
+                                      modelId: model.id,
+                                      variantId: variant.id,
+                                    })
+                                  }
                                 />
                               ))}
                             </TreeNode>
@@ -334,7 +422,14 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                                 depth={4}
                                 hasChildren={true}
                                 isSection
-                                onSelect={() => onSelectSection?.({ type: 'generated', viewId: view.id, vendorId: vendor.id, modelId: model.id })}
+                                onSelect={() =>
+                                  onSelectSection?.({
+                                    type: 'generated',
+                                    viewId: view.id,
+                                    vendorId: vendor.id,
+                                    modelId: model.id,
+                                  })
+                                }
                               >
                                 {generatedConfigs.map((gc) => (
                                   <TreeNode
@@ -423,7 +518,14 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                   <TreeNode
                     key={plugin.manifest.name}
                     id={`plugin-${plugin.manifest.name}`}
-                    label={<>{plugin.manifest.displayName} <span className={plugin.health.status === 'active' ? 'text-emerald-400' : 'text-slate-500'}>{plugin.health.status === 'active' ? '●' : '○'}</span></>}
+                    label={
+                      <>
+                        {plugin.manifest.displayName}{' '}
+                        <span className={plugin.health.status === 'active' ? 'text-emerald-400' : 'text-slate-500'}>
+                          {plugin.health.status === 'active' ? '●' : '○'}
+                        </span>
+                      </>
+                    }
                     icon={getPluginIcon(plugin.manifest.icon)}
                     depth={1}
                     hasChildren={false}
@@ -435,20 +537,26 @@ export function Sidebar({ onSwitchToEditor, onSelectGeneratedConfig, onSelectVar
                         onSelectPlugin(plugin.manifest.name, null);
                       }
                     }}
-                    onDelete={plugin.manifest.type !== 'bundled' ? () => {
-                      if (confirm(`Remove plugin "${plugin.manifest.displayName}"?`)) {
-                        const state = useForgeStore.getState();
-                        if (state.selectedPluginName === plugin.manifest.name) {
-                          setSelectedPluginName(null);
-                          setSelectedPluginNodeId(null);
-                        }
-                        unregisterPlugin(plugin.manifest.name);
-                      }
-                    } : undefined}
-                    contextMenuExtras={[{
-                      label: plugin.enabled ? 'Disable' : 'Enable',
-                      onClick: () => setPluginEnabled(plugin.manifest.name, !plugin.enabled),
-                    }]}
+                    onDelete={
+                      plugin.manifest.type !== 'bundled'
+                        ? () => {
+                            if (confirm(`Remove plugin "${plugin.manifest.displayName}"?`)) {
+                              const state = useForgeStore.getState();
+                              if (state.selectedPluginName === plugin.manifest.name) {
+                                setSelectedPluginName(null);
+                                setSelectedPluginNodeId(null);
+                              }
+                              unregisterPlugin(plugin.manifest.name);
+                            }
+                          }
+                        : undefined
+                    }
+                    contextMenuExtras={[
+                      {
+                        label: plugin.enabled ? 'Disable' : 'Enable',
+                        onClick: () => setPluginEnabled(plugin.manifest.name, !plugin.enabled),
+                      },
+                    ]}
                   />
                 ))}
               </TreeNode>

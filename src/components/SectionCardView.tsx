@@ -23,7 +23,15 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function Card({ children, onClick, className = '' }: { children: React.ReactNode; onClick?: () => void; className?: string }) {
+function Card({
+  children,
+  onClick,
+  className = '',
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+}) {
   return (
     <div
       onClick={onClick}
@@ -55,15 +63,27 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }
   );
 }
 
-function ConfigurationsView({ view, onNavigateSection }: { view: View; onNavigateSection: (sel: SectionSelection) => void }) {
+function ConfigurationsView({
+  view,
+  onNavigateSection,
+}: {
+  view: View;
+  onNavigateSection: (sel: SectionSelection) => void;
+}) {
   return (
     <>
-      <SectionHeader title="Configurations" subtitle={`${view.name} — ${view.vendors.length} vendor${view.vendors.length !== 1 ? 's' : ''}`} />
+      <SectionHeader
+        title="Configurations"
+        subtitle={`${view.name} — ${view.vendors.length} vendor${view.vendors.length !== 1 ? 's' : ''}`}
+      />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {view.vendors.map((vendor) => {
           const templateCount = vendor.models.reduce((sum, m) => sum + m.variants.length, 0);
           return (
-            <Card key={vendor.id} onClick={() => onNavigateSection({ type: 'vendor', viewId: view.id, vendorId: vendor.id })}>
+            <Card
+              key={vendor.id}
+              onClick={() => onNavigateSection({ type: 'vendor', viewId: view.id, vendorId: vendor.id })}
+            >
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 bg-forge-graphite rounded-md">
                   <Server size={18} className="text-forge-amber" />
@@ -88,7 +108,12 @@ function ConfigurationsView({ view, onNavigateSection }: { view: View; onNavigat
   );
 }
 
-function VendorView({ vendor, viewId, getGeneratedConfigs, onNavigateSection }: {
+function VendorView({
+  vendor,
+  viewId,
+  getGeneratedConfigs,
+  onNavigateSection,
+}: {
   vendor: Vendor;
   viewId: string;
   getGeneratedConfigs: (modelId: string) => GeneratedConfig[];
@@ -96,19 +121,27 @@ function VendorView({ vendor, viewId, getGeneratedConfigs, onNavigateSection }: 
 }) {
   return (
     <>
-      <SectionHeader title={vendor.name} subtitle={`${vendor.models.length} model${vendor.models.length !== 1 ? 's' : ''} — ${vendor.configFormat.toUpperCase()} format`} />
+      <SectionHeader
+        title={vendor.name}
+        subtitle={`${vendor.models.length} model${vendor.models.length !== 1 ? 's' : ''} — ${vendor.configFormat.toUpperCase()} format`}
+      />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {vendor.models.map((model) => {
           const genCount = getGeneratedConfigs(model.id).length;
           return (
-            <Card key={model.id} onClick={() => onNavigateSection({ type: 'model', viewId, vendorId: vendor.id, modelId: model.id })}>
+            <Card
+              key={model.id}
+              onClick={() => onNavigateSection({ type: 'model', viewId, vendorId: vendor.id, modelId: model.id })}
+            >
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 bg-forge-graphite rounded-md">
                   <Cpu size={18} className="text-forge-amber" />
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-slate-200">{model.name}</h3>
-                  {model.description && <p className="text-xs text-slate-500 truncate max-w-[180px]">{model.description}</p>}
+                  {model.description && (
+                    <p className="text-xs text-slate-500 truncate max-w-[180px]">{model.description}</p>
+                  )}
                 </div>
               </div>
               <div className="flex gap-4">
@@ -129,7 +162,13 @@ function VendorView({ vendor, viewId, getGeneratedConfigs, onNavigateSection }: 
   );
 }
 
-function ModelView({ model, getTemplate, getGeneratedConfigs, onNavigateVariant, onNavigateGeneratedConfig }: {
+function ModelView({
+  model,
+  getTemplate,
+  getGeneratedConfigs,
+  onNavigateVariant,
+  onNavigateGeneratedConfig,
+}: {
   model: Model;
   getTemplate: (id: string) => { sections: { id: string }[]; updatedAt: string } | undefined;
   getGeneratedConfigs: (modelId: string) => GeneratedConfig[];
@@ -140,7 +179,10 @@ function ModelView({ model, getTemplate, getGeneratedConfigs, onNavigateVariant,
 
   return (
     <>
-      <SectionHeader title={model.name} subtitle={model.description || `${model.variants.length} template${model.variants.length !== 1 ? 's' : ''}`} />
+      <SectionHeader
+        title={model.name}
+        subtitle={model.description || `${model.variants.length} template${model.variants.length !== 1 ? 's' : ''}`}
+      />
 
       {model.variants.length > 0 && (
         <>
@@ -196,14 +238,21 @@ function ModelView({ model, getTemplate, getGeneratedConfigs, onNavigateVariant,
   );
 }
 
-function TemplatesView({ model, getTemplate, onNavigateVariant }: {
+function TemplatesView({
+  model,
+  getTemplate,
+  onNavigateVariant,
+}: {
   model: Model;
   getTemplate: (id: string) => { sections: { id: string }[]; updatedAt: string } | undefined;
   onNavigateVariant: (variantId: string) => void;
 }) {
   return (
     <>
-      <SectionHeader title="Templates" subtitle={`${model.name} — ${model.variants.length} template${model.variants.length !== 1 ? 's' : ''}`} />
+      <SectionHeader
+        title="Templates"
+        subtitle={`${model.name} — ${model.variants.length} template${model.variants.length !== 1 ? 's' : ''}`}
+      />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {model.variants.map((variant) => {
           const tmpl = getTemplate(variant.templateId);
@@ -230,7 +279,11 @@ function TemplatesView({ model, getTemplate, onNavigateVariant }: {
   );
 }
 
-function GeneratedView({ model, getGeneratedConfigs, onNavigateGeneratedConfig }: {
+function GeneratedView({
+  model,
+  getGeneratedConfigs,
+  onNavigateGeneratedConfig,
+}: {
   model: Model;
   getGeneratedConfigs: (modelId: string) => GeneratedConfig[];
   onNavigateGeneratedConfig: (configId: string) => void;
@@ -238,7 +291,10 @@ function GeneratedView({ model, getGeneratedConfigs, onNavigateGeneratedConfig }
   const configs = getGeneratedConfigs(model.id);
   return (
     <>
-      <SectionHeader title="Generated Configs" subtitle={`${model.name} — ${configs.length} config${configs.length !== 1 ? 's' : ''}`} />
+      <SectionHeader
+        title="Generated Configs"
+        subtitle={`${model.name} — ${configs.length} config${configs.length !== 1 ? 's' : ''}`}
+      />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {configs.map((gc) => (
           <Card key={gc.id} onClick={() => onNavigateGeneratedConfig(gc.id)}>
@@ -254,15 +310,18 @@ function GeneratedView({ model, getGeneratedConfigs, onNavigateGeneratedConfig }
             <StatBadge icon={<Clock size={12} />} label="Created" value={formatDate(gc.createdAt)} />
           </Card>
         ))}
-        {configs.length === 0 && (
-          <p className="text-sm text-slate-500 col-span-full">No generated configs yet.</p>
-        )}
+        {configs.length === 0 && <p className="text-sm text-slate-500 col-span-full">No generated configs yet.</p>}
       </div>
     </>
   );
 }
 
-export function SectionCardView({ selection, onNavigateVariant, onNavigateGeneratedConfig, onNavigateSection }: SectionCardViewProps) {
+export function SectionCardView({
+  selection,
+  onNavigateVariant,
+  onNavigateGeneratedConfig,
+  onNavigateSection,
+}: SectionCardViewProps) {
   const { tree, getTemplate, getGeneratedConfigs } = useForgeStore();
 
   const view = tree.views.find((v) => v.id === selection.viewId);
@@ -273,11 +332,14 @@ export function SectionCardView({ selection, onNavigateVariant, onNavigateGenera
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
-      {selection.type === 'configurations' && (
-        <ConfigurationsView view={view} onNavigateSection={onNavigateSection} />
-      )}
+      {selection.type === 'configurations' && <ConfigurationsView view={view} onNavigateSection={onNavigateSection} />}
       {selection.type === 'vendor' && vendor && (
-        <VendorView vendor={vendor} viewId={view.id} getGeneratedConfigs={getGeneratedConfigs} onNavigateSection={onNavigateSection} />
+        <VendorView
+          vendor={vendor}
+          viewId={view.id}
+          getGeneratedConfigs={getGeneratedConfigs}
+          onNavigateSection={onNavigateSection}
+        />
       )}
       {selection.type === 'model' && model && (
         <ModelView
@@ -292,7 +354,11 @@ export function SectionCardView({ selection, onNavigateVariant, onNavigateGenera
         <TemplatesView model={model} getTemplate={getTemplate} onNavigateVariant={onNavigateVariant} />
       )}
       {selection.type === 'generated' && model && (
-        <GeneratedView model={model} getGeneratedConfigs={getGeneratedConfigs} onNavigateGeneratedConfig={onNavigateGeneratedConfig} />
+        <GeneratedView
+          model={model}
+          getGeneratedConfigs={getGeneratedConfigs}
+          onNavigateGeneratedConfig={onNavigateGeneratedConfig}
+        />
       )}
     </div>
   );

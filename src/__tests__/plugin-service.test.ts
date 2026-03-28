@@ -1,10 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  validateManifest,
-  fetchManifest,
-  healthCheck,
-  pluginFetch,
-} from '../lib/plugin-service.ts';
+import { validateManifest, fetchManifest, healthCheck, pluginFetch } from '../lib/plugin-service.ts';
 import type { PluginManifest } from '../types/plugin.ts';
 
 // --- Helpers ---
@@ -124,9 +119,7 @@ describe('fetchManifest', () => {
       status: 401,
     });
 
-    await expect(fetchManifest('http://localhost:9001', 'bad-key')).rejects.toThrow(
-      'Authentication failed',
-    );
+    await expect(fetchManifest('http://localhost:9001', 'bad-key')).rejects.toThrow('Authentication failed');
   });
 
   it('throws status error on 500', async () => {
@@ -135,9 +128,7 @@ describe('fetchManifest', () => {
       status: 500,
     });
 
-    await expect(fetchManifest('http://localhost:9001', 'key')).rejects.toThrow(
-      'returned status 500',
-    );
+    await expect(fetchManifest('http://localhost:9001', 'key')).rejects.toThrow('returned status 500');
   });
 });
 
@@ -204,9 +195,6 @@ describe('pluginFetch', () => {
 
     await pluginFetch('http://localhost:9001', 'key', '/forge/vulns');
 
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      'http://localhost:9001/forge/vulns',
-      expect.any(Object),
-    );
+    expect(globalThis.fetch).toHaveBeenCalledWith('http://localhost:9001/forge/vulns', expect.any(Object));
   });
 });

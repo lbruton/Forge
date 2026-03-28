@@ -3,17 +3,7 @@ import { useForgeStore } from '../store/index.ts';
 import { fetchManifest, healthCheck } from '../lib/plugin-service.ts';
 import type { PluginRegistration, SettingsField } from '../types/plugin.ts';
 import SetupWizard from '../plugins/infisical/SetupWizard.tsx';
-import {
-  ArrowLeft,
-  Eye,
-  EyeOff,
-  Loader2,
-  Plus,
-  Puzzle,
-  RefreshCw,
-  Settings,
-  Trash2,
-} from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Loader2, Plus, Puzzle, RefreshCw, Settings, Trash2 } from 'lucide-react';
 
 interface PluginPanelProps {
   viewId?: string;
@@ -26,12 +16,7 @@ const INPUT_CLASSES =
   'w-full px-2.5 py-1.5 bg-forge-obsidian border border-forge-steel rounded text-[13px] text-slate-200 outline-none focus:border-forge-amber focus:shadow-[0_0_0_2px_rgba(245,158,11,0.15)] transition-colors';
 
 function StatusDot({ status }: { status: 'active' | 'inactive' | 'unknown' }) {
-  const colorClass =
-    status === 'active'
-      ? 'bg-green-500'
-      : status === 'inactive'
-        ? 'bg-red-500'
-        : 'bg-slate-500';
+  const colorClass = status === 'active' ? 'bg-green-500' : status === 'inactive' ? 'bg-red-500' : 'bg-slate-500';
   return <span className={`inline-block w-2 h-2 rounded-full ${colorClass}`} />;
 }
 
@@ -46,11 +31,7 @@ function formatTimestamp(iso: string): string {
 
 // --- Add Plugin Form ---
 
-function AddPluginForm({
-  onDone,
-}: {
-  onDone: () => void;
-}) {
+function AddPluginForm({ onDone }: { onDone: () => void }) {
   const registerPlugin = useForgeStore((s) => s.registerPlugin);
   const setPluginHealth = useForgeStore((s) => s.setPluginHealth);
 
@@ -85,9 +66,7 @@ function AddPluginForm({
 
       <div className="space-y-3">
         <div>
-          <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">
-            Endpoint URL
-          </label>
+          <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">Endpoint URL</label>
           <input
             type="text"
             value={endpoint}
@@ -98,9 +77,7 @@ function AddPluginForm({
         </div>
 
         <div>
-          <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">
-            API Key
-          </label>
+          <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">API Key</label>
           <input
             type="password"
             value={apiKey}
@@ -110,9 +87,7 @@ function AddPluginForm({
           />
         </div>
 
-        {error && (
-          <p className="text-[12px] text-red-400">{error}</p>
-        )}
+        {error && <p className="text-[12px] text-red-400">{error}</p>}
 
         <div className="flex items-center gap-2">
           <button
@@ -179,9 +154,7 @@ function SettingsForm({
 
   return (
     <div className="mt-4">
-      <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-3 font-semibold">
-        Settings
-      </h3>
+      <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-3 font-semibold">Settings</h3>
       <div className="space-y-3">
         {entries.map(([key, field]) => {
           const val = currentSettings[key] ?? field.default ?? '';
@@ -192,9 +165,7 @@ function SettingsForm({
                 {field.label}
                 {field.required && <span className="text-red-400 ml-0.5">*</span>}
               </label>
-              {field.description && (
-                <p className="text-[11px] text-slate-500 mb-1">{field.description}</p>
-              )}
+              {field.description && <p className="text-[11px] text-slate-500 mb-1">{field.description}</p>}
 
               {field.type === 'boolean' ? (
                 <label className="inline-flex items-center gap-2 cursor-pointer">
@@ -204,9 +175,7 @@ function SettingsForm({
                     onChange={(e) => handleChange(key, e.target.checked)}
                     className="rounded border-forge-steel bg-forge-obsidian text-forge-amber focus:ring-forge-amber"
                   />
-                  <span className="text-[12px] text-slate-400">
-                    {val ? 'Enabled' : 'Disabled'}
-                  </span>
+                  <span className="text-[12px] text-slate-400">{val ? 'Enabled' : 'Disabled'}</span>
                 </label>
               ) : field.type === 'select' ? (
                 <select
@@ -225,9 +194,7 @@ function SettingsForm({
                 <input
                   type="number"
                   value={val === '' ? '' : Number(val)}
-                  onChange={(e) =>
-                    handleChange(key, e.target.value === '' ? '' : Number(e.target.value))
-                  }
+                  onChange={(e) => handleChange(key, e.target.value === '' ? '' : Number(e.target.value))}
                   className={INPUT_CLASSES}
                 />
               ) : field.type === 'password' ? (
@@ -264,13 +231,7 @@ function SettingsForm({
 
 // --- Plugin Detail View ---
 
-function PluginDetail({
-  registration,
-  onBack,
-}: {
-  registration: PluginRegistration;
-  onBack: () => void;
-}) {
+function PluginDetail({ registration, onBack }: { registration: PluginRegistration; onBack: () => void }) {
   const setPluginEnabled = useForgeStore((s) => s.setPluginEnabled);
   const setPluginHealth = useForgeStore((s) => s.setPluginHealth);
   const unregisterPlugin = useForgeStore((s) => s.unregisterPlugin);
@@ -320,25 +281,18 @@ function PluginDetail({
     onBack();
   }, [manifest.name, unregisterPlugin, onBack]);
 
-  const maskedApiKey = registration.apiKey
-    ? '\u2022'.repeat(16)
-    : '';
+  const maskedApiKey = registration.apiKey ? '\u2022'.repeat(16) : '';
 
   return (
     <div className="flex flex-col h-full bg-forge-obsidian">
       {/* Header */}
       <div className="flex items-center gap-3 px-6 py-4 border-b border-forge-graphite bg-forge-charcoal">
-        <button
-          onClick={onBack}
-          className="text-slate-400 hover:text-slate-200 transition-colors"
-        >
+        <button onClick={onBack} className="text-slate-400 hover:text-slate-200 transition-colors">
           <ArrowLeft size={18} />
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold text-slate-200 truncate">
-              {manifest.displayName}
-            </h2>
+            <h2 className="text-base font-semibold text-slate-200 truncate">{manifest.displayName}</h2>
             {manifest.type === 'bundled' && (
               <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-forge-graphite text-slate-400">
                 Built-in
@@ -361,26 +315,20 @@ function PluginDetail({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <StatusDot status={registration.health.status} />
-              <span className="text-[13px] text-slate-200 capitalize">
-                {registration.health.status}
-              </span>
+              <span className="text-[13px] text-slate-200 capitalize">{registration.health.status}</span>
             </div>
             <span className="text-[11px] text-slate-500">
               Last checked: {formatTimestamp(registration.health.lastChecked)}
             </span>
           </div>
-          {registration.health.error && (
-            <p className="text-[12px] text-red-400 mt-2">{registration.health.error}</p>
-          )}
+          {registration.health.error && <p className="text-[12px] text-red-400 mt-2">{registration.health.error}</p>}
         </div>
 
         {/* Enable/Disable toggle */}
         <div className="flex items-center justify-between">
           <span className="text-[13px] text-slate-300">Enabled</span>
           <button
-            onClick={() =>
-              setPluginEnabled(manifest.name, !registration.enabled)
-            }
+            onClick={() => setPluginEnabled(manifest.name, !registration.enabled)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
               registration.enabled ? 'bg-forge-amber' : 'bg-slate-600'
             }`}
@@ -397,18 +345,14 @@ function PluginDetail({
         {isSidecar && (
           <div className="space-y-3">
             <div>
-              <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">
-                Endpoint URL
-              </label>
+              <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">Endpoint URL</label>
               <div className="px-2.5 py-1.5 bg-forge-obsidian border border-forge-graphite rounded text-[13px] text-slate-400 font-mono">
                 {registration.endpoint}
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">
-                API Key
-              </label>
+              <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">API Key</label>
               <div className="relative">
                 <div className="px-2.5 py-1.5 bg-forge-obsidian border border-forge-graphite rounded text-[13px] text-slate-400 font-mono pr-10 min-h-[34px]">
                   {apiKeyRevealed ? registration.apiKey : maskedApiKey}
@@ -459,9 +403,7 @@ function PluginDetail({
           <div className="pt-4 border-t border-forge-graphite">
             {confirmRemove ? (
               <div className="flex items-center gap-3">
-                <span className="text-[12px] text-red-400">
-                  Remove {manifest.displayName}? This cannot be undone.
-                </span>
+                <span className="text-[12px] text-red-400">Remove {manifest.displayName}? This cannot be undone.</span>
                 <button
                   onClick={handleRemove}
                   className="px-3 py-1.5 text-[12px] font-semibold text-red-400 border border-red-500 rounded hover:bg-red-500/10 transition-colors"
@@ -512,12 +454,7 @@ export default function PluginPanel({ pluginName, autoAdd }: PluginPanelProps) {
         </div>
       );
     }
-    return (
-      <PluginDetail
-        registration={registration}
-        onBack={() => setSelectedPluginName(null)}
-      />
-    );
+    return <PluginDetail registration={registration} onBack={() => setSelectedPluginName(null)} />;
   }
 
   // Plugin List view
@@ -545,16 +482,14 @@ export default function PluginPanel({ pluginName, autoAdd }: PluginPanelProps) {
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-6 py-6">
-        {showAddForm && (
-          <AddPluginForm onDone={() => setShowAddForm(false)} />
-        )}
+        {showAddForm && <AddPluginForm onDone={() => setShowAddForm(false)} />}
 
         {plugins.length === 0 && !showAddForm ? (
           <div className="text-center py-12 text-slate-500">
             <Puzzle size={48} className="mx-auto mb-4 text-slate-600" />
             <p className="text-[13px] leading-relaxed max-w-[420px] mx-auto">
-              No plugins registered for this View. Add a sidecar plugin to extend Forge
-              with vulnerability scanning, compliance checks, and more.
+              No plugins registered for this View. Add a sidecar plugin to extend Forge with vulnerability scanning,
+              compliance checks, and more.
             </p>
             <button
               onClick={() => setShowAddForm(true)}
@@ -572,45 +507,41 @@ export default function PluginPanel({ pluginName, autoAdd }: PluginPanelProps) {
                 return a.manifest.type === 'bundled' ? -1 : 1;
               })
               .map((reg) => (
-              <button
-                key={reg.manifest.name}
-                onClick={() => setSelectedPluginName(reg.manifest.name)}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-forge-charcoal border border-forge-graphite rounded-lg hover:border-forge-amber/50 transition-colors text-left"
-              >
-                <StatusDot status={reg.health.status} />
-                <div className="flex-1 min-w-0">
+                <button
+                  key={reg.manifest.name}
+                  onClick={() => setSelectedPluginName(reg.manifest.name)}
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-forge-charcoal border border-forge-graphite rounded-lg hover:border-forge-amber/50 transition-colors text-left"
+                >
+                  <StatusDot status={reg.health.status} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-medium text-slate-200 truncate">
+                        {reg.manifest.displayName}
+                      </span>
+                      {reg.manifest.type === 'bundled' && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-forge-graphite text-slate-400 shrink-0">
+                          Built-in
+                        </span>
+                      )}
+                      {reg.manifest.type === 'integration' && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-forge-amber/15 text-forge-amber shrink-0">
+                          Integration
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-slate-500">v{reg.manifest.version}</div>
+                  </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[13px] font-medium text-slate-200 truncate">
-                      {reg.manifest.displayName}
+                    <span
+                      className={`text-[11px] px-2 py-0.5 rounded-full ${
+                        reg.enabled ? 'bg-green-500/10 text-green-400' : 'bg-slate-700 text-slate-500'
+                      }`}
+                    >
+                      {reg.enabled ? 'Enabled' : 'Disabled'}
                     </span>
-                    {reg.manifest.type === 'bundled' && (
-                      <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-forge-graphite text-slate-400 shrink-0">
-                        Built-in
-                      </span>
-                    )}
-                    {reg.manifest.type === 'integration' && (
-                      <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-forge-amber/15 text-forge-amber shrink-0">
-                        Integration
-                      </span>
-                    )}
                   </div>
-                  <div className="text-[11px] text-slate-500">
-                    v{reg.manifest.version}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`text-[11px] px-2 py-0.5 rounded-full ${
-                      reg.enabled
-                        ? 'bg-green-500/10 text-green-400'
-                        : 'bg-slate-700 text-slate-500'
-                    }`}
-                  >
-                    {reg.enabled ? 'Enabled' : 'Disabled'}
-                  </span>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))}
           </div>
         )}
       </div>

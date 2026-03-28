@@ -41,9 +41,7 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
   }, [globalVariables]);
 
   // Current variable values from store
-  const currentValues = selectedVariantId
-    ? variableValues[selectedVariantId]?.values ?? {}
-    : {};
+  const currentValues = selectedVariantId ? (variableValues[selectedVariantId]?.values ?? {}) : {};
 
   // Merge default values with user-entered values
   const mergedValues = useMemo(() => {
@@ -169,11 +167,7 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
 
           {/* Config preview */}
           <div className="flex-1 min-h-0">
-            <ConfigPreview
-              sections={displaySections}
-              activeSection={activeSection}
-              configFormat={configFormat}
-            />
+            <ConfigPreview sections={displaySections} activeSection={activeSection} configFormat={configFormat} />
           </div>
         </div>
 

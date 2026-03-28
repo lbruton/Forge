@@ -45,7 +45,9 @@ export function ImportSecretPicker({
         if (!cancelled) setLoading(false);
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [provider, projectId, environment]);
 
   useEffect(() => {
@@ -66,9 +68,7 @@ export function ImportSecretPicker({
     [provider, projectId, environment, onImport],
   );
 
-  const filtered = filter
-    ? secrets.filter((s) => s.key.toLowerCase().includes(filter.toLowerCase()))
-    : secrets;
+  const filtered = filter ? secrets.filter((s) => s.key.toLowerCase().includes(filter.toLowerCase())) : secrets;
 
   const alreadyImported = (key: string) => existingNames.has(secretKeyToVarName(key));
 
@@ -76,7 +76,9 @@ export function ImportSecretPicker({
     <div
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      onClick={(e) => {
+        if (e.target === overlayRef.current) onClose();
+      }}
     >
       <div className="w-full max-w-lg bg-slate-800 border border-slate-700 rounded-xl shadow-2xl flex flex-col max-h-[70vh]">
         {/* Header */}
@@ -85,10 +87,7 @@ export function ImportSecretPicker({
             <Shield size={16} className="text-amber-500" />
             Import from Infisical
           </h3>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-200 transition-colors"
-          >
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-200 transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -154,25 +153,15 @@ export function ImportSecretPicker({
                     }`}
                   >
                     <div className="flex flex-col min-w-0">
-                      <span className="font-mono text-[13px] text-slate-200 truncate">
-                        {secret.key}
-                      </span>
+                      <span className="font-mono text-[13px] text-slate-200 truncate">{secret.key}</span>
                       {secret.comment && (
-                        <span className="text-[11px] text-slate-500 truncate mt-0.5">
-                          {secret.comment}
-                        </span>
+                        <span className="text-[11px] text-slate-500 truncate mt-0.5">{secret.comment}</span>
                       )}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                      {imported && (
-                        <span className="text-[11px] text-slate-500">Already imported</span>
-                      )}
-                      {isImporting && (
-                        <Loader2 size={14} className="animate-spin text-amber-500" />
-                      )}
-                      {!imported && !isImporting && (
-                        <Download size={14} className="text-slate-500" />
-                      )}
+                      {imported && <span className="text-[11px] text-slate-500">Already imported</span>}
+                      {isImporting && <Loader2 size={14} className="animate-spin text-amber-500" />}
+                      {!imported && !isImporting && <Download size={14} className="text-slate-500" />}
                     </div>
                   </button>
                 );

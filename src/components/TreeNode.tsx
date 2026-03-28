@@ -101,7 +101,11 @@ export function TreeNode({
         )}
 
         <span className="shrink-0">{icon}</span>
-        <span className={`text-[13px] truncate flex-1 ${isSelected ? 'text-inherit' : isSection ? 'font-semibold text-slate-300' : 'font-medium text-amber-200/80'}`}>{label}</span>
+        <span
+          className={`text-[13px] truncate flex-1 ${isSelected ? 'text-inherit' : isSection ? 'font-semibold text-slate-300' : 'font-medium text-amber-200/80'}`}
+        >
+          {label}
+        </span>
 
         {onAdd && hovered && (
           <button
@@ -182,7 +186,10 @@ export function TreeNode({
           {contextMenuExtras?.map((item) => (
             <button
               key={item.label}
-              className={item.className || "w-full text-left px-3 py-1.5 text-[13px] text-slate-300 hover:bg-forge-graphite hover:text-slate-100 transition-colors"}
+              className={
+                item.className ||
+                'w-full text-left px-3 py-1.5 text-[13px] text-slate-300 hover:bg-forge-graphite hover:text-slate-100 transition-colors'
+              }
               onClick={() => {
                 setContextMenuOpen(false);
                 item.onClick();

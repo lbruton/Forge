@@ -18,9 +18,7 @@ export default function SecretsBrowser({ pluginName, viewId: _viewId }: SecretsB
 
   // State
   const [projects, setProjects] = useState<SecretProject[]>([]);
-  const [selectedProject, setSelectedProject] = useState<string>(
-    (settings.defaultProjectId as string) || '',
-  );
+  const [selectedProject, setSelectedProject] = useState<string>((settings.defaultProjectId as string) || '');
   const [selectedEnvironment, setSelectedEnvironment] = useState<string>(
     (settings.defaultEnvironment as string) || 'dev',
   );
@@ -147,9 +145,7 @@ export default function SecretsBrowser({ pluginName, viewId: _viewId }: SecretsB
 
       try {
         // If already revealed, copy from cache; otherwise fetch and discard
-        const value =
-          revealedValues[key] ??
-          (await provider.getSecret(selectedProject, selectedEnvironment, key));
+        const value = revealedValues[key] ?? (await provider.getSecret(selectedProject, selectedEnvironment, key));
 
         await navigator.clipboard.writeText(value);
         setCopiedKey(key);
@@ -174,9 +170,7 @@ export default function SecretsBrowser({ pluginName, viewId: _viewId }: SecretsB
         <div className="flex-1 flex flex-col items-center justify-center gap-3">
           <AlertTriangle size={32} className="text-slate-600" />
           <p className="text-sm text-slate-500">Not connected to Infisical.</p>
-          <p className="text-xs text-slate-600">
-            Check plugin settings and reconnect to browse secrets.
-          </p>
+          <p className="text-xs text-slate-600">Check plugin settings and reconnect to browse secrets.</p>
         </div>
       </div>
     );
@@ -237,8 +231,7 @@ export default function SecretsBrowser({ pluginName, viewId: _viewId }: SecretsB
       {isReadOnly && (
         <div className="mx-4 mt-3 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
           <p className="text-xs text-amber-400">
-            Connected in read-only mode. To enable sync features, update the machine identity role
-            in Infisical.
+            Connected in read-only mode. To enable sync features, update the machine identity role in Infisical.
           </p>
         </div>
       )}
@@ -302,9 +295,7 @@ export default function SecretsBrowser({ pluginName, viewId: _viewId }: SecretsB
                 >
                   {/* Key */}
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-mono text-[13px] text-slate-200 truncate">
-                      {secret.key}
-                    </span>
+                    <span className="font-mono text-[13px] text-slate-200 truncate">{secret.key}</span>
                     {secret.tags.length > 0 && (
                       <div className="flex gap-1 flex-shrink-0">
                         {secret.tags.map((tag) => (
@@ -322,9 +313,7 @@ export default function SecretsBrowser({ pluginName, viewId: _viewId }: SecretsB
                   {/* Value (masked or revealed) */}
                   <span
                     className={`text-[13px] truncate ${
-                      isRevealed
-                        ? 'font-mono text-slate-300'
-                        : 'text-slate-500 tracking-wider'
+                      isRevealed ? 'font-mono text-slate-300' : 'text-slate-500 tracking-wider'
                     }`}
                   >
                     {isRevealed ? revealedValues[secret.key] : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}
@@ -349,11 +338,7 @@ export default function SecretsBrowser({ pluginName, viewId: _viewId }: SecretsB
                       className="inline-flex items-center justify-center w-7 h-7 rounded text-slate-500 hover:text-forge-amber hover:bg-forge-amber/10 transition-colors"
                       title="Copy value to clipboard"
                     >
-                      {isCopied ? (
-                        <Check size={14} className="text-emerald-400" />
-                      ) : (
-                        <Copy size={14} />
-                      )}
+                      {isCopied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                     </button>
                   </div>
                 </div>

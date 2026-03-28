@@ -50,9 +50,7 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
     : 'Source variant unavailable';
 
   const variableEntries = Object.entries(config.variableValues);
-  const globalEntries = config.globalVariableValues
-    ? Object.entries(config.globalVariableValues)
-    : [];
+  const globalEntries = config.globalVariableValues ? Object.entries(config.globalVariableValues) : [];
 
   const handleDelete = () => {
     deleteGeneratedConfig(config.id);
@@ -84,11 +82,7 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
           {/* Action buttons */}
           <div className="flex items-center gap-2">
             <CopyButton text={config.fullConfig} label="Copy All" />
-            <DownloadButton
-              text={config.fullConfig}
-              filename={`${config.name}.txt`}
-              label="Download"
-            />
+            <DownloadButton text={config.fullConfig} filename={`${config.name}.txt`} label="Download" />
             {!confirmDelete ? (
               <button
                 onClick={() => setConfirmDelete(true)}
@@ -124,9 +118,7 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
         </div>
 
         {/* Notes */}
-        {config.notes && (
-          <p className="text-xs text-slate-500 mt-2 italic">{config.notes}</p>
-        )}
+        {config.notes && <p className="text-xs text-slate-500 mt-2 italic">{config.notes}</p>}
       </div>
 
       {/* Global variable values collapsible */}
@@ -146,7 +138,9 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
                 {globalEntries.map(([key, value]) => (
                   <div key={key} className="contents">
                     <span className="text-emerald-500 font-mono">${'{' + key + '}'}</span>
-                    <span className="text-slate-300 font-mono truncate">{value || <span className="text-slate-600 italic">empty</span>}</span>
+                    <span className="text-slate-300 font-mono truncate">
+                      {value || <span className="text-slate-600 italic">empty</span>}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -171,7 +165,9 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
                 {variableEntries.map(([key, value]) => (
                   <div key={key} className="contents">
                     <span className="text-slate-500 font-mono">${key}</span>
-                    <span className="text-slate-300 font-mono truncate">{value || <span className="text-slate-600 italic">empty</span>}</span>
+                    <span className="text-slate-300 font-mono truncate">
+                      {value || <span className="text-slate-600 italic">empty</span>}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -182,11 +178,7 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
 
       {/* Config preview */}
       <div className="flex-1 min-h-0">
-        <ConfigPreview
-          sections={config.sections}
-          activeSection={null}
-          configFormat={configFormat}
-        />
+        <ConfigPreview sections={config.sections} activeSection={null} configFormat={configFormat} />
       </div>
     </div>
   );

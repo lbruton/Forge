@@ -1,7 +1,19 @@
 import { useState, useCallback, useRef } from 'react';
 import { useForgeStore } from '../store/index.ts';
 import type { VariableDefinition, VariableType } from '../types/index.ts';
-import { Globe, Plus, GripVertical, Eye, EyeOff, Trash2, ArrowUp, ArrowDown, Cloud, CloudOff, Download } from 'lucide-react';
+import {
+  Globe,
+  Plus,
+  GripVertical,
+  Eye,
+  EyeOff,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  Cloud,
+  CloudOff,
+  Download,
+} from 'lucide-react';
 import { DropdownOptionsEditor } from './DropdownOptionsEditor.tsx';
 import { ImportSecretPicker } from './ImportSecretPicker.tsx';
 import { INFISICAL_MANIFEST } from '../plugins/infisical/manifest.ts';
@@ -136,15 +148,12 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
     [viewId, globalVariables, reorderGlobalVariables],
   );
 
-  const handleIpBlur = useCallback(
-    (name: string, value: string) => {
-      setIpErrors((prev) => ({
-        ...prev,
-        [name]: value.length > 0 && !isValidIpv4(value),
-      }));
-    },
-    [],
-  );
+  const handleIpBlur = useCallback((name: string, value: string) => {
+    setIpErrors((prev) => ({
+      ...prev,
+      [name]: value.length > 0 && !isValidIpv4(value),
+    }));
+  }, []);
 
   const handleSyncToggle = useCallback(
     async (variable: VariableDefinition) => {
@@ -268,7 +277,10 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
         >
           <option value="">Select...</option>
           {variable.options.map((opt, i) => {
-            const { label: optLabel, value: optValue } = typeof opt === 'string' ? { label: opt, value: opt } : { label: opt.label ?? opt.value, value: opt.value };
+            const { label: optLabel, value: optValue } =
+              typeof opt === 'string'
+                ? { label: opt, value: opt }
+                : { label: opt.label ?? opt.value, value: opt.value };
             return (
               <option key={`${optValue}-${i}`} value={optValue}>
                 {optLabel}
@@ -307,9 +319,7 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
           className={`${inputClasses} ${ipErrors[variable.name] ? '!border-red-500' : ''}`}
           placeholder={variable.type === 'ip' ? '0.0.0.0' : 'Enter value...'}
         />
-        {ipErrors[variable.name] && (
-          <p className="text-[11px] text-red-400 mt-0.5">Invalid IPv4 address</p>
-        )}
+        {ipErrors[variable.name] && <p className="text-[11px] text-red-400 mt-0.5">Invalid IPv4 address</p>}
       </>
     );
   };
@@ -399,7 +409,9 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
         ) : (
           <>
             {/* Column headers */}
-            <div className={`grid ${writableProvider ? 'grid-cols-[28px_1fr_180px_100px_36px_36px_200px_36px]' : 'grid-cols-[28px_1fr_180px_100px_36px_200px_36px]'} gap-2.5 px-4 mb-1.5 text-[10px] font-semibold tracking-widest uppercase text-slate-500`}>
+            <div
+              className={`grid ${writableProvider ? 'grid-cols-[28px_1fr_180px_100px_36px_36px_200px_36px]' : 'grid-cols-[28px_1fr_180px_100px_36px_200px_36px]'} gap-2.5 px-4 mb-1.5 text-[10px] font-semibold tracking-widest uppercase text-slate-500`}
+            >
               <span />
               <span>Variable Name</span>
               <span>Value</span>
@@ -414,173 +426,168 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
             <div>
               {globalVariables.map((variable, index) => (
                 <div key={variable.name} className="mb-2">
-                <div
-                  draggable
-                  onDragStart={() => handleDragStart(index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragEnd={handleDragEnd}
-                  className={`grid ${writableProvider ? 'grid-cols-[28px_1fr_180px_100px_36px_36px_200px_36px]' : 'grid-cols-[28px_1fr_180px_100px_36px_200px_36px]'} gap-2.5 items-center px-4 py-3 bg-slate-800 border border-slate-700/50 rounded-lg transition-colors hover:border-green-500/30 ${
-                    dragIndex === index ? 'opacity-50 !border-green-500' : ''
-                  } ${dragOverIndex === index ? '!border-green-500 shadow-[0_0_0_2px_rgba(34,197,94,0.2)]' : ''}`}
-                >
-                  {/* Grip handle + reorder */}
-                  <div className="flex flex-col items-center gap-0.5">
-                    <GripVertical size={14} className="text-slate-500 cursor-grab" />
-                    <div className="flex flex-col">
-                      <button
-                        onClick={() => handleMoveUp(index)}
-                        disabled={index === 0}
-                        className="text-slate-600 hover:text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed"
-                        title="Move up"
-                      >
-                        <ArrowUp size={10} />
-                      </button>
-                      <button
-                        onClick={() => handleMoveDown(index)}
-                        disabled={index === globalVariables.length - 1}
-                        className="text-slate-600 hover:text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed"
-                        title="Move down"
-                      >
-                        <ArrowDown size={10} />
-                      </button>
+                  <div
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragEnd={handleDragEnd}
+                    className={`grid ${writableProvider ? 'grid-cols-[28px_1fr_180px_100px_36px_36px_200px_36px]' : 'grid-cols-[28px_1fr_180px_100px_36px_200px_36px]'} gap-2.5 items-center px-4 py-3 bg-slate-800 border border-slate-700/50 rounded-lg transition-colors hover:border-green-500/30 ${
+                      dragIndex === index ? 'opacity-50 !border-green-500' : ''
+                    } ${dragOverIndex === index ? '!border-green-500 shadow-[0_0_0_2px_rgba(34,197,94,0.2)]' : ''}`}
+                  >
+                    {/* Grip handle + reorder */}
+                    <div className="flex flex-col items-center gap-0.5">
+                      <GripVertical size={14} className="text-slate-500 cursor-grab" />
+                      <div className="flex flex-col">
+                        <button
+                          onClick={() => handleMoveUp(index)}
+                          disabled={index === 0}
+                          className="text-slate-600 hover:text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Move up"
+                        >
+                          <ArrowUp size={10} />
+                        </button>
+                        <button
+                          onClick={() => handleMoveDown(index)}
+                          disabled={index === globalVariables.length - 1}
+                          className="text-slate-600 hover:text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Move down"
+                        >
+                          <ArrowDown size={10} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Variable name (editable — local state, committed on blur) */}
-                  <div className="flex items-center gap-0 overflow-hidden">
-                    <span className="text-green-600/70 font-mono text-[13px]">$</span>
-                    <input
-                      type="text"
-                      value={editingNames[variable.name] ?? variable.name}
-                      onChange={(e) => {
-                        const sanitized = e.target.value.replace(/[^a-zA-Z0-9_]/g, '');
-                        setEditingNames((prev) => ({ ...prev, [variable.name]: sanitized }));
-                      }}
-                      onBlur={() => {
-                        const newName = editingNames[variable.name];
-                        if (newName && newName !== variable.name) {
-                          handleUpdate(variable.name, { name: newName });
-                        }
-                        setEditingNames((prev) => {
-                          const next = { ...prev };
-                          delete next[variable.name];
-                          return next;
-                        });
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          (e.target as HTMLInputElement).blur();
-                        } else if (e.key === 'Escape') {
+                    {/* Variable name (editable — local state, committed on blur) */}
+                    <div className="flex items-center gap-0 overflow-hidden">
+                      <span className="text-green-600/70 font-mono text-[13px]">$</span>
+                      <input
+                        type="text"
+                        value={editingNames[variable.name] ?? variable.name}
+                        onChange={(e) => {
+                          const sanitized = e.target.value.replace(/[^a-zA-Z0-9_]/g, '');
+                          setEditingNames((prev) => ({ ...prev, [variable.name]: sanitized }));
+                        }}
+                        onBlur={() => {
+                          const newName = editingNames[variable.name];
+                          if (newName && newName !== variable.name) {
+                            handleUpdate(variable.name, { name: newName });
+                          }
                           setEditingNames((prev) => {
                             const next = { ...prev };
                             delete next[variable.name];
                             return next;
                           });
-                          (e.target as HTMLInputElement).blur();
-                        }
-                      }}
-                      className="bg-transparent text-green-500 font-mono text-[13px] font-medium outline-none border-none w-full"
-                    />
-                  </div>
-
-                  {/* Value input */}
-                  <div>{renderValueInput(variable)}</div>
-
-                  {/* Type selector */}
-                  <select
-                    value={variable.type}
-                    onChange={(e) =>
-                      handleUpdate(variable.name, { type: e.target.value as VariableType })
-                    }
-                    className="px-2.5 py-1.5 bg-slate-950 border border-slate-600 rounded text-[12px] text-slate-400 outline-none cursor-pointer appearance-none"
-                  >
-                    {VARIABLE_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* Mask toggle */}
-                  <button
-                    onClick={() => handleUpdate(variable.name, { masked: !variable.masked })}
-                    className={`inline-flex items-center justify-center w-7 h-7 rounded border-none cursor-pointer transition-colors ${
-                      variable.masked
-                        ? 'text-amber-500 bg-slate-700/50'
-                        : 'text-slate-500 bg-transparent hover:bg-slate-700/50 hover:text-slate-400'
-                    }`}
-                    title={variable.masked ? 'Unmask value' : 'Mask value'}
-                  >
-                    {variable.masked ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
-
-                  {/* Sync to secrets toggle */}
-                  {writableProvider && (
-                    <div className="flex flex-col items-center">
-                      <button
-                        onClick={() => void handleSyncToggle(variable)}
-                        className={`inline-flex items-center justify-center w-7 h-7 rounded border-none cursor-pointer transition-colors ${
-                          variable.syncToSecrets
-                            ? 'text-green-500 bg-slate-700/50'
-                            : 'text-slate-500 bg-transparent hover:bg-slate-700/50 hover:text-slate-400'
-                        }`}
-                        title={variable.syncToSecrets ? 'Stop syncing to Infisical' : 'Sync to Infisical'}
-                      >
-                        {variable.syncToSecrets ? <Cloud size={14} /> : <CloudOff size={14} />}
-                      </button>
-                      {syncErrors[variable.name] && (
-                        <p className="text-[9px] text-red-400 mt-0.5 max-w-[80px] text-center leading-tight truncate" title={syncErrors[variable.name]}>
-                          {syncErrors[variable.name]}
-                        </p>
-                      )}
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            (e.target as HTMLInputElement).blur();
+                          } else if (e.key === 'Escape') {
+                            setEditingNames((prev) => {
+                              const next = { ...prev };
+                              delete next[variable.name];
+                              return next;
+                            });
+                            (e.target as HTMLInputElement).blur();
+                          }
+                        }}
+                        className="bg-transparent text-green-500 font-mono text-[13px] font-medium outline-none border-none w-full"
+                      />
                     </div>
-                  )}
 
-                  {/* Description */}
-                  <input
-                    type="text"
-                    value={variable.description}
-                    onChange={(e) =>
-                      handleUpdate(variable.name, { description: e.target.value })
-                    }
-                    placeholder="Optional description..."
-                    className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700/50 rounded text-[12px] text-slate-400 outline-none focus:border-slate-500 placeholder:text-slate-600 transition-colors"
-                  />
+                    {/* Value input */}
+                    <div>{renderValueInput(variable)}</div>
 
-                  {/* Delete button */}
-                  {confirmDeleteName === variable.name ? (
-                    <div className="flex items-center gap-1">
+                    {/* Type selector */}
+                    <select
+                      value={variable.type}
+                      onChange={(e) => handleUpdate(variable.name, { type: e.target.value as VariableType })}
+                      className="px-2.5 py-1.5 bg-slate-950 border border-slate-600 rounded text-[12px] text-slate-400 outline-none cursor-pointer appearance-none"
+                    >
+                      {VARIABLE_TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Mask toggle */}
+                    <button
+                      onClick={() => handleUpdate(variable.name, { masked: !variable.masked })}
+                      className={`inline-flex items-center justify-center w-7 h-7 rounded border-none cursor-pointer transition-colors ${
+                        variable.masked
+                          ? 'text-amber-500 bg-slate-700/50'
+                          : 'text-slate-500 bg-transparent hover:bg-slate-700/50 hover:text-slate-400'
+                      }`}
+                      title={variable.masked ? 'Unmask value' : 'Mask value'}
+                    >
+                      {variable.masked ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+
+                    {/* Sync to secrets toggle */}
+                    {writableProvider && (
+                      <div className="flex flex-col items-center">
+                        <button
+                          onClick={() => void handleSyncToggle(variable)}
+                          className={`inline-flex items-center justify-center w-7 h-7 rounded border-none cursor-pointer transition-colors ${
+                            variable.syncToSecrets
+                              ? 'text-green-500 bg-slate-700/50'
+                              : 'text-slate-500 bg-transparent hover:bg-slate-700/50 hover:text-slate-400'
+                          }`}
+                          title={variable.syncToSecrets ? 'Stop syncing to Infisical' : 'Sync to Infisical'}
+                        >
+                          {variable.syncToSecrets ? <Cloud size={14} /> : <CloudOff size={14} />}
+                        </button>
+                        {syncErrors[variable.name] && (
+                          <p
+                            className="text-[9px] text-red-400 mt-0.5 max-w-[80px] text-center leading-tight truncate"
+                            title={syncErrors[variable.name]}
+                          >
+                            {syncErrors[variable.name]}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Description */}
+                    <input
+                      type="text"
+                      value={variable.description}
+                      onChange={(e) => handleUpdate(variable.name, { description: e.target.value })}
+                      placeholder="Optional description..."
+                      className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700/50 rounded text-[12px] text-slate-400 outline-none focus:border-slate-500 placeholder:text-slate-600 transition-colors"
+                    />
+
+                    {/* Delete button */}
+                    {confirmDeleteName === variable.name ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleDelete(variable.name)}
+                          className="inline-flex items-center justify-center w-7 h-7 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                          title="Confirm delete"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ) : (
                       <button
-                        onClick={() => handleDelete(variable.name)}
-                        className="inline-flex items-center justify-center w-7 h-7 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
-                        title="Confirm delete"
+                        onClick={() => setConfirmDeleteName(variable.name)}
+                        className="inline-flex items-center justify-center w-7 h-7 rounded bg-transparent text-slate-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                        title="Delete variable"
                       >
                         <Trash2 size={14} />
                       </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmDeleteName(variable.name)}
-                      className="inline-flex items-center justify-center w-7 h-7 rounded bg-transparent text-slate-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
-                      title="Delete variable"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  )}
-                </div>
-                {variable.type === 'dropdown' && (
-                  <div className="mt-1.5 ml-[40px]">
-                    <label className="block text-[10px] uppercase tracking-wider text-slate-500 mb-1">
-                      Options
-                    </label>
-                    <DropdownOptionsEditor
-                      options={variable.options}
-                      onChange={(newOptions) =>
-                        handleUpdate(variable.name, { options: newOptions })
-                      }
-                    />
+                    )}
                   </div>
-                )}
+                  {variable.type === 'dropdown' && (
+                    <div className="mt-1.5 ml-[40px]">
+                      <label className="block text-[10px] uppercase tracking-wider text-slate-500 mb-1">Options</label>
+                      <DropdownOptionsEditor
+                        options={variable.options}
+                        onChange={(newOptions) => handleUpdate(variable.name, { options: newOptions })}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -589,20 +596,22 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
       </div>
 
       {/* Import from Infisical picker */}
-      {showImportPicker && readableProvider && (() => {
-        const plugin = getPlugin(INFISICAL_MANIFEST.name);
-        const settings = (plugin?.settings ?? {}) as Record<string, string>;
-        return (
-          <ImportSecretPicker
-            provider={readableProvider}
-            projectId={settings.defaultProjectId || ''}
-            environment={settings.defaultEnvironment || 'dev'}
-            existingNames={new Set(globalVariables.map((v) => v.name.toLowerCase()))}
-            onImport={handleImportSecret}
-            onClose={() => setShowImportPicker(false)}
-          />
-        );
-      })()}
+      {showImportPicker &&
+        readableProvider &&
+        (() => {
+          const plugin = getPlugin(INFISICAL_MANIFEST.name);
+          const settings = (plugin?.settings ?? {}) as Record<string, string>;
+          return (
+            <ImportSecretPicker
+              provider={readableProvider}
+              projectId={settings.defaultProjectId || ''}
+              environment={settings.defaultEnvironment || 'dev'}
+              existingNames={new Set(globalVariables.map((v) => v.name.toLowerCase()))}
+              onImport={handleImportSecret}
+              onClose={() => setShowImportPicker(false)}
+            />
+          );
+        })()}
     </div>
   );
 }

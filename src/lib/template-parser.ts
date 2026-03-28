@@ -1,8 +1,29 @@
-import type { ConfigFormat, ParsedVariables, VariableDefinition, VariableType, TemplateSection } from '../types/index.ts';
+import type {
+  ConfigFormat,
+  ParsedVariables,
+  VariableDefinition,
+  VariableType,
+  TemplateSection,
+} from '../types/index.ts';
 
 export type { ParsedVariables } from '../types/index.ts';
 
-const UPPERCASE_SEGMENTS = new Set(['vlan', 'ip', 'snmp', 'vtp', 'id', 'cdp', 'ssh', 'ntp', 'aaa', 'acl', 'dns', 'dhcp', 'nac', 'ise']);
+const UPPERCASE_SEGMENTS = new Set([
+  'vlan',
+  'ip',
+  'snmp',
+  'vtp',
+  'id',
+  'cdp',
+  'ssh',
+  'ntp',
+  'aaa',
+  'acl',
+  'dns',
+  'dhcp',
+  'nac',
+  'ise',
+]);
 
 /**
  * Convert snake_case variable name to Title Case label.
@@ -107,8 +128,8 @@ const END_MARKER_RE = /^!#{3,}\s*(.*?)\s*-\s*END\s*#{3,}$/i;
 interface Divider {
   lineIndex: number;
   name: string;
-  pattern: string;    // the divider line(s)
-  spanLines: number;  // how many lines the divider occupies
+  pattern: string; // the divider line(s)
+  spanLines: number; // how many lines the divider occupies
   endLineIndex?: number; // line index of matching END marker (START/END mode)
 }
 
@@ -139,7 +160,7 @@ function detectCliDividers(lines: string[]): Divider[] {
   // Match START markers with their END markers
   for (const start of startMarkers) {
     const matchingEnd = endMarkers.find(
-      (e) => e.name.toLowerCase() === start.name.toLowerCase() && e.lineIndex > start.lineIndex
+      (e) => e.name.toLowerCase() === start.name.toLowerCase() && e.lineIndex > start.lineIndex,
     );
     dividers.push({
       lineIndex: start.lineIndex,
@@ -266,7 +287,7 @@ function buildSectionsFromDividers(lines: string[], dividers: Divider[]): Templa
     // Gap: content between cursor and this divider
     if (cursor < div.lineIndex) {
       const gapLines = lines.slice(cursor, div.lineIndex);
-      const hasContent = gapLines.some(l => l.trim() !== '' && l.trim() !== '!');
+      const hasContent = gapLines.some((l) => l.trim() !== '' && l.trim() !== '!');
       if (hasContent) {
         let gStart = 0;
         while (gStart < gapLines.length && gapLines[gStart].trim() === '') gStart++;
@@ -316,7 +337,7 @@ function buildSectionsFromDividers(lines: string[], dividers: Divider[]): Templa
   // Postamble: content after the last section
   if (cursor < lines.length) {
     const postLines = lines.slice(cursor);
-    const hasContent = postLines.some(l => l.trim() !== '' && l.trim() !== '!');
+    const hasContent = postLines.some((l) => l.trim() !== '' && l.trim() !== '!');
     if (hasContent) {
       let gStart = 0;
       while (gStart < postLines.length && postLines[gStart].trim() === '') gStart++;
@@ -347,13 +368,15 @@ function buildSectionsFromDividers(lines: string[], dividers: Divider[]): Templa
   return sections;
 }
 
-const FULL_CONFIG_SECTION = (template: string): TemplateSection[] => [{
-  id: crypto.randomUUID(),
-  name: 'Full Config',
-  template,
-  order: 0,
-  dividerPattern: '',
-}];
+const FULL_CONFIG_SECTION = (template: string): TemplateSection[] => [
+  {
+    id: crypto.randomUUID(),
+    name: 'Full Config',
+    template,
+    order: 0,
+    dividerPattern: '',
+  },
+];
 
 /**
  * Detect section boundaries from divider comment patterns.
@@ -485,7 +508,7 @@ export function rebuildRawText(sections: TemplateSection[], rawText: string): st
   interface SectionRange {
     section: TemplateSection;
     from: number; // inclusive (first line of divider)
-    to: number;   // exclusive
+    to: number; // exclusive
   }
 
   // First, find all section start positions
@@ -518,7 +541,7 @@ export function rebuildRawText(sections: TemplateSection[], rawText: string): st
           break;
         }
       }
-      to = endIdx >= 0 ? endIdx + 1 : (i + 1 < byPosition.length ? byPosition[i + 1].from : lines.length);
+      to = endIdx >= 0 ? endIdx + 1 : i + 1 < byPosition.length ? byPosition[i + 1].from : lines.length;
     } else {
       // No END marker — runs to next section start or EOF
       to = i + 1 < byPosition.length ? byPosition[i + 1].from : lines.length;

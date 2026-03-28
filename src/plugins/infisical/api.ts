@@ -56,9 +56,7 @@ export class InfisicalClient {
 
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      throw new Error(
-        `Infisical auth failed (${res.status}): ${body || res.statusText}`,
-      );
+      throw new Error(`Infisical auth failed (${res.status}): ${body || res.statusText}`);
     }
 
     const data: AuthResponse = await res.json();
@@ -91,9 +89,7 @@ export class InfisicalClient {
 
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      throw new Error(
-        `Failed to list projects (${res.status}): ${body || res.statusText}`,
-      );
+      throw new Error(`Failed to list projects (${res.status}): ${body || res.statusText}`);
     }
 
     const data = await res.json();
@@ -112,11 +108,7 @@ export class InfisicalClient {
   /**
    * List secrets in a project environment (values are not included).
    */
-  async listSecrets(
-    projectId: string,
-    environment: string,
-    path: string = '/',
-  ): Promise<SecretEntry[]> {
+  async listSecrets(projectId: string, environment: string, path: string = '/'): Promise<SecretEntry[]> {
     const token = await this.ensureAuth();
     const params = new URLSearchParams({
       projectId,
@@ -131,9 +123,7 @@ export class InfisicalClient {
 
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      throw new Error(
-        `Failed to list secrets (${res.status}): ${body || res.statusText}`,
-      );
+      throw new Error(`Failed to list secrets (${res.status}): ${body || res.statusText}`);
     }
 
     const data = await res.json();
@@ -153,11 +143,7 @@ export class InfisicalClient {
    * Fetch a single secret's plaintext value.
    * Lists secrets at the root path and filters client-side by key.
    */
-  async getSecretValue(
-    projectId: string,
-    environment: string,
-    key: string,
-  ): Promise<string> {
+  async getSecretValue(projectId: string, environment: string, key: string): Promise<string> {
     const token = await this.ensureAuth();
     const params = new URLSearchParams({
       projectId,
@@ -172,9 +158,7 @@ export class InfisicalClient {
 
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      throw new Error(
-        `Failed to get secret (${res.status}): ${body || res.statusText}`,
-      );
+      throw new Error(`Failed to get secret (${res.status}): ${body || res.statusText}`);
     }
 
     const data = await res.json();
@@ -191,12 +175,7 @@ export class InfisicalClient {
   /**
    * Create a new secret.
    */
-  async createSecret(
-    projectId: string,
-    environment: string,
-    key: string,
-    value: string,
-  ): Promise<void> {
+  async createSecret(projectId: string, environment: string, key: string, value: string): Promise<void> {
     const token = await this.ensureAuth();
     const url = `${this.endpoint}/api/v4/secrets/${encodeURIComponent(key)}`;
 
@@ -216,21 +195,14 @@ export class InfisicalClient {
 
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      throw new Error(
-        `Failed to create secret (${res.status}): ${body || res.statusText}`,
-      );
+      throw new Error(`Failed to create secret (${res.status}): ${body || res.statusText}`);
     }
   }
 
   /**
    * Update an existing secret's value.
    */
-  async updateSecret(
-    projectId: string,
-    environment: string,
-    key: string,
-    value: string,
-  ): Promise<void> {
+  async updateSecret(projectId: string, environment: string, key: string, value: string): Promise<void> {
     const token = await this.ensureAuth();
     const url = `${this.endpoint}/api/v4/secrets/${encodeURIComponent(key)}`;
 
@@ -250,9 +222,7 @@ export class InfisicalClient {
 
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      throw new Error(
-        `Failed to update secret (${res.status}): ${body || res.statusText}`,
-      );
+      throw new Error(`Failed to update secret (${res.status}): ${body || res.statusText}`);
     }
   }
 

@@ -1,5 +1,20 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Save, FileText, Layers, GripVertical, Sparkles, ChevronLeft, ChevronRight, ChevronDown, Plus, Globe, ExternalLink, Scissors, Copy, ClipboardPaste } from 'lucide-react';
+import {
+  Save,
+  FileText,
+  Layers,
+  GripVertical,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Plus,
+  Globe,
+  ExternalLink,
+  Scissors,
+  Copy,
+  ClipboardPaste,
+} from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { parseVariables, parseSections, cleanUpSections, rebuildRawText } from '../lib/template-parser.ts';
 import { VariableDetectionPanel } from './VariableDetectionPanel.tsx';
@@ -25,7 +40,15 @@ export function mergeVariablesOrderPreserving(
     .filter((v) => parsedByName.has(v.name))
     .map((v) => {
       const pv = parsedByName.get(v.name)!;
-      return { ...pv, label: v.label, type: v.type, description: v.description, required: v.required, defaultValue: v.defaultValue, options: v.options };
+      return {
+        ...pv,
+        label: v.label,
+        type: v.type,
+        description: v.description,
+        required: v.required,
+        defaultValue: v.defaultValue,
+        options: v.options,
+      };
     });
 
   // Append newly detected variables (in parsed output but not in existing)
@@ -39,23 +62,28 @@ interface TemplateEditorProps {
 }
 
 function TemplateEditor({ variantId }: TemplateEditorProps) {
-  const { saveTemplate, findVariant, getConfigFormat, getTemplate, preferences, toggleRightPanel, autoSyncGlobals, setSelectedGlobalVariablesViewId, setEditorDirty, setPendingSaveCallback } = useForgeStore();
+  const {
+    saveTemplate,
+    findVariant,
+    getConfigFormat,
+    getTemplate,
+    preferences,
+    toggleRightPanel,
+    autoSyncGlobals,
+    setSelectedGlobalVariablesViewId,
+    setEditorDirty,
+    setPendingSaveCallback,
+  } = useForgeStore();
 
   // Resolve variant context
   const context = variantId ? findVariant(variantId) : null;
   const configFormat: ConfigFormat = variantId ? getConfigFormat(variantId) : 'cli';
-  const existingTemplate = context?.variant.templateId
-    ? getTemplate(context.variant.templateId)
-    : undefined;
+  const existingTemplate = context?.variant.templateId ? getTemplate(context.variant.templateId) : undefined;
 
   // Editor state
   const [rawText, setRawText] = useState(existingTemplate?.rawSource ?? '');
-  const [variables, setVariables] = useState<VariableDefinition[]>(
-    existingTemplate?.variables ?? [],
-  );
-  const [sections, setSections] = useState<TemplateSection[]>(
-    existingTemplate?.sections ?? [],
-  );
+  const [variables, setVariables] = useState<VariableDefinition[]>(existingTemplate?.variables ?? []);
+  const [sections, setSections] = useState<TemplateSection[]>(existingTemplate?.sections ?? []);
   const [variableSectionMap, setVariableSectionMap] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [cleanUpToast, setCleanUpToast] = useState(false);
@@ -66,12 +94,16 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const [globalVarsCollapsed, setGlobalVarsCollapsed] = useState(false);
   const [showAddSection, setShowAddSection] = useState(false);
   const [addSectionName, setAddSectionName] = useState('');
-  const [customVariableOrder, setCustomVariableOrder] = useState(
-    existingTemplate?.customVariableOrder ?? false,
-  );
+  const [customVariableOrder, setCustomVariableOrder] = useState(existingTemplate?.customVariableOrder ?? false);
 
   // Context menu state for section marker insertion
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; cursorPos: number; selStart: number; selEnd: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    cursorPos: number;
+    selStart: number;
+    selEnd: number;
+  } | null>(null);
   const [pendingSectionName, setPendingSectionName] = useState<string | null>(null);
 
   // All global variables from the View (not just detected ones)
@@ -148,10 +180,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const handlePromoteVariable = useCallback(
     (varName: string) => {
       const escaped = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const promoted = rawText.replace(
-        new RegExp(`(\\$)(?!\\{)(${escaped})\\b`, 'g'),
-        `\${${varName}}`,
-      );
+      const promoted = rawText.replace(new RegExp(`(\\$)(?!\\{)(${escaped})\\b`, 'g'), `\${${varName}}`);
       if (promoted !== rawText) {
         handleTextChange(promoted);
       }
@@ -216,7 +245,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     return () => {
       setEditorDirty(false);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Clean up sections handler
@@ -355,9 +384,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     let endLine: number;
     if (section.endDividerPattern) {
       // Find the END marker line after startLine
-      endLine = lines.findIndex(
-        (l, i) => i > startLine && l === section.endDividerPattern,
-      );
+      endLine = lines.findIndex((l, i) => i > startLine && l === section.endDividerPattern);
       endLine = endLine >= 0 ? endLine + 1 : lines.length;
     } else {
       // Legacy: find next section's start or EOF
@@ -394,23 +421,35 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const handleContextMenu = useCallback((e: React.MouseEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
     const ta = e.currentTarget;
-    setContextMenu({ x: e.clientX, y: e.clientY, cursorPos: ta.selectionStart, selStart: ta.selectionStart, selEnd: ta.selectionEnd });
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      cursorPos: ta.selectionStart,
+      selStart: ta.selectionStart,
+      selEnd: ta.selectionEnd,
+    });
   }, []);
 
   // Insert a section marker at a cursor position in displayText
-  const insertMarkerAtCursor = useCallback((marker: string, cursorPos: number) => {
-    const text = displayText;
-    // Find the line start for the cursor position
-    const beforeCursor = text.substring(0, cursorPos);
-    const lineStart = beforeCursor.lastIndexOf('\n') + 1;
-    const newText = text.substring(0, lineStart) + marker + '\n' + text.substring(lineStart);
-    handleFilteredTextChange(newText);
-  }, [displayText, handleFilteredTextChange]);
+  const insertMarkerAtCursor = useCallback(
+    (marker: string, cursorPos: number) => {
+      const text = displayText;
+      // Find the line start for the cursor position
+      const beforeCursor = text.substring(0, cursorPos);
+      const lineStart = beforeCursor.lastIndexOf('\n') + 1;
+      const newText = text.substring(0, lineStart) + marker + '\n' + text.substring(lineStart);
+      handleFilteredTextChange(newText);
+    },
+    [displayText, handleFilteredTextChange],
+  );
 
   const handleInsertStart = useCallback(() => {
     if (!contextMenu) return;
     const name = prompt('Section name:');
-    if (!name?.trim()) { setContextMenu(null); return; }
+    if (!name?.trim()) {
+      setContextMenu(null);
+      return;
+    }
     const trimmed = name.trim();
     setPendingSectionName(trimmed);
     insertMarkerAtCursor(`!##### ${trimmed} - START #####`, contextMenu.cursorPos);
@@ -420,7 +459,10 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const handleInsertEnd = useCallback(() => {
     if (!contextMenu) return;
     const name = pendingSectionName ?? prompt('Section name:');
-    if (!name?.trim()) { setContextMenu(null); return; }
+    if (!name?.trim()) {
+      setContextMenu(null);
+      return;
+    }
     insertMarkerAtCursor(`!##### ${name.trim()} - END #####`, contextMenu.cursorPos);
     setPendingSectionName(null);
     setContextMenu(null);
@@ -429,7 +471,10 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const handleCut = useCallback(async () => {
     if (!contextMenu) return;
     const { selStart, selEnd } = contextMenu;
-    if (selStart === selEnd) { setContextMenu(null); return; }
+    if (selStart === selEnd) {
+      setContextMenu(null);
+      return;
+    }
     try {
       await navigator.clipboard.writeText(displayText.substring(selStart, selEnd));
       handleFilteredTextChange(displayText.substring(0, selStart) + displayText.substring(selEnd));
@@ -443,7 +488,10 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const handleCopy = useCallback(async () => {
     if (!contextMenu) return;
     const { selStart, selEnd } = contextMenu;
-    if (selStart === selEnd) { setContextMenu(null); return; }
+    if (selStart === selEnd) {
+      setContextMenu(null);
+      return;
+    }
     try {
       await navigator.clipboard.writeText(displayText.substring(selStart, selEnd));
     } catch {
@@ -488,16 +536,26 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
 
       // Section banner lines get a blue background highlight
       if (BANNER_RE.test(rawLine)) {
-        if (lineIdx > 0) result.push(<span key={`nl-${lineIdx}`} className="text-transparent">{'\n'}</span>);
+        if (lineIdx > 0)
+          result.push(
+            <span key={`nl-${lineIdx}`} className="text-transparent">
+              {'\n'}
+            </span>,
+          );
         result.push(
           <span key={`banner-${lineIdx}`} className="bg-blue-500/15 text-transparent">
             {rawLine}
-          </span>
+          </span>,
         );
         continue;
       }
 
-      if (lineIdx > 0) result.push(<span key={`nl-${lineIdx}`} className="text-transparent">{'\n'}</span>);
+      if (lineIdx > 0)
+        result.push(
+          <span key={`nl-${lineIdx}`} className="text-transparent">
+            {'\n'}
+          </span>,
+        );
 
       // Strip Cisco type-9 password hashes before scanning (same as parseVariables)
       const sanitized = rawLine.replace(/\$\d\$\S+/g, (match) => '_'.repeat(match.length));
@@ -513,18 +571,28 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
         offset += part.length;
         if (globalVarPattern.test(part)) {
           result.push(
-            <span key={`${lineIdx}-${pi}`} className="bg-green-500/25 text-transparent rounded-sm border-b border-green-500/40">
+            <span
+              key={`${lineIdx}-${pi}`}
+              className="bg-green-500/25 text-transparent rounded-sm border-b border-green-500/40"
+            >
               {original}
-            </span>
+            </span>,
           );
         } else if (localVarPattern.test(part)) {
           result.push(
-            <span key={`${lineIdx}-${pi}`} className="bg-amber-500/25 text-transparent rounded-sm border-b border-amber-500/40">
+            <span
+              key={`${lineIdx}-${pi}`}
+              className="bg-amber-500/25 text-transparent rounded-sm border-b border-amber-500/40"
+            >
               {original}
-            </span>
+            </span>,
           );
         } else {
-          result.push(<span key={`${lineIdx}-${pi}`} className="text-transparent">{original}</span>);
+          result.push(
+            <span key={`${lineIdx}-${pi}`} className="text-transparent">
+              {original}
+            </span>,
+          );
         }
       }
     }
@@ -657,9 +725,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             >
               <Plus size={14} className="text-blue-400" />
               Insert Section End
-              {pendingSectionName && (
-                <span className="ml-auto text-xs text-slate-500">({pendingSectionName})</span>
-              )}
+              {pendingSectionName && <span className="ml-auto text-xs text-slate-500">({pendingSectionName})</span>}
             </button>
           </div>
         )}
@@ -675,203 +741,207 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
 
         {/* Right: variables + sections */}
         {!preferences.rightPanelCollapsed && (
-        <div className="w-80 min-w-[320px] bg-forge-charcoal shrink-0 flex flex-col overflow-y-auto">
-          {/* Global variables panel — top, collapsible, always visible when View has globals */}
-          {viewGlobalVariables.length > 0 && (
-          <div className="shrink-0 border-b border-forge-graphite">
-            <button
-              onClick={() => setGlobalVarsCollapsed(!globalVarsCollapsed)}
-              className="w-full flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-green-400 hover:text-green-300 text-left"
-            >
-              <ChevronDown size={12} className={`transition-transform ${globalVarsCollapsed ? '-rotate-90' : ''}`} />
-              <Globe size={12} />
-              Global Variables
-              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold ml-1">
-                {viewGlobalVariables.length}
-              </span>
-            </button>
-            {!globalVarsCollapsed && (
-              <div className="px-5 py-3 space-y-1 border-t border-forge-graphite">
-                {viewGlobalVariables.map((gv) => (
-                  <div
-                    key={gv.name}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded bg-forge-obsidian border border-green-500/15 border-l-[3px] border-l-green-500 ${
-                      globalNames.includes(gv.name) ? '' : 'opacity-50'
-                    }`}
-                  >
-                    <span className="text-green-400 font-mono text-[12px] font-medium flex-1 truncate">
-                      {gv.name}
-                    </span>
-                    {gv.defaultValue ? (
-                      <span className="text-slate-400 font-mono text-[11px] max-w-[100px] truncate">
-                        {gv.masked ? '••••••••' : gv.defaultValue}
-                      </span>
-                    ) : (
-                      <span className="text-amber-400 text-[11px] italic">Not set</span>
+          <div className="w-80 min-w-[320px] bg-forge-charcoal shrink-0 flex flex-col overflow-y-auto">
+            {/* Global variables panel — top, collapsible, always visible when View has globals */}
+            {viewGlobalVariables.length > 0 && (
+              <div className="shrink-0 border-b border-forge-graphite">
+                <button
+                  onClick={() => setGlobalVarsCollapsed(!globalVarsCollapsed)}
+                  className="w-full flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-green-400 hover:text-green-300 text-left"
+                >
+                  <ChevronDown
+                    size={12}
+                    className={`transition-transform ${globalVarsCollapsed ? '-rotate-90' : ''}`}
+                  />
+                  <Globe size={12} />
+                  Global Variables
+                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold ml-1">
+                    {viewGlobalVariables.length}
+                  </span>
+                </button>
+                {!globalVarsCollapsed && (
+                  <div className="px-5 py-3 space-y-1 border-t border-forge-graphite">
+                    {viewGlobalVariables.map((gv) => (
+                      <div
+                        key={gv.name}
+                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded bg-forge-obsidian border border-green-500/15 border-l-[3px] border-l-green-500 ${
+                          globalNames.includes(gv.name) ? '' : 'opacity-50'
+                        }`}
+                      >
+                        <span className="text-green-400 font-mono text-[12px] font-medium flex-1 truncate">
+                          {gv.name}
+                        </span>
+                        {gv.defaultValue ? (
+                          <span className="text-slate-400 font-mono text-[11px] max-w-[100px] truncate">
+                            {gv.masked ? '••••••••' : gv.defaultValue}
+                          </span>
+                        ) : (
+                          <span className="text-amber-400 text-[11px] italic">Not set</span>
+                        )}
+                      </div>
+                    ))}
+                    {context?.view.id && (
+                      <button
+                        onClick={() => setSelectedGlobalVariablesViewId(context.view.id)}
+                        className="flex items-center gap-1 text-[11px] text-green-400 hover:text-green-300 mt-2 transition-colors"
+                      >
+                        <ExternalLink size={11} />
+                        Manage Global Variables
+                      </button>
                     )}
                   </div>
-                ))}
-                {context?.view.id && (
+                )}
+              </div>
+            )}
+
+            {/* Local variable detection panel, collapsible */}
+            <div className="shrink-0 border-b border-forge-graphite">
+              <div className="flex items-center shrink-0">
+                <button
+                  onClick={() => setVariablesCollapsed(!variablesCollapsed)}
+                  className="flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-slate-500 hover:text-slate-400 text-left flex-1"
+                >
+                  <ChevronDown size={12} className={`transition-transform ${variablesCollapsed ? '-rotate-90' : ''}`} />
+                  Detected Variables
+                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-forge-amber/20 text-forge-amber text-[10px] font-bold ml-1">
+                    {variables.length}
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    const newVar: VariableDefinition = {
+                      name: `new_variable_${variables.length + 1}`,
+                      label: `New Variable ${variables.length + 1}`,
+                      type: 'string',
+                      defaultValue: '',
+                      options: [],
+                      required: true,
+                      description: '',
+                    };
+                    setVariables([...variables, newVar]);
+                    setEditorDirty(true);
+                    if (variablesCollapsed) setVariablesCollapsed(false);
+                  }}
+                  className="p-1 mr-3 rounded text-slate-500 hover:text-forge-amber hover:bg-forge-graphite transition-colors shrink-0"
+                  title="Add variable manually"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+              {!variablesCollapsed && (
+                <VariableDetectionPanel
+                  variables={variables}
+                  onChange={(vars) => {
+                    setVariables(vars);
+                    setEditorDirty(true);
+                  }}
+                  sectionNames={sections.map((s) => s.name)}
+                  variableSectionMap={variableSectionMap}
+                  hideHeader
+                  onPromoteToGlobal={handlePromoteVariable}
+                  onReorder={handleVariableReorder}
+                />
+              )}
+            </div>
+
+            {/* Sections panel, collapsible */}
+            <div className="shrink-0 border-b border-forge-graphite">
+              <div className="flex items-center shrink-0">
+                <button
+                  onClick={() => setSectionsCollapsed(!sectionsCollapsed)}
+                  className="flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-slate-500 hover:text-slate-400 text-left flex-1"
+                >
+                  <ChevronDown size={12} className={`transition-transform ${sectionsCollapsed ? '-rotate-90' : ''}`} />
+                  <Layers size={12} />
+                  Detected Sections
+                  {hasRealSections && (
+                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold ml-1">
+                      {sections.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowAddSection(true)}
+                  className="p-1 rounded text-slate-400 hover:text-forge-amber hover:bg-forge-graphite transition-colors shrink-0"
+                  title="Add Section"
+                >
+                  <Plus size={14} />
+                </button>
+                {rawText.trim() && (
                   <button
-                    onClick={() => setSelectedGlobalVariablesViewId(context.view.id)}
-                    className="flex items-center gap-1 text-[11px] text-green-400 hover:text-green-300 mt-2 transition-colors"
+                    onClick={handleCleanUp}
+                    className="flex items-center gap-1 px-2 py-1 mr-3 rounded text-[11px] font-medium text-slate-400 hover:text-forge-amber bg-forge-obsidian border border-forge-graphite hover:border-forge-amber/30 transition-colors shrink-0"
+                    title="Auto-add START/END markers to sections"
                   >
-                    <ExternalLink size={11} />
-                    Manage Global Variables
+                    <Sparkles size={11} />
+                    Clean Up
                   </button>
                 )}
               </div>
-            )}
-          </div>
-          )}
-
-          {/* Local variable detection panel, collapsible */}
-          <div className="shrink-0 border-b border-forge-graphite">
-            <div className="flex items-center shrink-0">
-              <button
-                onClick={() => setVariablesCollapsed(!variablesCollapsed)}
-                className="flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-slate-500 hover:text-slate-400 text-left flex-1"
-              >
-                <ChevronDown size={12} className={`transition-transform ${variablesCollapsed ? '-rotate-90' : ''}`} />
-                Detected Variables
-                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-forge-amber/20 text-forge-amber text-[10px] font-bold ml-1">
-                  {variables.length}
-                </span>
-              </button>
-              <button
-                onClick={() => {
-                  const newVar: VariableDefinition = {
-                    name: `new_variable_${variables.length + 1}`,
-                    label: `New Variable ${variables.length + 1}`,
-                    type: 'string',
-                    defaultValue: '',
-                    options: [],
-                    required: true,
-                    description: '',
-                  };
-                  setVariables([...variables, newVar]);
-                  setEditorDirty(true);
-                  if (variablesCollapsed) setVariablesCollapsed(false);
-                }}
-                className="p-1 mr-3 rounded text-slate-500 hover:text-forge-amber hover:bg-forge-graphite transition-colors shrink-0"
-                title="Add variable manually"
-              >
-                <Plus size={14} />
-              </button>
-            </div>
-            {!variablesCollapsed && (
-              <VariableDetectionPanel
-                variables={variables}
-                onChange={(vars) => { setVariables(vars); setEditorDirty(true); }}
-                sectionNames={sections.map((s) => s.name)}
-                variableSectionMap={variableSectionMap}
-                hideHeader
-                onPromoteToGlobal={handlePromoteVariable}
-                onReorder={handleVariableReorder}
-              />
-            )}
-          </div>
-
-          {/* Sections panel, collapsible */}
-          <div className="shrink-0 border-b border-forge-graphite">
-            <div className="flex items-center shrink-0">
-              <button
-                onClick={() => setSectionsCollapsed(!sectionsCollapsed)}
-                className="flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-slate-500 hover:text-slate-400 text-left flex-1"
-              >
-                <ChevronDown size={12} className={`transition-transform ${sectionsCollapsed ? '-rotate-90' : ''}`} />
-                <Layers size={12} />
-                Detected Sections
-                {hasRealSections && (
-                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold ml-1">
-                    {sections.length}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setShowAddSection(true)}
-                className="p-1 rounded text-slate-400 hover:text-forge-amber hover:bg-forge-graphite transition-colors shrink-0"
-                title="Add Section"
-              >
-                <Plus size={14} />
-              </button>
-              {rawText.trim() && (
-                <button
-                  onClick={handleCleanUp}
-                  className="flex items-center gap-1 px-2 py-1 mr-3 rounded text-[11px] font-medium text-slate-400 hover:text-forge-amber bg-forge-obsidian border border-forge-graphite hover:border-forge-amber/30 transition-colors shrink-0"
-                  title="Auto-add START/END markers to sections"
-                >
-                  <Sparkles size={11} />
-                  Clean Up
-                </button>
+              {showAddSection && (
+                <div className="flex items-center gap-2 px-5 py-2 border-t border-forge-graphite">
+                  <input
+                    ref={addSectionInputRef}
+                    type="text"
+                    value={addSectionName}
+                    onChange={(e) => setAddSectionName(e.target.value)}
+                    onKeyDown={handleAddSectionKeyDown}
+                    placeholder="Section name..."
+                    className="flex-1 px-2 py-1 rounded bg-forge-obsidian border border-forge-graphite text-slate-200 text-[12px] font-medium placeholder:text-slate-600 outline-none focus:border-forge-amber/50"
+                  />
+                  <button
+                    onClick={handleConfirmAddSection}
+                    disabled={!addSectionName.trim()}
+                    className="px-2 py-1 rounded text-[11px] font-medium text-forge-amber hover:bg-forge-amber/10 border border-forge-amber/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Add
+                  </button>
+                </div>
+              )}
+              {!sectionsCollapsed && hasRealSections && (
+                <div className="px-5 pb-3">
+                  <div className="space-y-1">
+                    {sections.map((section, i) => {
+                      const lineStart = rawText
+                        .split('\n')
+                        .findIndex((line) => section.template.split('\n')[0] === line);
+                      const lineEnd = lineStart + section.template.split('\n').length - 1;
+                      const isDragging = dragIndex === i;
+                      const isDragOver = dragOverIndex === i;
+                      const isActive = activeSectionName === section.name;
+                      return (
+                        <div
+                          key={section.id}
+                          draggable
+                          onDragStart={() => handleDragStart(i)}
+                          onDragOver={(e) => handleDragOver(e, i)}
+                          onDragEnd={handleDragEnd}
+                          onClick={() => handleSelectSection(section.name)}
+                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded bg-forge-obsidian border text-[12px] cursor-pointer active:cursor-grabbing transition-all ${
+                            isDragging
+                              ? 'opacity-40 border-forge-amber/40'
+                              : isDragOver
+                                ? 'border-forge-amber/60 bg-forge-amber/5'
+                                : isActive
+                                  ? 'border-amber-500 bg-amber-500/10'
+                                  : 'border-forge-graphite'
+                          }`}
+                        >
+                          <GripVertical size={12} className="text-slate-600 shrink-0" />
+                          <FileText size={12} className="text-slate-500 shrink-0" />
+                          <span className="text-slate-300 font-medium truncate flex-1">{section.name}</span>
+                          <span className="text-slate-600 text-[11px] shrink-0">
+                            lines {lineStart > -1 ? lineStart + 1 : i * 10 + 1}-
+                            {lineStart > -1 ? lineEnd + 1 : (i + 1) * 10}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
             </div>
-            {showAddSection && (
-              <div className="flex items-center gap-2 px-5 py-2 border-t border-forge-graphite">
-                <input
-                  ref={addSectionInputRef}
-                  type="text"
-                  value={addSectionName}
-                  onChange={(e) => setAddSectionName(e.target.value)}
-                  onKeyDown={handleAddSectionKeyDown}
-                  placeholder="Section name..."
-                  className="flex-1 px-2 py-1 rounded bg-forge-obsidian border border-forge-graphite text-slate-200 text-[12px] font-medium placeholder:text-slate-600 outline-none focus:border-forge-amber/50"
-                />
-                <button
-                  onClick={handleConfirmAddSection}
-                  disabled={!addSectionName.trim()}
-                  className="px-2 py-1 rounded text-[11px] font-medium text-forge-amber hover:bg-forge-amber/10 border border-forge-amber/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  Add
-                </button>
-              </div>
-            )}
-            {!sectionsCollapsed && hasRealSections && (
-              <div className="px-5 pb-3">
-                <div className="space-y-1">
-                  {sections.map((section, i) => {
-                    const lineStart = rawText
-                      .split('\n')
-                      .findIndex((line) => section.template.split('\n')[0] === line);
-                    const lineEnd = lineStart + section.template.split('\n').length - 1;
-                    const isDragging = dragIndex === i;
-                    const isDragOver = dragOverIndex === i;
-                    const isActive = activeSectionName === section.name;
-                    return (
-                      <div
-                        key={section.id}
-                        draggable
-                        onDragStart={() => handleDragStart(i)}
-                        onDragOver={(e) => handleDragOver(e, i)}
-                        onDragEnd={handleDragEnd}
-                        onClick={() => handleSelectSection(section.name)}
-                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded bg-forge-obsidian border text-[12px] cursor-pointer active:cursor-grabbing transition-all ${
-                          isDragging
-                            ? 'opacity-40 border-forge-amber/40'
-                            : isDragOver
-                              ? 'border-forge-amber/60 bg-forge-amber/5'
-                              : isActive
-                                ? 'border-amber-500 bg-amber-500/10'
-                                : 'border-forge-graphite'
-                        }`}
-                      >
-                        <GripVertical size={12} className="text-slate-600 shrink-0" />
-                        <FileText size={12} className="text-slate-500 shrink-0" />
-                        <span className="text-slate-300 font-medium truncate flex-1">
-                          {section.name}
-                        </span>
-                        <span className="text-slate-600 text-[11px] shrink-0">
-                          lines {lineStart > -1 ? lineStart + 1 : (i * 10) + 1}-
-                          {lineStart > -1 ? lineEnd + 1 : (i + 1) * 10}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
-        </div>
         )}
       </div>
 
@@ -883,7 +953,8 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
         </div>
         <div className="flex-1 p-2 rounded bg-forge-obsidian border border-forge-graphite text-[10px] text-slate-500 leading-relaxed font-mono">
           <span className="text-slate-400 font-sans font-semibold uppercase tracking-wider">Variables: </span>
-          <span className="text-amber-500/70">$variable_name</span> <span className="text-slate-600">or</span> <span className="text-green-500/70">{'${variable_name}'}</span>
+          <span className="text-amber-500/70">$variable_name</span> <span className="text-slate-600">or</span>{' '}
+          <span className="text-green-500/70">{'${variable_name}'}</span>
         </div>
       </div>
     </div>

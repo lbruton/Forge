@@ -1,38 +1,38 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
-  --color-forge-obsidian: #0F172A;
-  --color-forge-charcoal: #1E293B;
+  --color-forge-obsidian: #0f172a;
+  --color-forge-charcoal: #1e293b;
   --color-forge-graphite: #334155;
   --color-forge-steel: #475569;
-  --color-forge-amber: #F59E0B;
-  --color-forge-amber-bright: #FBBF24;
-  --color-forge-amber-dark: #D97706;
-  --color-forge-ember: #B45309;
-  --color-forge-terminal: #0A0F1A;
+  --color-forge-amber: #f59e0b;
+  --color-forge-amber-bright: #fbbf24;
+  --color-forge-amber-dark: #d97706;
+  --color-forge-ember: #b45309;
+  --color-forge-terminal: #0a0f1a;
 
   --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
 }
 
 :root {
-  --bg-primary: #0F172A;
-  --bg-surface: #1E293B;
+  --bg-primary: #0f172a;
+  --bg-surface: #1e293b;
   --bg-elevated: #334155;
-  --bg-terminal: #0A0F1A;
+  --bg-terminal: #0a0f1a;
   --border-default: #475569;
   --border-subtle: #334155;
-  --text-primary: #E2E8F0;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
-  --accent-primary: #F59E0B;
-  --accent-hover: #FBBF24;
-  --accent-dark: #D97706;
-  --accent-darkest: #B45309;
-  --color-success: #22C55E;
-  --color-error: #EF4444;
-  --color-warning: #EAB308;
-  --color-info: #3B82F6;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent-primary: #f59e0b;
+  --accent-hover: #fbbf24;
+  --accent-dark: #d97706;
+  --accent-darkest: #b45309;
+  --color-success: #22c55e;
+  --color-error: #ef4444;
+  --color-warning: #eab308;
+  --color-info: #3b82f6;
   --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
   --radius-sm: 6px;
