@@ -459,7 +459,18 @@ function ScanProgressView({
       try {
         const resp = await pluginFetch(endpoint, apiKey, `/scan/${encodeURIComponent(scanId)}/status`);
         if (!resp.ok) return;
-        const scanStatus: ScanStatus = await resp.json();
+        // Sidecar returns snake_case (Pydantic), frontend expects camelCase
+        const raw = await resp.json();
+        const scanStatus: ScanStatus = {
+          scanId: raw.scanId ?? raw.scan_id,
+          status: raw.status,
+          progress: raw.progress,
+          startedAt: raw.startedAt ?? raw.started_at,
+          completedAt: raw.completedAt ?? raw.completed_at,
+          error: raw.error,
+          device: raw.device,
+          resultPath: raw.resultPath ?? raw.result_path,
+        };
         updateScanStatus(scanStatus);
       } catch {
         // Silently retry on next interval
