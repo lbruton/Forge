@@ -1,8 +1,9 @@
 import type { PluginManifest, PluginRegistration, PluginHealthStatus } from '../types/plugin.ts';
 import { CONFIGURATIONS_MANIFEST } from './configurations.ts';
 import { INFISICAL_MANIFEST } from './infisical/manifest.ts';
+import { VULN_CISCO_MANIFEST } from './vuln-cisco/manifest.ts';
 
-const BUNDLED_MANIFESTS: PluginManifest[] = [CONFIGURATIONS_MANIFEST, INFISICAL_MANIFEST];
+const BUNDLED_MANIFESTS: PluginManifest[] = [CONFIGURATIONS_MANIFEST, INFISICAL_MANIFEST, VULN_CISCO_MANIFEST];
 
 /**
  * Register all bundled plugins that are not yet registered.
