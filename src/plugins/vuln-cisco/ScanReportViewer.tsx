@@ -248,15 +248,19 @@ function ReportContent({ report }: { report: ScanReport }) {
   return (
     <div className="flex-1 overflow-auto space-y-5">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1">
         <div>
           <h2 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
             <ShieldAlert size={20} className="text-forge-amber" />
             Vulnerability Scan Report
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            {formatDate(report.scan_date)} &mdash; {report.scanner}
+            Forge Cisco Vulnerability Scanner
           </p>
+        </div>
+        <div className="text-xs text-slate-500 sm:text-right">
+          <div>{formatDate(report.scan_date)}</div>
+          <div>{report.scanner}</div>
         </div>
       </div>
 
@@ -321,8 +325,8 @@ function ReportContent({ report }: { report: ScanReport }) {
       )}
 
       {/* Findings table */}
-      <div className="bg-forge-charcoal border border-forge-graphite rounded-lg overflow-hidden">
-        <table className="w-full border-collapse text-[13px]">
+      <div className="bg-forge-charcoal border border-forge-graphite rounded-lg overflow-x-auto">
+        <table className="w-full border-collapse text-[13px] min-w-[900px]">
           <thead>
             <tr className="bg-forge-graphite/50">
               <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">Severity</th>
