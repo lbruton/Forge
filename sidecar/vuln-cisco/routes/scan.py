@@ -43,6 +43,9 @@ def _run_scan_in_thread(scan_id: str, req: ScanRequest) -> None:
         entry["progress"] = "SNMP detection"
         logger.info("[%s] Starting scan for %s", scan_id, target)
 
+        def _update_progress(stage: str) -> None:
+            entry["progress"] = stage
+
         # Run the async pipeline in a fresh event loop
         result = asyncio.run(
             run_scan(
@@ -51,6 +54,7 @@ def _run_scan_in_thread(scan_id: str, req: ScanRequest) -> None:
                 cisco_client_id=req.cisco_client_id,
                 cisco_client_secret=req.cisco_client_secret,
                 skip_nuclei=req.skip_nuclei,
+                on_progress=_update_progress,
             )
         )
 

@@ -23,7 +23,7 @@ import subprocess
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import requests
 from pysnmp.hlapi.v3arch.asyncio import (
@@ -738,6 +738,7 @@ async def run_scan(
     cisco_client_secret: str,
     skip_nuclei: bool = False,
     output_dir: str | None = None,
+    on_progress: Callable[[str], None] | None = None,
 ) -> dict[str, Any]:
     """Execute the full vulnerability scan pipeline.
 
@@ -769,14 +770,17 @@ async def run_scan(
         that never includes credentials.
     """
     notes: list[str] = []
+    _progress = on_progress or (lambda _: None)
 
     # ── Stage 1: SNMP Detection ──
+    _progress("SNMP detection")
     logger.info("Stage 1: SNMP detection on %s", target)
     device_info = await snmp_detect(target, snmp_community)
     version = device_info["version"]
     platform = device_info["platform"]
 
     # ── Stage 2: Cisco PSIRT API ──
+    _progress("PSIRT lookup")
     logger.info("Stage 2: Cisco PSIRT API query for %s %s", platform, version)
     token = _psirt_get_token(cisco_client_id, cisco_client_secret)
     advisories = _psirt_query(version, platform, token)
@@ -788,6 +792,7 @@ async def run_scan(
         notes.append("Nuclei scan was skipped by request.")
         logger.info("Stage 3: Nuclei skipped by request")
     else:
+        _progress("Nuclei scan")
         logger.info("Stage 3: Nuclei scan on %s", target)
         try:
             nuclei_findings = _run_nuclei(target)
