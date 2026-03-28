@@ -580,6 +580,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
   const getPlugin = useForgeStore((s) => s.getPlugin);
   const vulnDevices = useForgeStore((s) => s.vulnDevices);
   const updateVulnDevice = useForgeStore((s) => s.updateVulnDevice);
+  const setVulnScanCache = useForgeStore((s) => s.setVulnScanCache);
   const setSelectedPluginNodeId = useForgeStore((s) => s.setSelectedPluginNodeId);
   const setSelectedPluginName = useForgeStore((s) => s.setSelectedPluginName);
   const registration = getPlugin(pluginName);
@@ -587,7 +588,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Sync device info from sidecar (merges severity/lastScan data)
+  // Sync device info + scan history from sidecar
   const syncFromSidecar = useCallback(async () => {
     if (!registration?.endpoint || !registration?.apiKey) {
       setLoading(false);
@@ -606,7 +607,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
       }
 
       const data: DeviceSummary[] = await response.json();
-      // Update existing devices with sidecar data
+      // Update existing devices with sidecar data + fetch scan history
       for (const summary of data) {
         const device = vulnDevices.find((d) => d.ip === summary.device);
         if (device) {
@@ -614,6 +615,23 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
             lastScanAt: summary.lastScan,
             lastSeverity: summary.severity,
           });
+
+          // Fetch scan entries for sidebar tree
+          if (summary.scanCount > 0) {
+            try {
+              const scanResp = await pluginFetch(
+                registration.endpoint,
+                registration.apiKey,
+                `/results/${encodeURIComponent(summary.device)}`,
+              );
+              if (scanResp.ok) {
+                const scans: ScanEntry[] = await scanResp.json();
+                setVulnScanCache(device.id, scans.sort((a, b) => b.timestamp.localeCompare(a.timestamp)));
+              }
+            } catch {
+              // Non-critical — sidebar just won't show scan nodes
+            }
+          }
         }
       }
     } catch (err) {
@@ -622,7 +640,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
     } finally {
       setLoading(false);
     }
-  }, [registration, vulnDevices, updateVulnDevice]);
+  }, [registration, vulnDevices, updateVulnDevice, setVulnScanCache]);
 
   useEffect(() => {
     syncFromSidecar();
