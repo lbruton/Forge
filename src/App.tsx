@@ -430,7 +430,7 @@ function App() {
         )}
 
         {/* Action buttons — Add Template only in Configurations context */}
-        {(!selectedPluginName || selectedPluginName === 'forge-configurations') && (
+        {!selectedPluginName && (
           <button
             onClick={handleAddTemplate}
             className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold bg-forge-amber text-forge-obsidian rounded-md hover:bg-forge-amber-bright transition-colors"
