@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
 import { useForgeStore } from '../store/index.ts';
 import type { VariableDefinition, VariableType } from '../types/index.ts';
-import { Globe, Plus, GripVertical, Eye, EyeOff, Trash2, ArrowUp, ArrowDown, Cloud, CloudOff } from 'lucide-react';
+import { Globe, Plus, GripVertical, Eye, EyeOff, Trash2, ArrowUp, ArrowDown, Cloud, CloudOff, Download } from 'lucide-react';
 import { DropdownOptionsEditor } from './DropdownOptionsEditor.tsx';
+import { ImportSecretPicker } from './ImportSecretPicker.tsx';
 import { INFISICAL_MANIFEST } from '../plugins/infisical/manifest.ts';
 import { isValidIpv4 } from '../lib/validators.ts';
 
@@ -24,9 +25,11 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
 
   const providers = getSecretsProviders();
   const writableProvider = providers.find((p) => p.isConnected() && p.capabilities().write);
+  const readableProvider = providers.find((p) => p.isConnected() && p.capabilities().read);
 
   const globalVariables = view?.globalVariables ?? [];
 
+  const [showImportPicker, setShowImportPicker] = useState(false);
   const [confirmDeleteName, setConfirmDeleteName] = useState<string | null>(null);
   const [syncErrors, setSyncErrors] = useState<Record<string, string>>({});
   const [ipErrors, setIpErrors] = useState<Record<string, boolean>>({});
@@ -62,6 +65,44 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
       updateGlobalVariable(viewId, name, updates);
     },
     [viewId, updateGlobalVariable],
+  );
+
+  const handleImportSecret = useCallback(
+    (key: string, value: string) => {
+      if (!readableProvider) return;
+
+      const varName = key.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '');
+      if (!varName) return;
+
+      const existingNames = new Set(globalVariables.map((v) => v.name));
+
+      const plugin = getPlugin(INFISICAL_MANIFEST.name);
+      const settings = (plugin?.settings ?? {}) as Record<string, string>;
+      const syncMeta = {
+        provider: readableProvider.name,
+        projectId: settings.defaultProjectId || '',
+        environment: settings.defaultEnvironment || 'dev',
+        secretKey: key,
+      };
+
+      if (existingNames.has(varName)) {
+        handleUpdate(varName, { defaultValue: value, syncToSecrets: syncMeta });
+      } else {
+        const newVar: VariableDefinition = {
+          name: varName,
+          label: varName.replace(/[_-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+          type: 'string',
+          defaultValue: value,
+          options: [],
+          required: false,
+          description: '',
+          syncToSecrets: syncMeta,
+        };
+        addGlobalVariable(viewId, newVar);
+      }
+      setShowImportPicker(false);
+    },
+    [viewId, globalVariables, addGlobalVariable, handleUpdate, getPlugin, readableProvider],
   );
 
   const handleDelete = useCallback(
@@ -291,13 +332,24 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
             </span>
           )}
         </h2>
-        <button
-          onClick={handleAdd}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-slate-900 text-[13px] font-semibold rounded-md hover:bg-amber-400 transition-colors"
-        >
-          <Plus size={14} />
-          Add Variable
-        </button>
+        <div className="flex items-center gap-2">
+          {readableProvider && (
+            <button
+              onClick={() => setShowImportPicker(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-700 text-slate-200 text-[13px] font-semibold rounded-md hover:bg-slate-600 border border-slate-600 transition-colors"
+            >
+              <Download size={14} />
+              Import from Infisical
+            </button>
+          )}
+          <button
+            onClick={handleAdd}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-slate-900 text-[13px] font-semibold rounded-md hover:bg-amber-400 transition-colors"
+          >
+            <Plus size={14} />
+            Add Variable
+          </button>
+        </div>
       </div>
 
       {/* Secrets sync hint */}
@@ -322,13 +374,24 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
               </code>{' '}
               syntax in your templates to auto-detect globals, or add one manually.
             </p>
-            <button
-              onClick={handleAdd}
-              className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-slate-900 text-[13px] font-semibold rounded-md hover:bg-amber-400 transition-colors"
-            >
-              <Plus size={14} />
-              Add Variable
-            </button>
+            <div className="mt-5 flex items-center justify-center gap-2">
+              {readableProvider && (
+                <button
+                  onClick={() => setShowImportPicker(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-700 text-slate-200 text-[13px] font-semibold rounded-md hover:bg-slate-600 border border-slate-600 transition-colors"
+                >
+                  <Download size={14} />
+                  Import from Infisical
+                </button>
+              )}
+              <button
+                onClick={handleAdd}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-slate-900 text-[13px] font-semibold rounded-md hover:bg-amber-400 transition-colors"
+              >
+                <Plus size={14} />
+                Add Variable
+              </button>
+            </div>
           </div>
         ) : (
           <>
@@ -521,6 +584,22 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
           </>
         )}
       </div>
+
+      {/* Import from Infisical picker */}
+      {showImportPicker && readableProvider && (() => {
+        const plugin = getPlugin(INFISICAL_MANIFEST.name);
+        const settings = (plugin?.settings ?? {}) as Record<string, string>;
+        return (
+          <ImportSecretPicker
+            provider={readableProvider}
+            projectId={settings.defaultProjectId || ''}
+            environment={settings.defaultEnvironment || 'dev'}
+            existingNames={new Set(globalVariables.map((v) => v.name))}
+            onImport={handleImportSecret}
+            onClose={() => setShowImportPicker(false)}
+          />
+        );
+      })()}
     </div>
   );
 }
