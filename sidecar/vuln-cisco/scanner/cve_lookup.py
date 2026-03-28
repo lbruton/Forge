@@ -28,6 +28,7 @@ from typing import Any
 import requests
 from pysnmp.hlapi.v3arch.asyncio import (
     CommunityData,
+    ContextData,
     ObjectIdentity,
     ObjectType,
     SnmpEngine,
@@ -55,6 +56,7 @@ async def _snmp_get(target: str, community: str, oid: str) -> str | None:
         engine,
         CommunityData(community),
         await UdpTransportTarget.create((target, 161), timeout=5, retries=2),
+        ContextData(),
         ObjectType(ObjectIdentity(oid)),
     )
     engine.close_dispatcher()
