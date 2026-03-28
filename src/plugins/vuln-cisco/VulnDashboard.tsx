@@ -65,7 +65,14 @@ function formatElapsed(seconds: number): string {
 
 function formatScanDate(iso: string): string {
   try {
-    const d = new Date(iso);
+    // Sidecar timestamps use hyphens in time/tz: 2026-03-28T15-28-00.810897+00-00
+    // Convert to ISO 8601 colons: 2026-03-28T15:28:00.810897+00:00
+    const fixed = iso.replace(
+      /T(\d{2})-(\d{2})-(\d{2})(.*?)([+-]\d{2})-(\d{2})$/,
+      'T$1:$2:$3$4$5:$6',
+    );
+    const d = new Date(fixed);
+    if (isNaN(d.getTime())) return iso;
     return d.toLocaleString(undefined, {
       month: 'short',
       day: 'numeric',
@@ -863,6 +870,18 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
                 setSelectedPluginNodeId(`device:${device.id}`);
               } else {
                 setSelectedPluginNodeId('cisco');
+              }
+            }}
+            onDeleted={() => {
+              // Clear cached scan entry so sidebar updates
+              const devices = useForgeStore.getState().vulnDevices;
+              const device = devices.find((d) => d.ip === route.deviceIp);
+              if (device) {
+                const cache = useForgeStore.getState().vulnScanCache[device.id] ?? [];
+                useForgeStore.getState().setVulnScanCache(
+                  device.id,
+                  cache.filter((s) => s.timestamp !== route.timestamp),
+                );
               }
             }}
           />

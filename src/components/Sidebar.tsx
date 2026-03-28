@@ -53,7 +53,13 @@ interface SidebarProps {
 }
 
 function formatShortDate(iso: string): string {
-  const d = new Date(iso);
+  // Sidecar timestamps use hyphens in time/tz — normalize to colons
+  const fixed = iso.replace(
+    /T(\d{2})-(\d{2})-(\d{2})(.*?)([+-]\d{2})-(\d{2})$/,
+    'T$1:$2:$3$4$5:$6',
+  );
+  const d = new Date(fixed);
+  if (isNaN(d.getTime())) return iso.slice(0, 10);
   return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
 }
 
