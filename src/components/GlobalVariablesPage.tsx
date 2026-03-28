@@ -78,13 +78,17 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
 
   const handleImportSecret = useCallback(
     (key: string, value: string) => {
-      const varName = key.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      if (!readableProvider) return;
+
+      const varName = key.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '');
+      if (!varName) return;
+
       const existingNames = new Set(globalVariables.map((v) => v.name));
 
       const plugin = getPlugin(INFISICAL_MANIFEST.name);
       const settings = (plugin?.settings ?? {}) as Record<string, string>;
       const syncMeta = {
-        provider: readableProvider!.name,
+        provider: readableProvider.name,
         projectId: settings.defaultProjectId || '',
         environment: settings.defaultEnvironment || 'dev',
         secretKey: key,
@@ -101,9 +105,9 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
           options: [],
           required: false,
           description: '',
+          syncToSecrets: syncMeta,
         };
         addGlobalVariable(viewId, newVar);
-        handleUpdate(varName, { syncToSecrets: syncMeta });
       }
       setShowImportPicker(false);
     },
