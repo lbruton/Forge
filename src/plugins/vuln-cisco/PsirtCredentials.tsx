@@ -115,9 +115,22 @@ export default function PsirtCredentials({ pluginName }: { pluginName: string })
       <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-3 font-semibold">
         Cisco PSIRT API Credentials
       </h3>
-      <p className="text-[11px] text-slate-500 mb-4">
-        Credentials are stored in Infisical — never in the browser. Only the key name is saved locally.
-      </p>
+      <div className="px-4 py-3 mb-4 bg-cyan-500/5 border border-cyan-500/20 rounded-lg">
+        <p className="text-[12px] text-cyan-400 font-medium mb-1">Where to get these credentials</p>
+        <ol className="text-[11px] text-slate-400 leading-relaxed space-y-1 list-decimal list-inside">
+          <li>
+            Go to{' '}
+            <span className="text-cyan-400 font-mono text-[10px]">apiconsole.cisco.com</span>
+            {' '}and sign in with your Cisco CCO account
+          </li>
+          <li>Register a new app under <span className="text-cyan-400">My Apps &amp; Keys</span></li>
+          <li>Select the <span className="text-cyan-400">Cisco PSIRT openVuln API</span> and request access</li>
+          <li>Copy the <span className="text-slate-200">Client ID</span> and <span className="text-slate-200">Client Secret</span> from your registered app</li>
+        </ol>
+        <p className="text-[11px] text-slate-500 mt-2">
+          Credentials are stored in Infisical — never in the browser. Only the key name is saved locally.
+        </p>
+      </div>
 
       <div className="space-y-4">
         {/* Client ID */}
