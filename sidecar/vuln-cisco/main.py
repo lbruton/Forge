@@ -1,0 +1,42 @@
+"""Forge sidecar — Cisco Vulnerability Scanner (PSIRT + Nuclei)."""
+
+from __future__ import annotations
+
+import os
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from middleware.auth import init_api_key
+from routes.health import router as health_router
+from routes.manifest import router as manifest_router
+
+app = FastAPI(
+    title="Forge Vuln Scanner — Cisco",
+    version="1.0.0",
+)
+
+# LAN-only service — allow all origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Register routers
+app.include_router(manifest_router)
+app.include_router(health_router)
+
+
+@app.on_event("startup")
+async def startup() -> None:
+    init_api_key()
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    port = int(os.environ.get("FORGE_VULN_PORT", "8400"))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
