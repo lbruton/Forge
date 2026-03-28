@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 # -- Manifest ------------------------------------------------------------------
@@ -47,6 +47,16 @@ class ScanRequest(BaseModel):
     cisco_client_id: str
     cisco_client_secret: str
     skip_nuclei: bool = False
+
+    @field_validator("cisco_client_id", "cisco_client_secret")
+    @classmethod
+    def credentials_not_blank(cls, v: str, info) -> str:  # noqa: N805
+        if not v or not v.strip():
+            raise ValueError(
+                f"{info.field_name} must not be empty — "
+                "Cisco PSIRT API credentials are required"
+            )
+        return v
 
 
 class ScanStatus(BaseModel):
