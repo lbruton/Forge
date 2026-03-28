@@ -294,9 +294,7 @@ def _run_nuclei(target: str) -> list[dict[str, Any]]:
     cmd = [
         "nuclei",
         "-target", target,
-        "-t", "javascript/enumeration/ssh/",
-        "-t", "javascript/misconfiguration/ssh/",
-        "-t", "network/",
+        "-tags", "cisco,network,snmp,ssh,ssl",
         "-jsonl",
         "-silent",
         "-timeout", "120",
