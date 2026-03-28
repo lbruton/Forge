@@ -418,7 +418,7 @@ function ScanProgressView({
   onCancel,
 }: {
   pluginName: string;
-  onComplete: (deviceIp: string, timestamp: string) => void;
+  onComplete: () => void;
   onCancel: () => void;
 }) {
   const getPlugin = useForgeStore((s) => s.getPlugin);
@@ -487,11 +487,8 @@ function ScanProgressView({
   useEffect(() => {
     if (!activeScan || activeScan.status.status !== 'complete') return;
 
-    const deviceIp = activeScan.device.ip;
-    const completedAt = activeScan.status.completedAt ?? new Date().toISOString();
-
     const timeout = setTimeout(() => {
-      onComplete(deviceIp, completedAt);
+      onComplete();
     }, 1500);
 
     return () => clearTimeout(timeout);
@@ -887,9 +884,14 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
     return (
       <ScanProgressView
         pluginName={pluginName}
-        onComplete={(deviceIp, timestamp) => {
+        onComplete={() => {
+          const deviceId = activeScan.device.id;
           setActiveScan(null);
-          setSelectedPluginNodeId(`report:${deviceIp}:${timestamp}`);
+          // Navigate to device page (not report) — the sidecar stores reports
+          // under started_at timestamps but completedAt uses a different value,
+          // causing a 404 on direct report navigation. The device page shows the
+          // scan list with correct timestamps for the user to click into.
+          setSelectedPluginNodeId(`device:${deviceId}`);
         }}
         onCancel={() => {
           const deviceId = activeScan.device.id;
