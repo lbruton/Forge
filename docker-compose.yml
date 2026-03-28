@@ -5,3 +5,15 @@ services:
     restart: unless-stopped
     ports:
       - "8070:80"
+
+  forge-vuln-cisco:
+    build:
+      context: ./sidecar/vuln-cisco
+      dockerfile: Dockerfile
+    network_mode: host
+    volumes:
+      - forge-vuln-data:/data
+    restart: unless-stopped
+
+volumes:
+  forge-vuln-data:
