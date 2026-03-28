@@ -4,22 +4,13 @@ import type { VariableDefinition, VariableType } from '../types/index.ts';
 import { Globe, Plus, GripVertical, Eye, EyeOff, Trash2, ArrowUp, ArrowDown, Cloud, CloudOff } from 'lucide-react';
 import { DropdownOptionsEditor } from './DropdownOptionsEditor.tsx';
 import { INFISICAL_MANIFEST } from '../plugins/infisical/manifest.ts';
+import { isValidIpv4 } from '../lib/validators.ts';
 
 interface GlobalVariablesPageProps {
   viewId: string;
 }
 
 const VARIABLE_TYPES: VariableType[] = ['string', 'ip', 'integer', 'dropdown'];
-
-const IPV4_REGEX = /^(\d{1,3}\.){3}\d{1,3}$/;
-
-function isValidIpv4(value: string): boolean {
-  if (!IPV4_REGEX.test(value)) return false;
-  return value.split('.').every((octet) => {
-    const n = parseInt(octet, 10);
-    return n >= 0 && n <= 255;
-  });
-}
 
 export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps) {
   const view = useForgeStore((s) => s.tree.views.find((v) => v.id === viewId));

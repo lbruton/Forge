@@ -1,21 +1,12 @@
 import { useState, useCallback } from 'react';
 import { normalizeOption } from '../types/index.ts';
 import type { VariableDefinition } from '../types/index.ts';
+import { isValidIpv4 } from '../lib/validators.ts';
 
 interface VariableInputProps {
   variableDefinition: VariableDefinition;
   value: string;
   onChange: (value: string) => void;
-}
-
-const IPV4_REGEX = /^(\d{1,3}\.){3}\d{1,3}$/;
-
-function isValidIpv4(value: string): boolean {
-  if (!IPV4_REGEX.test(value)) return false;
-  return value.split('.').every((octet) => {
-    const n = parseInt(octet, 10);
-    return n >= 0 && n <= 255;
-  });
 }
 
 export function VariableInput({ variableDefinition, value, onChange }: VariableInputProps) {
