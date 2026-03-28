@@ -25,6 +25,30 @@ export class StorageService {
   removeItem(key: string): void {
     localStorage.removeItem(this.prefix + key);
   }
+
+  getAllKeys(): string[] {
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(this.prefix)) {
+        keys.push(key.slice(this.prefix.length));
+      }
+    }
+    return keys;
+  }
+
+  clear(): void {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(this.prefix)) {
+        keysToRemove.push(key);
+      }
+    }
+    for (const key of keysToRemove) {
+      localStorage.removeItem(key);
+    }
+  }
 }
 
 export const storage = new StorageService();
