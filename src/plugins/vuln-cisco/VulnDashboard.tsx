@@ -190,29 +190,49 @@ function DevicePage({
   const handleScan = useCallback(async () => {
     if (!registration?.endpoint || !registration?.apiKey) return;
 
-    const ciscoClientId = registration.settings?.ciscoClientId as string | undefined;
-    const ciscoClientSecret = registration.settings?.ciscoClientSecret as string | undefined;
+    // Resolve PSIRT credentials from Infisical
+    const ciscoClientIdKey = registration.settings?.ciscoClientIdKey as string | undefined;
+    const ciscoClientSecretKey = registration.settings?.ciscoClientSecretKey as string | undefined;
+
+    if (!ciscoClientIdKey || !ciscoClientSecretKey) {
+      setError('Configure Cisco PSIRT API credentials in the plugin settings first.');
+      return;
+    }
+
+    const providers = getSecretsProviders();
+    const infisicalPlugin = getPlugin('forge-infisical');
+    const projectId = infisicalPlugin?.settings?.defaultProjectId as string | undefined;
+    const env = (infisicalPlugin?.settings?.defaultEnvironment as string) || 'dev';
+
+    if (providers.length === 0 || !projectId) {
+      setError('Infisical is not connected. Connect it first to resolve PSIRT credentials.');
+      return;
+    }
+
+    let ciscoClientId: string;
+    let ciscoClientSecret: string;
+    try {
+      ciscoClientId = await providers[0].getSecret(projectId, env, ciscoClientIdKey);
+      ciscoClientSecret = await providers[0].getSecret(projectId, env, ciscoClientSecretKey);
+    } catch {
+      setError('Failed to retrieve PSIRT credentials from Infisical.');
+      return;
+    }
 
     if (!ciscoClientId || !ciscoClientSecret) {
-      setError('Configure Cisco PSIRT API credentials in the plugin settings first.');
+      setError('PSIRT credentials are empty in Infisical. Check the secret values.');
       return;
     }
 
     // Resolve SNMP community
     let snmpCommunity = device.snmpCommunity ?? 'public';
     if (device.snmpSecretKey) {
-      const providers = getSecretsProviders();
-      const infisicalPlugin = getPlugin('forge-infisical');
-      const projectId = infisicalPlugin?.settings?.defaultProjectId as string | undefined;
-      const env = (infisicalPlugin?.settings?.defaultEnvironment as string) || 'dev';
-      if (providers.length > 0 && projectId) {
-        try {
-          const value = await providers[0].getSecret(projectId, env, device.snmpSecretKey);
-          if (value) snmpCommunity = value;
-        } catch {
-          setError(`Failed to retrieve SNMP secret "${device.snmpSecretKey}" from Infisical`);
-          return;
-        }
+      try {
+        const value = await providers[0].getSecret(projectId, env, device.snmpSecretKey);
+        if (value) snmpCommunity = value;
+      } catch {
+        setError(`Failed to retrieve SNMP secret "${device.snmpSecretKey}" from Infisical`);
+        return;
       }
     }
 
@@ -280,7 +300,7 @@ function DevicePage({
       </div>
 
       {/* PSIRT creds warning */}
-      {!registration?.settings?.ciscoClientId && (
+      {!registration?.settings?.ciscoClientIdKey && (
         <button
           type="button"
           onClick={() => {
@@ -637,7 +657,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
       </div>
 
       {/* PSIRT creds warning */}
-      {!registration?.settings?.ciscoClientId && !registration?.settings?.ciscoClientSecret && (
+      {!registration?.settings?.ciscoClientIdKey && !registration?.settings?.ciscoClientSecretKey && (
         <button
           type="button"
           onClick={() => {

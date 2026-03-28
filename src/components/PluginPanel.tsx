@@ -3,6 +3,8 @@ import { useForgeStore } from '../store/index.ts';
 import { fetchManifest, healthCheck } from '../lib/plugin-service.ts';
 import type { PluginRegistration, SettingsField } from '../types/plugin.ts';
 import SetupWizard from '../plugins/infisical/SetupWizard.tsx';
+import PsirtCredentials from '../plugins/vuln-cisco/PsirtCredentials.tsx';
+import { VULN_CISCO_MANIFEST } from '../plugins/vuln-cisco/manifest.ts';
 import { ArrowLeft, Eye, EyeOff, Puzzle, RefreshCw, Settings } from 'lucide-react';
 
 interface PluginPanelProps {
@@ -430,6 +432,11 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
             schema={manifest.settingsSchema}
             currentSettings={registration.settings}
           />
+        )}
+
+        {/* Vuln-cisco: PSIRT credentials via Infisical */}
+        {manifest.name === VULN_CISCO_MANIFEST.name && (
+          <PsirtCredentials pluginName={manifest.name} />
         )}
       </div>
     </div>
