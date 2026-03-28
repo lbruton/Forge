@@ -17,7 +17,7 @@ import type {
 } from '../types/index.ts';
 import type { PluginManifest, PluginRegistration, PluginHealthStatus } from '../types/plugin.ts';
 import type { SecretsProvider } from '../types/secrets-provider.ts';
-import type { VulnDevice, ScanEntry } from '../plugins/vuln-cisco/types.ts';
+import type { VulnDevice, ScanEntry, ActiveScan, ScanStatus } from '../plugins/vuln-cisco/types.ts';
 
 // --- Custom storage adapter for zustand persist ---
 
@@ -151,6 +151,11 @@ interface ForgeStore {
   deleteVulnDevice: (id: string) => void;
   getVulnDevice: (id: string) => VulnDevice | undefined;
   setVulnScanCache: (deviceId: string, scans: ScanEntry[]) => void;
+
+  // Active scan (runtime-only, not persisted)
+  activeScan: ActiveScan | null;
+  setActiveScan: (scan: ActiveScan | null) => void;
+  updateScanStatus: (status: ScanStatus) => void;
 
   // Helpers
   findVariant: (variantId: string) => { view: View; vendor: Vendor; model: Model; variant: Variant } | null;
@@ -882,6 +887,17 @@ export const useForgeStore = create<ForgeStore>()(
         }));
       },
 
+      // --- Active scan (runtime-only) ---
+
+      activeScan: null,
+      setActiveScan: (scan) => set({ activeScan: scan }),
+      updateScanStatus: (status) => {
+        set((state) => {
+          if (!state.activeScan || state.activeScan.scanId !== status.scanId) return state;
+          return { activeScan: { ...state.activeScan, status } };
+        });
+      },
+
       // --- Helpers ---
 
       findVariant: (variantId) => {
@@ -916,6 +932,7 @@ export const useForgeStore = create<ForgeStore>()(
         selectedPluginName: _selectedPluginName,
         selectedPluginNodeId: _selectedPluginNodeId,
         secretsProviders: _secretsProviders,
+        activeScan: _activeScan,
         ...rest
       }) => rest,
     },

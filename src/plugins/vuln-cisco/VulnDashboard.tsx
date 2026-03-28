@@ -1,13 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  ShieldAlert,
-  Plus,
-  Play,
-  RefreshCw,
-  Check,
-  Cpu,
-  Clock,
-} from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { ShieldAlert, Plus, Play, RefreshCw, Check, Cpu, Clock, Loader2 } from 'lucide-react';
 import { useForgeStore } from '../../store/index.ts';
 import { pluginFetch } from '../../lib/plugin-service.ts';
 import type { VulnDevice, DeviceSummary, ScanStatus, ScanEntry, SeveritySummary } from './types.ts';
@@ -67,10 +59,7 @@ function formatScanDate(iso: string): string {
   try {
     // Sidecar timestamps use hyphens in time/tz: 2026-03-28T15-28-00.810897+00-00
     // Convert to ISO 8601 colons: 2026-03-28T15:28:00.810897+00:00
-    const fixed = iso.replace(
-      /T(\d{2})-(\d{2})-(\d{2})(.*?)([+-]\d{2})-(\d{2})$/,
-      'T$1:$2:$3$4$5:$6',
-    );
+    const fixed = iso.replace(/T(\d{2})-(\d{2})-(\d{2})(.*?)([+-]\d{2})-(\d{2})$/, 'T$1:$2:$3$4$5:$6');
     const d = new Date(fixed);
     if (isNaN(d.getTime())) return iso;
     return d.toLocaleString(undefined, {
@@ -317,8 +306,8 @@ function DevicePage({
           className="mx-6 mt-4 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-lg w-[calc(100%-3rem)] text-left hover:border-amber-500/40 transition-colors cursor-pointer"
         >
           <p className="text-xs text-amber-400">
-            Cisco PSIRT API credentials are not configured.{' '}
-            <span className="underline">Open plugin settings</span> to add your Client ID and Secret.
+            Cisco PSIRT API credentials are not configured. <span className="underline">Open plugin settings</span> to
+            add your Client ID and Secret.
           </p>
         </button>
       )}
@@ -356,7 +345,9 @@ function DevicePage({
             <Clock size={48} className="text-slate-600" />
             <div className="text-center">
               <h3 className="text-base font-semibold text-slate-200 mb-1">No scans yet</h3>
-              <p className="text-sm text-slate-400">Click "Scan Now" to run the first vulnerability scan on this device.</p>
+              <p className="text-sm text-slate-400">
+                Click "Scan Now" to run the first vulnerability scan on this device.
+              </p>
             </div>
           </div>
         )}
@@ -396,9 +387,7 @@ function DevicePage({
                     <td className="px-4 py-3.5">
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                          scan.status === 'complete'
-                            ? 'bg-green-500/10 text-green-400'
-                            : 'bg-red-500/10 text-red-400'
+                          scan.status === 'complete' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
                         }`}
                       >
                         {scan.status === 'complete' ? 'Complete' : 'Failed'}
@@ -424,14 +413,10 @@ function DevicePage({
 // ========================
 
 function ScanProgressView({
-  device,
-  scanId,
   pluginName,
   onComplete,
   onCancel,
 }: {
-  device: VulnDevice;
-  scanId: string;
   pluginName: string;
   onComplete: (deviceIp: string, timestamp: string) => void;
   onCancel: () => void;
@@ -439,55 +424,67 @@ function ScanProgressView({
   const getPlugin = useForgeStore((s) => s.getPlugin);
   const registration = getPlugin(pluginName);
 
-  const [scanStatus, setScanStatus] = useState<ScanStatus | null>(null);
+  // Read scan state from store — survives component unmount
+  const activeScan = useForgeStore((s) => s.activeScan);
+  const updateScanStatus = useForgeStore((s) => s.updateScanStatus);
+
+  // Elapsed timer — computed from activeScan.startedAt, ticks locally
   const [elapsed, setElapsed] = useState(0);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Elapsed timer — ticks every second, recomputes from stored startedAt on remount
   useEffect(() => {
-    // Start elapsed timer
-    timerRef.current = setInterval(() => {
-      setElapsed((prev) => prev + 1);
+    if (!activeScan) return;
+    setElapsed(Math.floor((Date.now() - activeScan.startedAt) / 1000));
+    const id = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - activeScan.startedAt) / 1000));
     }, 1000);
+    return () => clearInterval(id);
+  }, [activeScan?.startedAt, activeScan === null]);
 
-    // Poll scan status every 3 seconds
-    pollRef.current = setInterval(async () => {
-      if (!registration?.endpoint || !registration?.apiKey) return;
+  // Poll scan status — resumes on remount since activeScan lives in the store
+  useEffect(() => {
+    if (!activeScan) return;
+    const { status } = activeScan.status;
+    if (status === 'complete' || status === 'failed') return;
+    if (!registration?.endpoint || !registration?.apiKey) return;
+
+    const endpoint = registration.endpoint;
+    const apiKey = registration.apiKey;
+    const scanId = activeScan.scanId;
+
+    const poll = async () => {
       try {
-        const statusResp = await pluginFetch(
-          registration.endpoint,
-          registration.apiKey,
-          `/scan/${encodeURIComponent(scanId)}/status`,
-        );
-        if (!statusResp.ok) return;
-
-        const status: ScanStatus = await statusResp.json();
-        setScanStatus(status);
-
-        if (status.status === 'complete' || status.status === 'failed') {
-          if (pollRef.current) clearInterval(pollRef.current);
-          if (timerRef.current) clearInterval(timerRef.current);
-          pollRef.current = null;
-          timerRef.current = null;
-
-          if (status.status === 'complete') {
-            onComplete(device.ip, status.completedAt ?? new Date().toISOString());
-          }
-        }
+        const resp = await pluginFetch(endpoint, apiKey, `/scan/${encodeURIComponent(scanId)}/status`);
+        if (!resp.ok) return;
+        const scanStatus: ScanStatus = await resp.json();
+        updateScanStatus(scanStatus);
       } catch {
         // Silently retry on next interval
       }
-    }, 3000);
-
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-      if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [registration, scanId, device.ip, onComplete]);
 
-  const activeStep = getStepIndex(scanStatus?.progress);
-  const isDone = scanStatus?.status === 'complete';
-  const isFailed = scanStatus?.status === 'failed';
+    // Poll immediately on mount, then every 3 seconds
+    void poll();
+    const id = setInterval(poll, 3000);
+    return () => clearInterval(id);
+  }, [activeScan?.scanId, activeScan?.status.status, registration?.endpoint, registration?.apiKey, updateScanStatus]);
+
+  // Completion transition — wait 1.5s for sidecar to finalize report (fixes FORGE-56)
+  useEffect(() => {
+    if (!activeScan || activeScan.status.status !== 'complete') return;
+
+    const timeout = setTimeout(() => {
+      onComplete(activeScan.device.ip, activeScan.status.completedAt ?? new Date().toISOString());
+    }, 1500);
+
+    return () => clearTimeout(timeout);
+  }, [activeScan?.status.status, activeScan?.status.completedAt, activeScan?.device.ip, onComplete]);
+
+  if (!activeScan) return null;
+
+  const activeStep = getStepIndex(activeScan.status.progress);
+  const isDone = activeScan.status.status === 'complete';
+  const isFailed = activeScan.status.status === 'failed';
 
   return (
     <div className="flex flex-col h-full bg-forge-charcoal">
@@ -497,10 +494,14 @@ function ScanProgressView({
           {/* Target info */}
           <div className="text-center mb-8">
             <div className="text-xl font-semibold text-slate-200 flex items-center justify-center gap-2">
-              <span className="inline-block w-2 h-2 rounded-full bg-forge-amber animate-pulse" />
-              {device.hostname}
+              {isDone ? (
+                <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+              ) : (
+                <span className="inline-block w-2 h-2 rounded-full bg-forge-amber animate-pulse" />
+              )}
+              {activeScan.device.hostname}
             </div>
-            <div className="font-mono text-sm text-slate-400 mt-1">{device.ip}</div>
+            <div className="font-mono text-sm text-slate-400 mt-1">{activeScan.device.ip}</div>
           </div>
 
           {/* Steps */}
@@ -556,23 +557,35 @@ function ScanProgressView({
           </div>
           <div className="text-center text-xs text-slate-500 mb-6">Elapsed time</div>
 
-          {/* Error state */}
-          {isFailed && (
-            <div className="text-center mb-4 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <p className="text-sm text-red-400">Scan failed{scanStatus?.error ? `: ${scanStatus.error}` : ''}</p>
+          {/* Completion transition — brief loading while report is prepared */}
+          {isDone && (
+            <div className="flex items-center justify-center gap-2 mb-4 px-4 py-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+              <Loader2 size={14} className="animate-spin text-green-400" />
+              <p className="text-sm text-green-400">Scan complete — preparing report...</p>
             </div>
           )}
 
-          {/* Cancel button */}
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-4 py-2 text-sm font-medium text-slate-400 border border-forge-graphite rounded-md hover:bg-forge-graphite hover:text-slate-200 transition-colors"
-            >
-              {isFailed ? 'Back to Device' : 'Cancel Scan'}
-            </button>
-          </div>
+          {/* Error state */}
+          {isFailed && (
+            <div className="text-center mb-4 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-sm text-red-400">
+                Scan failed{activeScan.status.error ? `: ${activeScan.status.error}` : ''}
+              </p>
+            </div>
+          )}
+
+          {/* Cancel / Back button */}
+          {!isDone && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-4 py-2 text-sm font-medium text-slate-400 border border-forge-graphite rounded-md hover:bg-forge-graphite hover:text-slate-200 transition-colors"
+              >
+                {isFailed ? 'Back to Device' : 'Cancel Scan'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -633,7 +646,10 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
               );
               if (scanResp.ok) {
                 const scans: ScanEntry[] = await scanResp.json();
-                setVulnScanCache(device.id, scans.sort((a, b) => b.timestamp.localeCompare(a.timestamp)));
+                setVulnScanCache(
+                  device.id,
+                  scans.sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
+                );
               }
             } catch {
               // Non-critical — sidebar just won't show scan nodes
@@ -692,8 +708,8 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
           className="mx-6 mt-4 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-lg w-[calc(100%-3rem)] text-left hover:border-amber-500/40 transition-colors cursor-pointer"
         >
           <p className="text-xs text-amber-400">
-            Cisco PSIRT API credentials are not configured.{' '}
-            <span className="underline">Open plugin settings</span> to add your Client ID and Secret.
+            Cisco PSIRT API credentials are not configured. <span className="underline">Open plugin settings</span> to
+            add your Client ID and Secret.
           </p>
         </button>
       )}
@@ -702,7 +718,11 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
       {error && (
         <div className="mx-6 mt-4 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-between">
           <p className="text-sm text-red-400">{error}</p>
-          <button type="button" onClick={() => setError(null)} className="text-red-400 hover:text-red-300 text-xs font-medium ml-4">
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="text-red-400 hover:text-red-300 text-xs font-medium ml-4"
+          >
             Dismiss
           </button>
         </div>
@@ -713,7 +733,11 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
         {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-forge-amber/30 border-t-forge-amber rounded-full animate-spin" role="status" aria-label="Loading" />
+            <div
+              className="w-6 h-6 border-2 border-forge-amber/30 border-t-forge-amber rounded-full animate-spin"
+              role="status"
+              aria-label="Loading"
+            />
           </div>
         )}
 
@@ -776,7 +800,9 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
                     </td>
                     <td className="px-4 py-3.5">
                       {device.lastScanAt ? (
-                        <span className="font-mono text-[11px] text-slate-500">{formatScanDate(device.lastScanAt)}</span>
+                        <span className="font-mono text-[11px] text-slate-500">
+                          {formatScanDate(device.lastScanAt)}
+                        </span>
                       ) : (
                         <span className="text-xs text-slate-600">Never</span>
                       )}
@@ -804,8 +830,9 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
   const addVulnDevice = useForgeStore((s) => s.addVulnDevice);
   const updateVulnDevice = useForgeStore((s) => s.updateVulnDevice);
 
-  // Scan progress state (transient)
-  const [activeScan, setActiveScan] = useState<{ scanId: string; device: VulnDevice } | null>(null);
+  // Active scan state — lives in Zustand store, survives component unmount
+  const activeScan = useForgeStore((s) => s.activeScan);
+  const setActiveScan = useForgeStore((s) => s.setActiveScan);
 
   const route = parseNodeId(selectedPluginNodeId);
 
@@ -835,20 +862,19 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
     }
   }, [showEditModal, route.deviceId, setSelectedPluginNodeId]);
 
-  // Active scan in progress
+  // Active scan in progress — activeScan lives in store, survives navigation
   if (activeScan) {
     return (
       <ScanProgressView
-        device={activeScan.device}
-        scanId={activeScan.scanId}
         pluginName={pluginName}
         onComplete={(deviceIp, timestamp) => {
           setActiveScan(null);
           setSelectedPluginNodeId(`report:${deviceIp}:${timestamp}`);
         }}
         onCancel={() => {
+          const deviceId = activeScan.device.id;
           setActiveScan(null);
-          setSelectedPluginNodeId(`device:${activeScan.device.id}`);
+          setSelectedPluginNodeId(`device:${deviceId}`);
         }}
       />
     );
@@ -906,7 +932,12 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
         device={device}
         pluginName={pluginName}
         onScanStarted={(scanId) => {
-          setActiveScan({ scanId, device });
+          setActiveScan({
+            scanId,
+            device,
+            status: { scanId, status: 'queued', device: device.ip },
+            startedAt: Date.now(),
+          });
         }}
       />
     );
@@ -918,12 +949,7 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
       <OverviewPage pluginName={pluginName} />
 
       {/* Add Device Modal */}
-      <DeviceModal
-        open={showAddModal}
-        device={null}
-        onSave={handleSaveDevice}
-        onClose={handleCloseModal}
-      />
+      <DeviceModal open={showAddModal} device={null} onSave={handleSaveDevice} onClose={handleCloseModal} />
 
       {/* Edit Device Modal */}
       <DeviceModal
