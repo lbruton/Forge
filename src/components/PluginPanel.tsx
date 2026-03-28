@@ -302,15 +302,36 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
             {!isConfigured && (
               <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-lg p-4">
                 <h3 className="text-[13px] font-semibold text-cyan-400 mb-2">Sidecar Setup Required</h3>
-                <p className="text-[12px] text-slate-400 leading-relaxed mb-3">
-                  This plugin requires a Docker sidecar container. Add the service to your docker-compose.yml and deploy
-                  via Portainer, then enter the endpoint URL and API key below.
-                </p>
-                <p className="text-[12px] text-slate-500">
-                  The API key is displayed in the container logs on first boot. You can also retrieve it with:{' '}
-                  <code className="text-[11px] text-cyan-400 bg-forge-obsidian px-1.5 py-0.5 rounded">
-                    docker exec {manifest.name} cat /data/api-key.txt
-                  </code>
+                <ol className="text-[12px] text-slate-400 leading-relaxed space-y-2 list-decimal list-inside">
+                  <li>
+                    Add the sidecar service to your{' '}
+                    <code className="text-[11px] text-cyan-400 bg-forge-obsidian px-1 py-0.5 rounded">
+                      docker-compose.yml
+                    </code>{' '}
+                    and deploy via Portainer
+                  </li>
+                  <li>
+                    Create an NPM reverse proxy entry (e.g.{' '}
+                    <code className="text-[11px] text-cyan-400 bg-forge-obsidian px-1 py-0.5 rounded">
+                      vuln-cisco.yourdomain.com
+                    </code>{' '}
+                    &rarr;{' '}
+                    <code className="text-[11px] text-cyan-400 bg-forge-obsidian px-1 py-0.5 rounded">
+                      http://localhost:8400
+                    </code>
+                    ) with SSL enabled
+                  </li>
+                  <li>
+                    Retrieve the API key from the container logs or run:{' '}
+                    <code className="text-[11px] text-cyan-400 bg-forge-obsidian px-1 py-0.5 rounded">
+                      docker exec {manifest.name} cat /data/api-key.txt
+                    </code>
+                  </li>
+                  <li>Enter the HTTPS proxy URL and API key below, then click Connect</li>
+                </ol>
+                <p className="text-[12px] text-slate-500 mt-2">
+                  An NPM reverse proxy with SSL is required to avoid mixed-content browser blocks when Forge is served
+                  over HTTPS.
                 </p>
               </div>
             )}
