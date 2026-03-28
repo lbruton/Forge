@@ -615,7 +615,7 @@ function ScanProgressView({
 
 function OverviewPage({ pluginName }: { pluginName: string }) {
   const vulnDevices = useForgeStore((s) => s.vulnDevices);
-  const registration = useForgeStore((s) => s.plugins[pluginName]);
+  const pluginSettings = useForgeStore((s) => s.plugins[pluginName]?.settings);
   const setSelectedPluginNodeId = useForgeStore((s) => s.setSelectedPluginNodeId);
   const setSelectedPluginName = useForgeStore((s) => s.setSelectedPluginName);
 
@@ -718,7 +718,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
       </div>
 
       {/* PSIRT creds warning */}
-      {!registration?.settings?.ciscoClientIdKey && !registration?.settings?.ciscoClientSecretKey && (
+      {!pluginSettings?.ciscoClientIdKey && !pluginSettings?.ciscoClientSecretKey && (
         <button
           type="button"
           onClick={() => {
