@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends
 
 from middleware.auth import verify_api_key
 from models.schemas import HealthResponse
+from routes.scan import get_active_scan_count
 
 router = APIRouter()
 
@@ -22,5 +23,5 @@ async def get_health(_key: str = Depends(verify_api_key)) -> HealthResponse:
         status=status,
         lastChecked=datetime.now(timezone.utc).isoformat(),
         nucleiAvailable=nuclei_available,
-        scansRunning=0,
+        scansRunning=get_active_scan_count(),
     )

@@ -8,8 +8,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from middleware.auth import init_api_key
-from routes.health import router as health_router
 from routes.manifest import router as manifest_router
+from routes.results import router as results_router
+from routes.scan import router as scan_router
+from routes.health import router as health_router  # after scan (imports get_active_scan_count)
 
 app = FastAPI(
     title="Forge Vuln Scanner — Cisco",
@@ -28,6 +30,8 @@ app.add_middleware(
 # Register routers
 app.include_router(manifest_router)
 app.include_router(health_router)
+app.include_router(scan_router)
+app.include_router(results_router)
 
 
 @app.on_event("startup")
