@@ -7,3 +7,9 @@ export function isValidIpv4(value: string): boolean {
     return num >= 0 && num <= 255 && part === num.toString();
   });
 }
+
+/** Convert an Infisical secret key to a Forge variable name.
+ *  Strips all leading FORGE_ prefixes, lowercases, sanitizes to [a-z0-9_]. */
+export function secretKeyToVarName(key: string): string {
+  return key.replace(/^(FORGE_)+/i, '').toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '');
+}

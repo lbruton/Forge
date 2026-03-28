@@ -5,6 +5,7 @@ import { Globe, Plus, GripVertical, Eye, EyeOff, Trash2, ArrowUp, ArrowDown, Clo
 import { DropdownOptionsEditor } from './DropdownOptionsEditor.tsx';
 import { ImportSecretPicker } from './ImportSecretPicker.tsx';
 import { INFISICAL_MANIFEST } from '../plugins/infisical/manifest.ts';
+import { secretKeyToVarName } from '../lib/validators.ts';
 import { isValidIpv4 } from '../lib/validators.ts';
 
 interface GlobalVariablesPageProps {
@@ -71,8 +72,7 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
     (key: string, value: string) => {
       if (!readableProvider) return;
 
-      const stripped = key.replace(/^FORGE_/i, '');
-      const varName = stripped.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '');
+      const varName = secretKeyToVarName(key);
       if (!varName) return;
 
       const existingNames = new Set(globalVariables.map((v) => v.name));

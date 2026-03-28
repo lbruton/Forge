@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Search, Shield, Download, Loader2, AlertTriangle } from 'lucide-react';
 import type { SecretsProvider, SecretEntry } from '../types/secrets-provider.ts';
+import { secretKeyToVarName } from '../lib/validators.ts';
 
 interface ImportSecretPickerProps {
   provider: SecretsProvider;
@@ -69,8 +70,7 @@ export function ImportSecretPicker({
     ? secrets.filter((s) => s.key.toLowerCase().includes(filter.toLowerCase()))
     : secrets;
 
-  const toVarName = (key: string) => key.replace(/^FORGE_/i, '').toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '');
-  const alreadyImported = (key: string) => existingNames.has(toVarName(key));
+  const alreadyImported = (key: string) => existingNames.has(secretKeyToVarName(key));
 
   return (
     <div
