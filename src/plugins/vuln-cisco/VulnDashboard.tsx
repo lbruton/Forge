@@ -459,7 +459,18 @@ function ScanProgressView({
       try {
         const resp = await pluginFetch(endpoint, apiKey, `/scan/${encodeURIComponent(scanId)}/status`);
         if (!resp.ok) return;
-        const scanStatus: ScanStatus = await resp.json();
+        // Sidecar returns snake_case (Pydantic), frontend expects camelCase
+        const raw = await resp.json();
+        const scanStatus: ScanStatus = {
+          scanId: raw.scanId ?? raw.scan_id,
+          status: raw.status,
+          progress: raw.progress,
+          startedAt: raw.startedAt ?? raw.started_at,
+          completedAt: raw.completedAt ?? raw.completed_at,
+          error: raw.error,
+          device: raw.device,
+          resultPath: raw.resultPath ?? raw.result_path,
+        };
         updateScanStatus(scanStatus);
       } catch {
         // Silently retry on next interval
@@ -603,19 +614,22 @@ function ScanProgressView({
 // ========================
 
 function OverviewPage({ pluginName }: { pluginName: string }) {
-  const getPlugin = useForgeStore((s) => s.getPlugin);
   const vulnDevices = useForgeStore((s) => s.vulnDevices);
-  const updateVulnDevice = useForgeStore((s) => s.updateVulnDevice);
-  const setVulnScanCache = useForgeStore((s) => s.setVulnScanCache);
+  const pluginSettings = useForgeStore((s) => s.plugins[pluginName]?.settings);
   const setSelectedPluginNodeId = useForgeStore((s) => s.setSelectedPluginNodeId);
   const setSelectedPluginName = useForgeStore((s) => s.setSelectedPluginName);
-  const registration = getPlugin(pluginName);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Sync device info + scan history from sidecar
+  // Sync device info + scan history from sidecar.
+  // Reads all store state via getState() inside the callback to avoid
+  // dependency cycles — this callback mutates the store (updateVulnDevice,
+  // setVulnScanCache), so reactive selectors in deps would cause infinite loops.
   const syncFromSidecar = useCallback(async () => {
+    const state = useForgeStore.getState();
+    const registration = state.getPlugin(pluginName);
+
     if (!registration?.endpoint || !registration?.apiKey) {
       setLoading(false);
       return;
@@ -633,11 +647,11 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
       }
 
       const data: DeviceSummary[] = await response.json();
-      // Update existing devices with sidecar data + fetch scan history
+      const devices = state.vulnDevices;
       for (const summary of data) {
-        const device = vulnDevices.find((d) => d.ip === summary.device);
+        const device = devices.find((d) => d.ip === summary.device);
         if (device) {
-          updateVulnDevice(device.id, {
+          state.updateVulnDevice(device.id, {
             lastScanAt: summary.lastScan,
             lastSeverity: summary.severity,
           });
@@ -652,7 +666,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
               );
               if (scanResp.ok) {
                 const scans: ScanEntry[] = await scanResp.json();
-                setVulnScanCache(
+                state.setVulnScanCache(
                   device.id,
                   scans.sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
                 );
@@ -669,7 +683,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
     } finally {
       setLoading(false);
     }
-  }, [registration, vulnDevices, updateVulnDevice, setVulnScanCache]);
+  }, [pluginName]);
 
   useEffect(() => {
     syncFromSidecar();
@@ -704,7 +718,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
       </div>
 
       {/* PSIRT creds warning */}
-      {!registration?.settings?.ciscoClientIdKey && !registration?.settings?.ciscoClientSecretKey && (
+      {!pluginSettings?.ciscoClientIdKey && !pluginSettings?.ciscoClientSecretKey && (
         <button
           type="button"
           onClick={() => {
