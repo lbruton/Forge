@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useForgeStore } from '../store/index.ts';
-import { healthCheck } from '../lib/plugin-service.ts';
+import { fetchManifest, healthCheck } from '../lib/plugin-service.ts';
 import type { PluginRegistration, SettingsField } from '../types/plugin.ts';
 import SetupWizard from '../plugins/infisical/SetupWizard.tsx';
 import { ArrowLeft, Eye, EyeOff, Puzzle, RefreshCw, Settings } from 'lucide-react';
@@ -146,13 +146,54 @@ function SettingsForm({
 function PluginDetail({ registration, onBack }: { registration: PluginRegistration; onBack: () => void }) {
   const setPluginEnabled = useForgeStore((s) => s.setPluginEnabled);
   const setPluginHealth = useForgeStore((s) => s.setPluginHealth);
+  const registerPlugin = useForgeStore((s) => s.registerPlugin);
   const [refreshing, setRefreshing] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const [apiKeyRevealed, setApiKeyRevealed] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
+
+  // Editable fields for sidecar configuration
+  const [editEndpoint, setEditEndpoint] = useState(registration.endpoint ?? '');
+  const [editApiKey, setEditApiKey] = useState(registration.apiKey ?? '');
 
   const { manifest } = registration;
   const isSidecar = manifest.type === 'sidecar';
   const isIntegration = manifest.type === 'integration';
+  const isConfigured = Boolean(registration.endpoint && registration.apiKey);
+
+  // Sync editable fields if registration changes externally
+  useEffect(() => {
+    setEditEndpoint(registration.endpoint ?? '');
+    setEditApiKey(registration.apiKey ?? '');
+  }, [registration.endpoint, registration.apiKey]);
+
+  const handleConnect = useCallback(async () => {
+    const endpoint = editEndpoint.trim();
+    const apiKey = editApiKey.trim();
+    if (!endpoint) {
+      setConnectError('Endpoint URL is required');
+      return;
+    }
+    if (!apiKey) {
+      setConnectError('API Key is required');
+      return;
+    }
+    setConnecting(true);
+    setConnectError(null);
+    try {
+      // Verify the sidecar is reachable and returns a valid manifest
+      await fetchManifest(endpoint, apiKey);
+      // Re-register with the endpoint and key
+      registerPlugin(manifest, endpoint, apiKey);
+      const health = await healthCheck(endpoint, apiKey);
+      setPluginHealth(manifest.name, health);
+    } catch (err: unknown) {
+      setConnectError(err instanceof Error ? err.message : 'Failed to connect');
+    } finally {
+      setConnecting(false);
+    }
+  }, [editEndpoint, editApiKey, manifest, registerPlugin, setPluginHealth]);
 
   const handleRefreshHealth = useCallback(async () => {
     if (!registration.endpoint || !registration.apiKey) return;
@@ -202,6 +243,11 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
                 Built-in
               </span>
             )}
+            {manifest.type === 'sidecar' && (
+              <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-400">
+                Sidecar
+              </span>
+            )}
             {manifest.type === 'integration' && (
               <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-forge-amber/15 text-forge-amber">
                 Integration
@@ -218,12 +264,16 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
         <div className="bg-forge-charcoal border border-forge-graphite rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <StatusDot status={registration.health.status} />
-              <span className="text-[13px] text-slate-200 capitalize">{registration.health.status}</span>
+              <StatusDot status={isConfigured ? registration.health.status : 'unknown'} />
+              <span className="text-[13px] text-slate-200 capitalize">
+                {isConfigured ? registration.health.status : 'Not configured'}
+              </span>
             </div>
-            <span className="text-[11px] text-slate-500">
-              Last checked: {formatTimestamp(registration.health.lastChecked)}
-            </span>
+            {isConfigured && (
+              <span className="text-[11px] text-slate-500">
+                Last checked: {formatTimestamp(registration.health.lastChecked)}
+              </span>
+            )}
           </div>
           {registration.health.error && <p className="text-[12px] text-red-400 mt-2">{registration.health.error}</p>}
         </div>
@@ -245,40 +295,99 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
           </button>
         </div>
 
-        {/* Sidecar-specific info */}
+        {/* Sidecar configuration */}
         {isSidecar && (
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {/* Setup instructions when not configured */}
+            {!isConfigured && (
+              <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-lg p-4">
+                <h3 className="text-[13px] font-semibold text-cyan-400 mb-2">Sidecar Setup Required</h3>
+                <p className="text-[12px] text-slate-400 leading-relaxed mb-3">
+                  This plugin requires a Docker sidecar container. Add the service to your docker-compose.yml and deploy
+                  via Portainer, then enter the endpoint URL and API key below.
+                </p>
+                <p className="text-[12px] text-slate-500">
+                  The API key is displayed in the container logs on first boot. You can also retrieve it with:{' '}
+                  <code className="text-[11px] text-cyan-400 bg-forge-obsidian px-1.5 py-0.5 rounded">
+                    docker exec {manifest.name} cat /data/api-key.txt
+                  </code>
+                </p>
+              </div>
+            )}
+
+            {/* Endpoint + API Key inputs */}
             <div>
               <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">Endpoint URL</label>
-              <div className="px-2.5 py-1.5 bg-forge-obsidian border border-forge-graphite rounded text-[13px] text-slate-400 font-mono">
-                {registration.endpoint}
-              </div>
+              <input
+                type="text"
+                value={editEndpoint}
+                onChange={(e) => setEditEndpoint(e.target.value)}
+                placeholder="http://localhost:8400"
+                className={INPUT_CLASSES}
+              />
             </div>
 
             <div>
               <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">API Key</label>
               <div className="relative">
-                <div className="px-2.5 py-1.5 bg-forge-obsidian border border-forge-graphite rounded text-[13px] text-slate-400 font-mono pr-10 min-h-[34px]">
-                  {apiKeyRevealed ? registration.apiKey : maskedApiKey}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setApiKeyRevealed((prev) => !prev)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                >
-                  {apiKeyRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
+                {isConfigured && !apiKeyRevealed ? (
+                  <>
+                    <div className="px-2.5 py-1.5 bg-forge-obsidian border border-forge-steel rounded text-[13px] text-slate-400 font-mono pr-10 min-h-[34px]">
+                      {maskedApiKey}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setApiKeyRevealed(true)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      <Eye size={14} />
+                    </button>
+                  </>
+                ) : (
+                  <input
+                    type="text"
+                    value={editApiKey}
+                    onChange={(e) => setEditApiKey(e.target.value)}
+                    onBlur={() => {
+                      if (isConfigured && editApiKey === registration.apiKey) setApiKeyRevealed(false);
+                    }}
+                    placeholder="Paste API key from container logs"
+                    className={`${INPUT_CLASSES} font-mono`}
+                  />
+                )}
               </div>
             </div>
 
-            <button
-              onClick={handleRefreshHealth}
-              disabled={refreshing}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-forge-charcoal border border-forge-graphite text-[12px] text-slate-300 rounded hover:border-forge-amber transition-colors disabled:opacity-50"
-            >
-              <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
-              Refresh Health
-            </button>
+            {connectError && <p className="text-[12px] text-red-400">{connectError}</p>}
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleConnect}
+                disabled={connecting}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-forge-amber text-forge-obsidian text-[13px] font-semibold rounded-md hover:bg-amber-400 transition-colors disabled:opacity-50"
+              >
+                {connecting ? (
+                  <>
+                    <RefreshCw size={14} className="animate-spin" />
+                    Connecting...
+                  </>
+                ) : isConfigured ? (
+                  'Reconnect'
+                ) : (
+                  'Connect'
+                )}
+              </button>
+              {isConfigured && (
+                <button
+                  onClick={handleRefreshHealth}
+                  disabled={refreshing}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-forge-charcoal border border-forge-graphite text-[12px] text-slate-300 rounded hover:border-forge-amber transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+                  Refresh Health
+                </button>
+              )}
+            </div>
           </div>
         )}
 
