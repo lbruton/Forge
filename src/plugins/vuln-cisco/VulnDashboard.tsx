@@ -54,6 +54,7 @@ function getStepIndex(progress: string | undefined): number {
 
 export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
   const getPlugin = useForgeStore((s) => s.getPlugin);
+  const getSecretsProviders = useForgeStore((s) => s.getSecretsProviders);
   const registration = getPlugin(pluginName);
 
   // Sub-view navigation
@@ -67,6 +68,12 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
   // Device modal
   const [modalOpen, setModalOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState<VulnDevice | null>(null);
+
+  // Scan credentials prompt
+  const [scanCredsOpen, setScanCredsOpen] = useState(false);
+  const [scanCredsDevice, setScanCredsDevice] = useState<VulnDevice | null>(null);
+  const [ciscoClientId, setCiscoClientId] = useState('');
+  const [ciscoClientSecret, setCiscoClientSecret] = useState('');
 
   // Scan progress state
   const [scanStatus, setScanStatus] = useState<ScanStatus | null>(null);
@@ -123,10 +130,11 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
     };
   }, []);
 
-  // Start scan
+  // Start scan with credentials
   const startScan = useCallback(
-    async (device: VulnDevice) => {
+    async (device: VulnDevice, clientId: string, clientSecret: string) => {
       if (!registration?.endpoint || !registration?.apiKey) return;
+      setScanCredsOpen(false);
 
       try {
         const response = await pluginFetch(registration.endpoint, registration.apiKey, '/scan', {
@@ -135,7 +143,9 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
           body: JSON.stringify({
             target: device.ip,
             hostname: device.hostname,
-            snmpCommunity: device.snmpCommunity ?? 'public',
+            snmp_community: device.snmpCommunity ?? 'public',
+            cisco_client_id: clientId,
+            cisco_client_secret: clientSecret,
           }),
         });
 
@@ -200,6 +210,47 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
       }
     },
     [registration, fetchDevices],
+  );
+
+  // Try to get Cisco API creds from Infisical, then start scan
+  const triggerScan = useCallback(
+    async (device: VulnDevice) => {
+      const providers = getSecretsProviders();
+      const infisicalPlugin = getPlugin('forge-infisical');
+      const projectId = infisicalPlugin?.settings?.defaultProjectId as string | undefined;
+      const env = (infisicalPlugin?.settings?.defaultEnvironment as string) || 'dev';
+
+      if (providers.length > 0 && projectId) {
+        try {
+          const provider = providers[0];
+          const secrets = await provider.listSecrets(projectId, env);
+          const clientIdSecret = secrets.find(
+            (s) => s.key.toLowerCase().includes('cisco') && s.key.toLowerCase().includes('id'),
+          );
+          const clientSecretSecret = secrets.find(
+            (s) => s.key.toLowerCase().includes('cisco') && s.key.toLowerCase().includes('secret'),
+          );
+
+          if (clientIdSecret && clientSecretSecret) {
+            const clientId = await provider.getSecret(projectId, env, clientIdSecret.key);
+            const clientSecret = await provider.getSecret(projectId, env, clientSecretSecret.key);
+            if (clientId && clientSecret) {
+              void startScan(device, clientId, clientSecret);
+              return;
+            }
+          }
+        } catch {
+          /* Infisical unavailable — fall through to manual prompt */
+        }
+      }
+
+      // Fallback: prompt for Cisco API creds
+      setScanCredsDevice(device);
+      setCiscoClientId('');
+      setCiscoClientSecret('');
+      setScanCredsOpen(true);
+    },
+    [getSecretsProviders, getPlugin, startScan],
   );
 
   // Modal handlers
@@ -512,7 +563,7 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
                         {/* Scan button */}
                         <button
                           type="button"
-                          onClick={() => startScan(device)}
+                          onClick={() => void triggerScan(device)}
                           className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-forge-amber/10 text-forge-amber border border-forge-amber/25 rounded-md hover:bg-forge-amber/20 transition-colors"
                         >
                           <Play size={12} />
@@ -565,6 +616,68 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
         onSave={handleSaveDevice}
         onClose={() => setModalOpen(false)}
       />
+
+      {/* Cisco API credentials prompt (fallback when Infisical not available) */}
+      {scanCredsOpen && scanCredsDevice && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setScanCredsOpen(false);
+          }}
+        >
+          <div className="bg-forge-charcoal border border-forge-steel rounded-xl shadow-2xl w-full max-w-md mx-4">
+            <div className="px-6 py-5 border-b border-forge-graphite">
+              <h3 className="text-base font-semibold text-slate-200">Cisco API Credentials</h3>
+              <p className="text-[12px] text-slate-500 mt-1">
+                Required for PSIRT CVE lookups. Store these in Infisical to skip this step.
+              </p>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+                  Cisco Client ID
+                </label>
+                <input
+                  type="text"
+                  value={ciscoClientId}
+                  onChange={(e) => setCiscoClientId(e.target.value)}
+                  placeholder="OAuth2 Client ID from Cisco API Console"
+                  className="w-full px-3 py-2 bg-forge-obsidian border border-forge-graphite rounded-md font-mono text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+                  Cisco Client Secret
+                </label>
+                <input
+                  type="password"
+                  value={ciscoClientSecret}
+                  onChange={(e) => setCiscoClientSecret(e.target.value)}
+                  placeholder="OAuth2 Client Secret"
+                  className="w-full px-3 py-2 bg-forge-obsidian border border-forge-graphite rounded-md font-mono text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setScanCredsOpen(false)}
+                  className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 rounded-lg hover:bg-forge-graphite transition-colors border border-forge-graphite"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={!ciscoClientId.trim() || !ciscoClientSecret.trim()}
+                  onClick={() => void startScan(scanCredsDevice, ciscoClientId.trim(), ciscoClientSecret.trim())}
+                  className="px-4 py-2 text-sm font-semibold bg-forge-amber text-forge-obsidian rounded-lg hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Start Scan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

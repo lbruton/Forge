@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, type FormEvent } from 'react';
-import { X, Eye, EyeOff, Server, Info } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback, type FormEvent } from 'react';
+import { X, Eye, EyeOff, Server, KeyRound, Loader2 } from 'lucide-react';
 import { useForgeStore } from '../../store/index.ts';
+import type { SecretEntry } from '../../types/secrets-provider.ts';
 import type { VulnDevice } from './types.ts';
 
 interface DeviceModalProps {
@@ -20,7 +21,11 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const getSecretsProviders = useForgeStore((s) => s.getSecretsProviders);
-  const hasSecretsProvider = getSecretsProviders().length > 0;
+  const getPlugin = useForgeStore((s) => s.getPlugin);
+  const providers = getSecretsProviders();
+  const hasSecretsProvider = providers.length > 0;
+  const [infisicalSecrets, setInfisicalSecrets] = useState<SecretEntry[]>([]);
+  const [loadingSecrets, setLoadingSecrets] = useState(false);
 
   const isEditing = device !== null;
 
@@ -34,6 +39,43 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
       setTimeout(() => hostnameRef.current?.focus(), 50);
     }
   }, [open, device]);
+
+  // Load Infisical secrets list when modal opens (for the selector)
+  useEffect(() => {
+    if (!open || !hasSecretsProvider) return;
+    const infisicalPlugin = getPlugin('forge-infisical');
+    const projectId = infisicalPlugin?.settings?.defaultProjectId as string | undefined;
+    const env = (infisicalPlugin?.settings?.defaultEnvironment as string) || 'dev';
+    if (!projectId) return;
+
+    setLoadingSecrets(true);
+    const provider = providers[0];
+    void provider
+      .listSecrets(projectId, env)
+      .then((secrets) => setInfisicalSecrets(secrets))
+      .catch(() => setInfisicalSecrets([]))
+      .finally(() => setLoadingSecrets(false));
+  }, [open, hasSecretsProvider, providers, getPlugin]);
+
+  // When user selects a secret from the dropdown, fetch its value
+  const selectSecret = useCallback(
+    async (secretKey: string) => {
+      if (!hasSecretsProvider) return;
+      const infisicalPlugin = getPlugin('forge-infisical');
+      const projectId = infisicalPlugin?.settings?.defaultProjectId as string | undefined;
+      const env = (infisicalPlugin?.settings?.defaultEnvironment as string) || 'dev';
+      if (!projectId) return;
+
+      const provider = providers[0];
+      try {
+        const value = await provider.getSecret(projectId, env, secretKey);
+        if (value) setSnmpCommunity(value);
+      } catch {
+        /* failed to fetch secret value */
+      }
+    },
+    [hasSecretsProvider, providers, getPlugin],
+  );
 
   // ESC key handler
   useEffect(() => {
@@ -143,14 +185,50 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
             <p className="text-[11px] text-slate-500 mt-1">SNMP v2c community string for device polling</p>
           </div>
 
-          {/* Infisical tip */}
+          {/* Infisical secret selector */}
           {hasSecretsProvider && (
-            <div className="flex items-start gap-2 px-3 py-2.5 bg-forge-amber/10 border border-forge-amber/20 rounded-md">
-              <Info size={14} className="text-forge-amber mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-slate-400">
-                <span className="font-semibold text-forge-amber">Tip:</span> Configure the Infisical plugin to auto-fill
-                SNMP credentials from your secrets vault.
-              </p>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+                <KeyRound size={12} className="inline mr-1" />
+                Fill from Infisical
+              </label>
+              {loadingSecrets ? (
+                <div className="flex items-center gap-2 text-[12px] text-slate-500">
+                  <Loader2 size={12} className="animate-spin" /> Loading secrets...
+                </div>
+              ) : infisicalSecrets.length > 0 ? (
+                <select
+                  onChange={(e) => {
+                    if (e.target.value) void selectSecret(e.target.value);
+                  }}
+                  defaultValue=""
+                  className="w-full px-3 py-2 bg-forge-obsidian border border-forge-graphite rounded-md text-sm text-slate-200 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors cursor-pointer"
+                >
+                  <option value="" disabled>
+                    Select a secret to use as SNMP community...
+                  </option>
+                  {infisicalSecrets
+                    .filter(
+                      (s) =>
+                        s.key.toLowerCase().includes('snmp') ||
+                        s.key.toLowerCase().includes('community') ||
+                        s.key.toLowerCase().includes('auth'),
+                    )
+                    .map((s) => (
+                      <option key={s.key} value={s.key}>
+                        {s.key}
+                      </option>
+                    ))}
+                  <option disabled>{'--- All secrets ---'}</option>
+                  {infisicalSecrets.map((s) => (
+                    <option key={`all-${s.key}`} value={s.key}>
+                      {s.key}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-[12px] text-slate-500">No secrets available in Infisical</p>
+              )}
             </div>
           )}
 
