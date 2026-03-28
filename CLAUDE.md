@@ -22,9 +22,73 @@ This file provides core guidance to Claude Code when working with code in this r
 
 ## Technical Baseline
 
-**Stack**: TBD (tech stack decisions pending — see steering docs)
+**Stack**: React 19 + Vite + TypeScript + Zustand + Tailwind CSS v4
 **Architecture**: Static web app, browser storage, no backend required
 **Hosting**: Homelab (Portainer) initially, publicly hostable
+
+## Commands
+
+```bash
+npm run dev       # Vite dev server
+npm run build     # tsc -b && vite build
+npm run test      # vitest run (11 test suites)
+npm run lint      # eslint
+```
+
+**Type-check gotcha:** `npx tsc --noEmit` silently passes because root
+`tsconfig.json` has `"files": []`. Always use:
+
+```bash
+npx tsc --noEmit -p tsconfig.app.json
+```
+
+The `dompurify` type error is pre-existing — ignore it.
+
+## Architecture
+
+```
+src/
+├── App.tsx                    # Root — routing, plugin init, layout
+├── store/index.ts             # Zustand store — all app state + actions
+├── types/                     # index.ts (core), plugin.ts, secrets-provider.ts
+├── lib/
+│   ├── template-parser.ts     # Section parsing, cleanup, rebuild (highest complexity)
+│   ├── substitution-engine.ts # Variable substitution for config generation
+│   ├── vault-engine.ts        # .stvault encrypt/decrypt (AES-GCM)
+│   ├── storage-service.ts     # localStorage wrapper with prefix isolation
+│   ├── plugin-service.ts      # Plugin lifecycle management
+│   ├── syntax-highlighter.ts  # Config syntax coloring
+│   └── validators.ts          # Shared validators (IPv4, secretKeyToVarName)
+├── components/                # 21 React components (see sidebar, editor, modals)
+├── plugins/
+│   ├── init.ts                # Plugin bootstrap
+│   ├── configurations.ts      # Bundled plugin — config template management
+│   └── infisical/             # Bundled plugin — secrets integration
+│       ├── manifest.ts        # Plugin manifest + settings schema
+│       ├── provider.ts        # SecretsProvider implementation
+│       ├── api.ts             # InfisicalClient (HTTP + token lifecycle)
+│       ├── SecretsBrowser.tsx  # Secrets browsing UI
+│       └── SetupWizard.tsx    # Connection setup wizard
+└── __tests__/                 # 11 Vitest test suites
+```
+
+## Plugin System
+
+Forge uses a two-tier plugin model:
+
+- **Bundled plugins** (Configurations, Infisical) — shipped with the app, enable/disable only
+- **Sidecar plugins** — external Docker containers (planned, see FORGE-23)
+
+Plugins register via manifests in `src/plugins/`. The registry is **global** (not per-View).
+Views store usage data (devices, results), not plugin instances.
+
+### SecretsProvider Interface
+
+Plugins can implement `SecretsProvider` (defined in `types/secrets-provider.ts`) to integrate
+with external secrets managers. Methods: `listProjects`, `listSecrets`, `getSecret`, `setSecret?`.
+
+Sync convention: variables synced to Infisical get a `FORGE_` prefix on the secret key
+(e.g., `hostname` → `FORGE_HOSTNAME`). Import strips the prefix back via `secretKeyToVarName()`.
 
 ## Branding
 
