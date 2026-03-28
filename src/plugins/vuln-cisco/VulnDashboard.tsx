@@ -434,12 +434,15 @@ function ScanProgressView({
   // Elapsed timer — ticks every second, recomputes from stored startedAt on remount
   useEffect(() => {
     if (!activeScan) return;
-    setElapsed(Math.floor((Date.now() - activeScan.startedAt) / 1000));
-    const id = setInterval(() => {
+
+    const updateElapsed = () => {
       setElapsed(Math.floor((Date.now() - activeScan.startedAt) / 1000));
-    }, 1000);
+    };
+
+    updateElapsed();
+    const id = setInterval(updateElapsed, 1000);
     return () => clearInterval(id);
-  }, [activeScan?.startedAt, activeScan === null]);
+  }, [activeScan?.startedAt]);
 
   // Poll scan status — resumes on remount since activeScan lives in the store
   useEffect(() => {
@@ -473,12 +476,15 @@ function ScanProgressView({
   useEffect(() => {
     if (!activeScan || activeScan.status.status !== 'complete') return;
 
+    const deviceIp = activeScan.device.ip;
+    const completedAt = activeScan.status.completedAt ?? new Date().toISOString();
+
     const timeout = setTimeout(() => {
-      onComplete(activeScan.device.ip, activeScan.status.completedAt ?? new Date().toISOString());
+      onComplete(deviceIp, completedAt);
     }, 1500);
 
     return () => clearTimeout(timeout);
-  }, [activeScan?.status.status, activeScan?.status.completedAt, activeScan?.device.ip, onComplete]);
+  }, [activeScan, onComplete]);
 
   if (!activeScan) return null;
 
