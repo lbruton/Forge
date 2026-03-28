@@ -3,3 +3,6 @@
 .spec-workflow/     export-ignore
 .gitattributes      export-ignore
 CLAUDE.md           export-ignore
+.husky/             export-ignore
+.prettierrc         export-ignore
+.prettierignore     export-ignore
