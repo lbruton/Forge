@@ -5,6 +5,9 @@ import { VULN_CISCO_MANIFEST } from './vuln-cisco/manifest.ts';
 
 const BUNDLED_MANIFESTS: PluginManifest[] = [CONFIGURATIONS_MANIFEST, INFISICAL_MANIFEST, VULN_CISCO_MANIFEST];
 
+/** Names of all shipped plugins — these cannot be deleted by the user. */
+export const BUNDLED_PLUGIN_NAMES = new Set(BUNDLED_MANIFESTS.map((m) => m.name));
+
 /**
  * Register all bundled plugins that are not yet registered.
  * Accepts store callbacks as params for testability — does NOT import the store directly.

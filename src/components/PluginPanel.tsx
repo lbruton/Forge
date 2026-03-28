@@ -1,14 +1,13 @@
 import { useState, useCallback } from 'react';
 import { useForgeStore } from '../store/index.ts';
-import { fetchManifest, healthCheck } from '../lib/plugin-service.ts';
+import { healthCheck } from '../lib/plugin-service.ts';
 import type { PluginRegistration, SettingsField } from '../types/plugin.ts';
 import SetupWizard from '../plugins/infisical/SetupWizard.tsx';
-import { ArrowLeft, Eye, EyeOff, Loader2, Plus, Puzzle, RefreshCw, Settings, Trash2 } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Puzzle, RefreshCw, Settings } from 'lucide-react';
 
 interface PluginPanelProps {
   viewId?: string;
   pluginName: string | null;
-  autoAdd?: boolean;
 }
 
 // Shared input classes matching GlobalVariablesPage style
@@ -27,93 +26,6 @@ function formatTimestamp(iso: string): string {
   } catch {
     return iso;
   }
-}
-
-// --- Add Plugin Form ---
-
-function AddPluginForm({ onDone }: { onDone: () => void }) {
-  const registerPlugin = useForgeStore((s) => s.registerPlugin);
-  const setPluginHealth = useForgeStore((s) => s.setPluginHealth);
-
-  const [endpoint, setEndpoint] = useState('');
-  const [apiKey, setApiKey] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleConnect = useCallback(async () => {
-    if (!endpoint.trim()) {
-      setError('Endpoint URL is required');
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const manifest = await fetchManifest(endpoint.trim(), apiKey);
-      registerPlugin(manifest, endpoint.trim(), apiKey);
-      const health = await healthCheck(endpoint.trim(), apiKey);
-      setPluginHealth(manifest.name, health);
-      onDone();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to connect to plugin');
-    } finally {
-      setLoading(false);
-    }
-  }, [endpoint, apiKey, registerPlugin, setPluginHealth, onDone]);
-
-  return (
-    <div className="bg-forge-charcoal border border-forge-graphite rounded-lg p-4 mt-4">
-      <h3 className="text-sm font-semibold text-slate-200 mb-3">Add Sidecar Plugin</h3>
-
-      <div className="space-y-3">
-        <div>
-          <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">Endpoint URL</label>
-          <input
-            type="text"
-            value={endpoint}
-            onChange={(e) => setEndpoint(e.target.value)}
-            placeholder="https://sidecar.example.com"
-            className={INPUT_CLASSES}
-          />
-        </div>
-
-        <div>
-          <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">API Key</label>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="Bearer token"
-            className={INPUT_CLASSES}
-          />
-        </div>
-
-        {error && <p className="text-[12px] text-red-400">{error}</p>}
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleConnect}
-            disabled={loading}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-forge-amber text-forge-obsidian text-[13px] font-semibold rounded-md hover:bg-amber-400 transition-colors disabled:opacity-50"
-          >
-            {loading ? (
-              <>
-                <Loader2 size={14} className="animate-spin" />
-                Connecting...
-              </>
-            ) : (
-              'Connect'
-            )}
-          </button>
-          <button
-            onClick={onDone}
-            className="px-4 py-2 text-[13px] text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // --- Settings Form ---
@@ -234,10 +146,7 @@ function SettingsForm({
 function PluginDetail({ registration, onBack }: { registration: PluginRegistration; onBack: () => void }) {
   const setPluginEnabled = useForgeStore((s) => s.setPluginEnabled);
   const setPluginHealth = useForgeStore((s) => s.setPluginHealth);
-  const unregisterPlugin = useForgeStore((s) => s.unregisterPlugin);
-
   const [refreshing, setRefreshing] = useState(false);
-  const [confirmRemove, setConfirmRemove] = useState(false);
   const [apiKeyRevealed, setApiKeyRevealed] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
 
@@ -255,11 +164,6 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
       setRefreshing(false);
     }
   }, [manifest.name, registration.endpoint, registration.apiKey, setPluginHealth]);
-
-  const handleRemove = useCallback(() => {
-    unregisterPlugin(manifest.name);
-    onBack();
-  }, [manifest.name, unregisterPlugin, onBack]);
 
   // Auto-show wizard for integration plugins with no endpoint configured
   const hasEndpoint = Boolean(registration.settings?.endpoint);
@@ -397,37 +301,6 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
             currentSettings={registration.settings}
           />
         )}
-
-        {/* Remove Plugin — hidden for bundled plugins */}
-        {manifest.type !== 'bundled' && (
-          <div className="pt-4 border-t border-forge-graphite">
-            {confirmRemove ? (
-              <div className="flex items-center gap-3">
-                <span className="text-[12px] text-red-400">Remove {manifest.displayName}? This cannot be undone.</span>
-                <button
-                  onClick={handleRemove}
-                  className="px-3 py-1.5 text-[12px] font-semibold text-red-400 border border-red-500 rounded hover:bg-red-500/10 transition-colors"
-                >
-                  Confirm Remove
-                </button>
-                <button
-                  onClick={() => setConfirmRemove(false)}
-                  className="px-3 py-1.5 text-[12px] text-slate-400 hover:text-slate-200 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setConfirmRemove(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-red-400 border border-red-500 rounded hover:bg-red-500/10 transition-colors"
-              >
-                <Trash2 size={12} />
-                Remove Plugin
-              </button>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -435,12 +308,10 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
 
 // --- Main PluginPanel ---
 
-export default function PluginPanel({ pluginName, autoAdd }: PluginPanelProps) {
+export default function PluginPanel({ pluginName }: PluginPanelProps) {
   const setSelectedPluginName = useForgeStore((s) => s.setSelectedPluginName);
   const getPlugins = useForgeStore((s) => s.getPlugins);
   const getPlugin = useForgeStore((s) => s.getPlugin);
-
-  const [showAddForm, setShowAddForm] = useState(autoAdd ?? false);
 
   const plugins = getPlugins();
 
@@ -471,33 +342,16 @@ export default function PluginPanel({ pluginName, autoAdd }: PluginPanelProps) {
             </span>
           )}
         </h2>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-forge-amber text-forge-obsidian text-[13px] font-semibold rounded-md hover:bg-amber-400 transition-colors"
-        >
-          <Plus size={14} />
-          Add Plugin
-        </button>
       </div>
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-6 py-6">
-        {showAddForm && <AddPluginForm onDone={() => setShowAddForm(false)} />}
-
-        {plugins.length === 0 && !showAddForm ? (
+        {plugins.length === 0 ? (
           <div className="text-center py-12 text-slate-500">
             <Puzzle size={48} className="mx-auto mb-4 text-slate-600" />
             <p className="text-[13px] leading-relaxed max-w-[420px] mx-auto">
-              No plugins registered for this View. Add a sidecar plugin to extend Forge with vulnerability scanning,
-              compliance checks, and more.
+              No plugins installed. Plugins are added during deployment via docker-compose.
             </p>
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 bg-forge-amber text-forge-obsidian text-[13px] font-semibold rounded-md hover:bg-amber-400 transition-colors"
-            >
-              <Plus size={14} />
-              Add Plugin
-            </button>
           </div>
         ) : (
           <div className="space-y-2 mt-4">
