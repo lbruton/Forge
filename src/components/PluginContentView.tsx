@@ -4,6 +4,8 @@ import { useForgeStore } from '../store/index.ts';
 import { pluginFetch } from '../lib/plugin-service.ts';
 import SecretsBrowser from '../plugins/infisical/SecretsBrowser.tsx';
 import { INFISICAL_MANIFEST } from '../plugins/infisical/manifest.ts';
+import { VULN_CISCO_MANIFEST } from '../plugins/vuln-cisco/manifest.ts';
+import VulnDashboard from '../plugins/vuln-cisco/VulnDashboard.tsx';
 
 interface PluginContentViewProps {
   pluginName: string;
@@ -26,10 +28,11 @@ export default function PluginContentView({ pluginName, nodeId, viewId }: Plugin
   const nodeLabel = registration?.manifest.treeNodes.find((n) => n.id === nodeId)?.label ?? nodeId;
 
   const isIntegrationPlugin = pluginName === INFISICAL_MANIFEST.name;
+  const isVulnCiscoPlugin = pluginName === VULN_CISCO_MANIFEST.name;
 
   const fetchContent = useCallback(async () => {
-    // Integration plugins are handled by their own component
-    if (isIntegrationPlugin) return;
+    // Integration plugins and vuln-cisco are handled by their own component
+    if (isIntegrationPlugin || isVulnCiscoPlugin) return;
 
     if (!registration) {
       setState({ kind: 'error', message: `Plugin "${pluginName}" is not registered` });
@@ -69,7 +72,7 @@ export default function PluginContentView({ pluginName, nodeId, viewId }: Plugin
       console.error(`Error fetching content from plugin '${pluginName}':`, err);
       setState({ kind: 'error', message: `Unable to load data from ${displayName}` });
     }
-  }, [isIntegrationPlugin, registration, pluginName, nodeId, displayName]);
+  }, [isIntegrationPlugin, isVulnCiscoPlugin, registration, pluginName, nodeId, displayName]);
 
   useEffect(() => {
     fetchContent();
@@ -78,6 +81,11 @@ export default function PluginContentView({ pluginName, nodeId, viewId }: Plugin
   // Integration plugins get their own dedicated UI
   if (isIntegrationPlugin) {
     return <SecretsBrowser pluginName={pluginName} viewId={viewId} />;
+  }
+
+  // Vuln-cisco sidecar plugin gets its own dashboard
+  if (isVulnCiscoPlugin) {
+    return <VulnDashboard pluginName={pluginName} />;
   }
 
   return (
