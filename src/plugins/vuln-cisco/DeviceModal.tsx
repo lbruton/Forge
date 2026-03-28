@@ -1,5 +1,7 @@
-import { useState, useEffect, useRef, type FormEvent } from 'react';
-import { X, Eye, EyeOff, Server } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback, type FormEvent } from 'react';
+import { X, Eye, EyeOff, Server, KeyRound } from 'lucide-react';
+import { useForgeStore } from '../../store/index.ts';
+import type { SecretEntry } from '../../types/secrets-provider.ts';
 import type { VulnDevice } from './types.ts';
 
 interface DeviceModalProps {
@@ -14,9 +16,21 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
   const [ip, setIp] = useState('');
   const [snmpCommunity, setSnmpCommunity] = useState('');
   const [showSnmp, setShowSnmp] = useState(false);
+  const [snmpSource, setSnmpSource] = useState<'manual' | 'infisical'>('manual');
+  const [selectedSecretKey, setSelectedSecretKey] = useState('');
+
+  // Infisical secret picker state
+  const [secrets, setSecrets] = useState<SecretEntry[]>([]);
+  const [secretsLoading, setSecretsLoading] = useState(false);
 
   const hostnameRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+
+  const getSecretsProviders = useForgeStore((s) => s.getSecretsProviders);
+  const getPlugin = useForgeStore((s) => s.getPlugin);
+
+  const providers = getSecretsProviders();
+  const hasProvider = providers.length > 0 && providers[0].isConnected();
 
   const isEditing = device !== null;
 
@@ -27,9 +41,50 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
       setIp(device?.ip ?? '');
       setSnmpCommunity(device?.snmpCommunity ?? '');
       setShowSnmp(false);
+      setSnmpSource(device?.snmpSecretKey ? 'infisical' : 'manual');
+      setSelectedSecretKey(device?.snmpSecretKey ?? '');
       setTimeout(() => hostnameRef.current?.focus(), 50);
     }
   }, [open, device]);
+
+  // Load Infisical secret keys when modal opens and provider is available
+  useEffect(() => {
+    if (!open || !hasProvider) return;
+
+    const infisicalPlugin = getPlugin('forge-infisical');
+    const projectId = infisicalPlugin?.settings?.defaultProjectId as string | undefined;
+    const env = (infisicalPlugin?.settings?.defaultEnvironment as string) || 'dev';
+    if (!projectId) return;
+
+    setSecretsLoading(true);
+    const provider = providers[0];
+    void provider
+      .listSecrets(projectId, env)
+      .then((entries) => setSecrets(entries))
+      .catch(() => setSecrets([]))
+      .finally(() => setSecretsLoading(false));
+  }, [open, hasProvider, providers, getPlugin]);
+
+  // When user picks a secret, fetch its value for the scan
+  const handleSecretSelect = useCallback(
+    async (key: string) => {
+      if (!key || !hasProvider) return;
+      setSelectedSecretKey(key);
+
+      const infisicalPlugin = getPlugin('forge-infisical');
+      const projectId = infisicalPlugin?.settings?.defaultProjectId as string | undefined;
+      const env = (infisicalPlugin?.settings?.defaultEnvironment as string) || 'dev';
+      if (!projectId) return;
+
+      try {
+        const value = await providers[0].getSecret(projectId, env, key);
+        if (value) setSnmpCommunity(value);
+      } catch {
+        /* failed — user can type manually */
+      }
+    },
+    [hasProvider, providers, getPlugin],
+  );
 
   // ESC key handler
   useEffect(() => {
@@ -52,6 +107,7 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
       hostname: hostname.trim(),
       ip: ip.trim(),
       snmpCommunity: snmpCommunity || undefined,
+      snmpSecretKey: snmpSource === 'infisical' ? selectedSecretKey : undefined,
       lastScanAt: device?.lastScanAt,
       lastSeverity: device?.lastSeverity,
     });
@@ -114,29 +170,84 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
             <p className="text-[11px] text-slate-500 mt-1">IPv4 address reachable via SNMP</p>
           </div>
 
-          {/* SNMP Community */}
+          {/* SNMP Community — source toggle */}
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
-              SNMP Community
-            </label>
-            <div className="relative">
-              <input
-                type={showSnmp ? 'text' : 'password'}
-                value={snmpCommunity}
-                onChange={(e) => setSnmpCommunity(e.target.value)}
-                placeholder="e.g. public"
-                className="w-full px-3 py-2 pr-10 bg-forge-obsidian border border-forge-graphite rounded-lg font-mono text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors"
-              />
-              <button
-                type="button"
-                onClick={() => setShowSnmp(!showSnmp)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-300 transition-colors"
-                title={showSnmp ? 'Hide' : 'Show'}
-              >
-                {showSnmp ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                SNMP Community
+              </label>
+              {hasProvider && (
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setSnmpSource('manual')}
+                    className={`px-2 py-0.5 text-[10px] font-semibold uppercase rounded transition-colors ${
+                      snmpSource === 'manual'
+                        ? 'bg-forge-amber/20 text-forge-amber'
+                        : 'text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    Manual
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSnmpSource('infisical')}
+                    className={`px-2 py-0.5 text-[10px] font-semibold uppercase rounded transition-colors flex items-center gap-1 ${
+                      snmpSource === 'infisical'
+                        ? 'bg-forge-amber/20 text-forge-amber'
+                        : 'text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    <KeyRound size={10} />
+                    Infisical
+                  </button>
+                </div>
+              )}
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">SNMP v2c community string for device polling</p>
+
+            {snmpSource === 'manual' || !hasProvider ? (
+              <>
+                <div className="relative">
+                  <input
+                    type={showSnmp ? 'text' : 'password'}
+                    value={snmpCommunity}
+                    onChange={(e) => setSnmpCommunity(e.target.value)}
+                    placeholder="e.g. public"
+                    className="w-full px-3 py-2 pr-10 bg-forge-obsidian border border-forge-graphite rounded-lg font-mono text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSnmp(!showSnmp)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-300 transition-colors"
+                    title={showSnmp ? 'Hide' : 'Show'}
+                  >
+                    {showSnmp ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1">Type the SNMP v2c community string</p>
+              </>
+            ) : (
+              <>
+                <select
+                  value={selectedSecretKey}
+                  onChange={(e) => void handleSecretSelect(e.target.value)}
+                  disabled={secretsLoading}
+                  className="w-full px-3 py-2 bg-forge-obsidian border border-forge-graphite rounded-lg text-sm text-slate-200 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors cursor-pointer"
+                >
+                  <option value="">{secretsLoading ? 'Loading secrets...' : 'Select a secret key...'}</option>
+                  {secrets.map((s) => (
+                    <option key={s.key} value={s.key}>
+                      {s.key}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  {selectedSecretKey
+                    ? `Using secret: ${selectedSecretKey}`
+                    : 'Pick a secret key from your Infisical vault'}
+                </p>
+              </>
+            )}
           </div>
 
           {/* Actions */}

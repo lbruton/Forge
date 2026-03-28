@@ -11,6 +11,7 @@ export interface VulnDevice {
   hostname: string;
   ip: string;
   snmpCommunity?: string;
+  snmpSecretKey?: string;
   lastScanAt?: string;
   lastSeverity?: SeveritySummary;
 }

@@ -131,7 +131,10 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
     };
   }, []);
 
-  // Start scan — reads PSIRT creds from plugin settings
+  const getSecretsProviders = useForgeStore((s) => s.getSecretsProviders);
+  const getPluginForSecrets = useForgeStore((s) => s.getPlugin);
+
+  // Start scan — reads PSIRT creds from plugin settings, resolves SNMP from Infisical if needed
   const startScan = useCallback(
     async (device: VulnDevice) => {
       if (!registration?.endpoint || !registration?.apiKey) return;
@@ -145,6 +148,24 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
         return;
       }
 
+      // Resolve SNMP community — from Infisical secret if snmpSecretKey is set, otherwise use stored value
+      let snmpCommunity = device.snmpCommunity ?? 'public';
+      if (device.snmpSecretKey) {
+        const providers = getSecretsProviders();
+        const infisicalPlugin = getPluginForSecrets('forge-infisical');
+        const projectId = infisicalPlugin?.settings?.defaultProjectId as string | undefined;
+        const env = (infisicalPlugin?.settings?.defaultEnvironment as string) || 'dev';
+        if (providers.length > 0 && projectId) {
+          try {
+            const value = await providers[0].getSecret(projectId, env, device.snmpSecretKey);
+            if (value) snmpCommunity = value;
+          } catch {
+            setError(`Failed to retrieve SNMP secret "${device.snmpSecretKey}" from Infisical`);
+            return;
+          }
+        }
+      }
+
       setError(null);
 
       try {
@@ -154,7 +175,7 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
           body: JSON.stringify({
             target: device.ip,
             hostname: device.hostname,
-            snmp_community: device.snmpCommunity ?? 'public',
+            snmp_community: snmpCommunity,
             cisco_client_id: ciscoClientId,
             cisco_client_secret: ciscoClientSecret,
           }),
