@@ -245,6 +245,22 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
   const isSidecar = manifest.type === 'sidecar';
   const isIntegration = manifest.type === 'integration';
 
+  const handleRefreshHealth = useCallback(async () => {
+    if (!registration.endpoint || !registration.apiKey) return;
+    setRefreshing(true);
+    try {
+      const health = await healthCheck(registration.endpoint, registration.apiKey);
+      setPluginHealth(manifest.name, health);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [manifest.name, registration.endpoint, registration.apiKey, setPluginHealth]);
+
+  const handleRemove = useCallback(() => {
+    unregisterPlugin(manifest.name);
+    onBack();
+  }, [manifest.name, unregisterPlugin, onBack]);
+
   // Auto-show wizard for integration plugins with no endpoint configured
   const hasEndpoint = Boolean(registration.settings?.endpoint);
   const shouldShowWizard = isIntegration && (!hasEndpoint || showWizard);
@@ -264,22 +280,6 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
       />
     );
   }
-
-  const handleRefreshHealth = useCallback(async () => {
-    if (!registration.endpoint || !registration.apiKey) return;
-    setRefreshing(true);
-    try {
-      const health = await healthCheck(registration.endpoint, registration.apiKey);
-      setPluginHealth(manifest.name, health);
-    } finally {
-      setRefreshing(false);
-    }
-  }, [manifest.name, registration.endpoint, registration.apiKey, setPluginHealth]);
-
-  const handleRemove = useCallback(() => {
-    unregisterPlugin(manifest.name);
-    onBack();
-  }, [manifest.name, unregisterPlugin, onBack]);
 
   const maskedApiKey = registration.apiKey ? '\u2022'.repeat(16) : '';
 

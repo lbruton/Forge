@@ -8,7 +8,7 @@ interface SecretsBrowserProps {
   viewId: string;
 }
 
-export default function SecretsBrowser({ pluginName, viewId: _viewId }: SecretsBrowserProps) {
+export default function SecretsBrowser({ pluginName }: SecretsBrowserProps) {
   const getSecretsProvider = useForgeStore((s) => s.getSecretsProvider);
   const getPlugin = useForgeStore((s) => s.getPlugin);
 

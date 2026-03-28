@@ -679,14 +679,15 @@ export const useForgeStore = create<ForgeStore>()(
           const importedViews = data.views ?? [];
           for (const importedView of importedViews) {
             // Migrate old View-scoped plugins to global
-            const viewPlugins = (importedView as any).plugins as Record<string, PluginRegistration> | undefined;
+            const legacyView = importedView as unknown as Record<string, unknown>;
+            const viewPlugins = legacyView.plugins as Record<string, PluginRegistration> | undefined;
             if (viewPlugins) {
               for (const [name, reg] of Object.entries(viewPlugins)) {
                 if (!currentPlugins[name]) {
                   currentPlugins[name] = reg;
                 }
               }
-              delete (importedView as any).plugins;
+              delete legacyView.plugins;
             }
 
             const existingView = tree.views.find((v) => v.id === importedView.id);
@@ -713,7 +714,8 @@ export const useForgeStore = create<ForgeStore>()(
           }
 
           // Also import root-level plugins (new format)
-          const importedPlugins = (data as any).plugins as Record<string, PluginRegistration> | undefined;
+          const legacyData = data as unknown as Record<string, unknown>;
+          const importedPlugins = legacyData.plugins as Record<string, PluginRegistration> | undefined;
           if (importedPlugins) {
             for (const [name, reg] of Object.entries(importedPlugins)) {
               currentPlugins[name] = reg; // new format takes precedence
@@ -724,7 +726,7 @@ export const useForgeStore = create<ForgeStore>()(
         });
       },
 
-      exportData: (_scope?) => {
+      exportData: () => {
         const state = get();
         return {
           exportedAt: now(),
@@ -860,20 +862,16 @@ export const useForgeStore = create<ForgeStore>()(
     {
       name: 'forge-store',
       storage: createJSONStorage(() => forgeStorage),
-      partialize: (state) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const {
-          editorDirty,
-          pendingSaveCallback,
-          setEditorDirty,
-          setPendingSaveCallback,
-          selectedPluginName,
-          selectedPluginNodeId,
-          secretsProviders,
-          ...rest
-        } = state;
-        return rest;
-      },
+      partialize: ({
+        editorDirty: _editorDirty,
+        pendingSaveCallback: _pendingSaveCallback,
+        setEditorDirty: _setEditorDirty,
+        setPendingSaveCallback: _setPendingSaveCallback,
+        selectedPluginName: _selectedPluginName,
+        selectedPluginNodeId: _selectedPluginNodeId,
+        secretsProviders: _secretsProviders,
+        ...rest
+      }) => rest,
     },
   ),
 );

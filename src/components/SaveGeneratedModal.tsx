@@ -32,7 +32,9 @@ export function SaveGeneratedModal({
 
   // Auto-suggest name from hostname variable — only on open, not on every variableValues change
   const variableValuesRef = useRef(variableValues);
-  variableValuesRef.current = variableValues;
+  useEffect(() => {
+    variableValuesRef.current = variableValues;
+  }, [variableValues]);
 
   useEffect(() => {
     if (isOpen) {

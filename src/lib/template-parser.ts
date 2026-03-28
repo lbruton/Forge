@@ -265,7 +265,7 @@ function detectXmlDividers(lines: string[]): Divider[] {
 function detectYamlDividers(lines: string[]): Divider[] {
   const dividers: Divider[] = [];
   for (let i = 0; i < lines.length; i++) {
-    const match = lines[i].match(/^#\s+[=\-]{3,}\s+(.+?)\s+[=\-]{3,}\s*$/);
+    const match = lines[i].match(/^#\s+[=-]{3,}\s+(.+?)\s+[=-]{3,}\s*$/);
     if (match) {
       dividers.push({ lineIndex: i, name: match[1].trim(), pattern: lines[i], spanLines: 1 });
     }
