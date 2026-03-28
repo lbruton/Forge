@@ -132,6 +132,7 @@ function DevicePage({
   const getSecretsProviders = useForgeStore((s) => s.getSecretsProviders);
   const setVulnScanCache = useForgeStore((s) => s.setVulnScanCache);
   const setSelectedPluginNodeId = useForgeStore((s) => s.setSelectedPluginNodeId);
+  const setSelectedPluginName = useForgeStore((s) => s.setSelectedPluginName);
   const registration = getPlugin(pluginName);
 
   const [scans, setScans] = useState<ScanEntry[]>([]);
@@ -280,11 +281,19 @@ function DevicePage({
 
       {/* PSIRT creds warning */}
       {!registration?.settings?.ciscoClientId && (
-        <div className="mx-6 mt-4 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedPluginName(pluginName);
+            setSelectedPluginNodeId(null);
+          }}
+          className="mx-6 mt-4 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-lg w-[calc(100%-3rem)] text-left hover:border-amber-500/40 transition-colors cursor-pointer"
+        >
           <p className="text-xs text-amber-400">
-            Cisco PSIRT API credentials are not configured. Go to the plugin settings to add your Client ID and Secret.
+            Cisco PSIRT API credentials are not configured.{' '}
+            <span className="underline">Open plugin settings</span> to add your Client ID and Secret.
           </p>
-        </div>
+        </button>
       )}
 
       {/* Error banner */}
@@ -552,6 +561,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
   const vulnDevices = useForgeStore((s) => s.vulnDevices);
   const updateVulnDevice = useForgeStore((s) => s.updateVulnDevice);
   const setSelectedPluginNodeId = useForgeStore((s) => s.setSelectedPluginNodeId);
+  const setSelectedPluginName = useForgeStore((s) => s.setSelectedPluginName);
   const registration = getPlugin(pluginName);
 
   const [loading, setLoading] = useState(true);
@@ -628,12 +638,19 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
 
       {/* PSIRT creds warning */}
       {!registration?.settings?.ciscoClientId && !registration?.settings?.ciscoClientSecret && (
-        <div className="mx-6 mt-4 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedPluginName(pluginName);
+            setSelectedPluginNodeId(null);
+          }}
+          className="mx-6 mt-4 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-lg w-[calc(100%-3rem)] text-left hover:border-amber-500/40 transition-colors cursor-pointer"
+        >
           <p className="text-xs text-amber-400">
-            Cisco PSIRT API credentials are not configured. Go to the plugin settings to add your Client ID and Secret
-            before scanning.
+            Cisco PSIRT API credentials are not configured.{' '}
+            <span className="underline">Open plugin settings</span> to add your Client ID and Secret.
           </p>
-        </div>
+        </button>
       )}
 
       {/* Error banner */}

@@ -13,14 +13,14 @@ export const BUNDLED_PLUGIN_NAMES = new Set(BUNDLED_MANIFESTS.map((m) => m.name)
  * Accepts store callbacks as params for testability — does NOT import the store directly.
  */
 export function initBundledPlugins(
-  getPlugin: (name: string) => PluginRegistration | undefined,
+  _getPlugin: (name: string) => PluginRegistration | undefined,
   registerPlugin: (manifest: PluginManifest) => void,
   setPluginHealth: (name: string, health: PluginHealthStatus) => void,
 ): void {
   for (const manifest of BUNDLED_MANIFESTS) {
-    if (getPlugin(manifest.name) === undefined) {
-      registerPlugin(manifest);
-    }
+    // Always re-register to update manifest (settingsSchema, treeNodes, etc.)
+    // registerPlugin preserves existing endpoint, apiKey, settings, and enabled state
+    registerPlugin(manifest);
     setPluginHealth(manifest.name, {
       status: 'active',
       lastChecked: new Date().toISOString(),

@@ -756,19 +756,22 @@ export const useForgeStore = create<ForgeStore>()(
       setSelectedPluginNodeId: (nodeId) => set({ selectedPluginNodeId: nodeId }),
 
       registerPlugin: (manifest, endpoint, apiKey) => {
-        set((state) => ({
-          plugins: {
-            ...state.plugins,
-            [manifest.name]: {
-              manifest,
-              endpoint,
-              apiKey,
-              enabled: true,
-              settings: {},
-              health: { status: 'unknown', lastChecked: '' },
+        set((state) => {
+          const existing = state.plugins[manifest.name];
+          return {
+            plugins: {
+              ...state.plugins,
+              [manifest.name]: {
+                manifest,
+                endpoint: endpoint ?? existing?.endpoint,
+                apiKey: apiKey ?? existing?.apiKey,
+                enabled: existing?.enabled ?? true,
+                settings: existing?.settings ?? {},
+                health: existing?.health ?? { status: 'unknown', lastChecked: '' },
+              },
             },
-          },
-        }));
+          };
+        });
       },
 
       unregisterPlugin: (pluginName) => {

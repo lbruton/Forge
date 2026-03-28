@@ -25,7 +25,7 @@ describe('initBundledPlugins', () => {
     expect(setPluginHealth).toHaveBeenCalledWith('forge-configurations', expect.objectContaining({ status: 'active' }));
   });
 
-  it('skips registration when already registered', () => {
+  it('re-registers to update manifest when already registered', () => {
     const getPlugin = vi.fn().mockReturnValue({
       manifest: CONFIGURATIONS_MANIFEST,
       enabled: true,
@@ -36,7 +36,8 @@ describe('initBundledPlugins', () => {
 
     initBundledPlugins(getPlugin, registerPlugin, setPluginHealth);
 
-    expect(registerPlugin).not.toHaveBeenCalled();
+    // Always re-registers to pick up manifest changes (settingsSchema, treeNodes, etc.)
+    expect(registerPlugin).toHaveBeenCalledWith(CONFIGURATIONS_MANIFEST);
     expect(setPluginHealth).toHaveBeenCalledWith('forge-configurations', expect.objectContaining({ status: 'active' }));
   });
 });
