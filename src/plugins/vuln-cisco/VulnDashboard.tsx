@@ -926,10 +926,14 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
               const device = devices.find((d) => d.ip === route.deviceIp);
               if (device) {
                 const cache = useForgeStore.getState().vulnScanCache[device.id] ?? [];
-                useForgeStore.getState().setVulnScanCache(
-                  device.id,
-                  cache.filter((s) => s.timestamp !== route.timestamp),
-                );
+                const remaining = cache.filter((s) => s.timestamp !== route.timestamp);
+                useForgeStore.getState().setVulnScanCache(device.id, remaining);
+                // Update lastSeverity to latest remaining scan, or clear if none left
+                const latest = remaining.length > 0 ? remaining[0] : null;
+                useForgeStore.getState().updateVulnDevice(device.id, {
+                  lastSeverity: latest?.severity,
+                  lastScanAt: latest?.timestamp,
+                });
               }
             }}
           />

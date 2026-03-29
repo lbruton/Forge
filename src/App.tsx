@@ -434,6 +434,9 @@ function App() {
           <span className="hidden sm:inline text-[9px] font-medium tracking-[0.25em] uppercase text-slate-500 mt-0.5">
             Network Workshop
           </span>
+          <span className="hidden sm:inline text-[9px] font-mono text-slate-600 mt-0.5">
+            v{__APP_VERSION__}
+          </span>
         </div>
 
         <div className="flex-1" />
