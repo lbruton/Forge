@@ -34,6 +34,7 @@ function App() {
     selectedGlobalVariablesViewId,
     selectedPluginName,
     selectedPluginNodeId,
+    selectedPluginViewId,
     preferences,
     toggleSidebar,
     addView,
@@ -71,28 +72,31 @@ function App() {
   const [dragWidth, setDragWidth] = useState<number | null>(null);
   const sidebarWidth = dragWidth ?? preferences.sidebarWidth;
 
-  const handleDragStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startWidth = useForgeStore.getState().preferences.sidebarWidth;
-    const onMouseMove = (ev: MouseEvent) => {
-      const newWidth = Math.max(180, Math.min(400, startWidth + ev.clientX - startX));
-      setDragWidth(newWidth);
-    };
-    const onMouseUp = (ev: MouseEvent) => {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      const finalWidth = Math.max(180, Math.min(400, startWidth + ev.clientX - startX));
-      setSidebarWidth(finalWidth);
-      setDragWidth(null);
-    };
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-  }, [setSidebarWidth]);
+  const handleDragStart = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startWidth = useForgeStore.getState().preferences.sidebarWidth;
+      const onMouseMove = (ev: MouseEvent) => {
+        const newWidth = Math.max(180, Math.min(400, startWidth + ev.clientX - startX));
+        setDragWidth(newWidth);
+      };
+      const onMouseUp = (ev: MouseEvent) => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        const finalWidth = Math.max(180, Math.min(400, startWidth + ev.clientX - startX));
+        setSidebarWidth(finalWidth);
+        setDragWidth(null);
+      };
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    },
+    [setSidebarWidth],
+  );
 
   // Navigation guard state
   const [pendingNavAction, setPendingNavAction] = useState<(() => void) | null>(null);
@@ -386,13 +390,8 @@ function App() {
     if (selectedPluginName && selectedPluginNodeId) {
       const reg = getPlugin(selectedPluginName);
       if (reg) {
-        // Derive viewId for content context: use the selected variant's view, or fall back to first view
-        const variantInfo = selectedVariantId
-          ? tree.views.find((v) =>
-              v.vendors.some((vn) => vn.models.some((m) => m.variants.some((va) => va.id === selectedVariantId))),
-            )
-          : null;
-        const contextViewId = variantInfo?.id ?? tree.views[0]?.id ?? '';
+        // Derive viewId for content context: use the sidebar-tracked view, or fall back to first view
+        const contextViewId = selectedPluginViewId ?? tree.views[0]?.id ?? '';
         return (
           <PluginContentView pluginName={selectedPluginName} nodeId={selectedPluginNodeId} viewId={contextViewId} />
         );
@@ -464,9 +463,7 @@ function App() {
           <span className="hidden sm:inline text-[9px] font-medium tracking-[0.25em] uppercase text-slate-500 mt-0.5">
             Network Workshop
           </span>
-          <span className="hidden sm:inline text-[9px] font-mono text-slate-600 mt-0.5">
-            v{__APP_VERSION__}
-          </span>
+          <span className="hidden sm:inline text-[9px] font-mono text-slate-600 mt-0.5">v{__APP_VERSION__}</span>
         </div>
 
         <div className="flex-1" />
