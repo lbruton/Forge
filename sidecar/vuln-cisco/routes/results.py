@@ -28,8 +28,7 @@ async def list_scans(
     scans = file_store.list_scans(device)
     if not scans:
         # Distinguish "no scans" from "device never scanned"
-        device_dir = file_store._results_dir() / device
-        if not device_dir.is_dir():
+        if not file_store.device_exists(device):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Device '{device}' not found",

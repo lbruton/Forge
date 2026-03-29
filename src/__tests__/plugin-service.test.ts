@@ -93,13 +93,12 @@ describe('fetchManifest', () => {
       json: async () => data,
     });
 
-    const result = await fetchManifest('http://localhost:9001', 'test-key');
+    const result = await fetchManifest('http://localhost:9001');
     expect(result.name).toBe('forge-vuln-cisco');
     expect(globalThis.fetch).toHaveBeenCalledWith(
       'http://localhost:9001/forge/manifest',
       expect.objectContaining({
         method: 'GET',
-        headers: { Authorization: 'Bearer test-key' },
         credentials: 'omit',
       }),
     );
@@ -108,7 +107,7 @@ describe('fetchManifest', () => {
   it('throws network error message when fetch rejects', async () => {
     (globalThis.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new TypeError('Failed to fetch'));
 
-    await expect(fetchManifest('http://localhost:9001', 'key')).rejects.toThrow(
+    await expect(fetchManifest('http://localhost:9001')).rejects.toThrow(
       'Cannot connect to http://localhost:9001',
     );
   });
@@ -119,7 +118,7 @@ describe('fetchManifest', () => {
       status: 401,
     });
 
-    await expect(fetchManifest('http://localhost:9001', 'bad-key')).rejects.toThrow('Authentication failed');
+    await expect(fetchManifest('http://localhost:9001')).rejects.toThrow('Authentication failed');
   });
 
   it('throws status error on 500', async () => {
@@ -128,7 +127,7 @@ describe('fetchManifest', () => {
       status: 500,
     });
 
-    await expect(fetchManifest('http://localhost:9001', 'key')).rejects.toThrow('returned status 500');
+    await expect(fetchManifest('http://localhost:9001')).rejects.toThrow('returned status 500');
   });
 });
 

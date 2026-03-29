@@ -61,6 +61,14 @@ class TestSaveScan:
         # Verify HTML content
         assert (scan_dir / "report.html").read_text() == FIXTURE_HTML
 
+    def test_rejects_traversal_in_device_or_timestamp(self):
+        """save_scan should reject path traversal outside the results dir."""
+        with pytest.raises(ValueError):
+            file_store.save_scan("../escape", "2026-03-27T12-00-00", FIXTURE_JSON, FIXTURE_HTML)
+
+        with pytest.raises(ValueError):
+            file_store.save_scan("10.0.0.1", "../escape", FIXTURE_JSON, FIXTURE_HTML)
+
 
 # ── list_devices ────────────────────────────────────────────────────────────
 
@@ -100,6 +108,10 @@ class TestListScans:
         assert scans[1]["timestamp"] == "2026-03-27T12-00-00"
         assert scans[2]["timestamp"] == "2026-03-27T10-00-00"
 
+    def test_rejects_unsafe_device_path(self):
+        """Traversal-style device values should behave like a missing device."""
+        assert file_store.list_scans("../escape") == []
+
 
 # ── get_scan ────────────────────────────────────────────────────────────────
 
@@ -119,6 +131,16 @@ class TestGetScan:
     def test_nonexistent_scan_returns_none_none(self):
         """get_scan for a path that does not exist should return (None, None)."""
         json_data, html_content = file_store.get_scan("10.99.99.99", "never")
+        assert json_data is None
+        assert html_content is None
+
+    def test_rejects_traversal_in_requested_path(self):
+        """Traversal-style device/timestamp values should not escape DATA_DIR."""
+        json_data, html_content = file_store.get_scan("../escape", "never")
+        assert json_data is None
+        assert html_content is None
+
+        json_data, html_content = file_store.get_scan("10.0.0.1", "../escape")
         assert json_data is None
         assert html_content is None
 
@@ -143,3 +165,8 @@ class TestDeleteScan:
         """delete_scan for a missing path should return False."""
         result = file_store.delete_scan("10.99.99.99", "never")
         assert result is False
+
+    def test_rejects_traversal_in_delete_path(self):
+        """Traversal-style device/timestamp values should not delete outside DATA_DIR."""
+        assert file_store.delete_scan("../escape", "never") is False
+        assert file_store.delete_scan("10.0.0.1", "../escape") is False

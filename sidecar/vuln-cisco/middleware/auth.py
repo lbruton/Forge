@@ -18,8 +18,7 @@ def init_api_key() -> str:
     """Load or generate the API key on startup.
 
     - If ``/data/api-key.txt`` exists, read the key from it.
-    - Otherwise generate a UUID4 key, persist it, and print to stdout so
-      the operator can grab it from the container logs.
+    - Otherwise generate a UUID4 key and persist it to ``/data/api-key.txt``.
     """
     global _api_key  # noqa: PLW0603
 
@@ -30,7 +29,7 @@ def init_api_key() -> str:
         _api_key = str(uuid.uuid4())
         API_KEY_PATH.parent.mkdir(parents=True, exist_ok=True)
         API_KEY_PATH.write_text(_api_key)
-        print(f"[auth] Generated new API key: {_api_key}")
+        print(f"[auth] Generated new API key and stored it at {API_KEY_PATH}")
 
     return _api_key
 
