@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
-import { ArrowLeft, ChevronDown, ChevronRight, Globe, Trash2 } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronRight, Eye, EyeOff, Globe, Trash2 } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { ConfigPreview } from './ConfigPreview.tsx';
 import { CopyButton, DownloadButton } from './CopyButton.tsx';
+import { SUB_START, SUB_END } from '../lib/substitution-engine.ts';
 
 interface GeneratedConfigViewerProps {
   configId: string;
@@ -18,6 +19,7 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
   const [variablesExpanded, setVariablesExpanded] = useState(false);
   const [globalsExpanded, setGlobalsExpanded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showMasked, setShowMasked] = useState(false);
 
   const config = generatedConfigs[configId];
 
@@ -52,6 +54,58 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
   const variableEntries = Object.entries(config.variableValues);
   const globalEntries = config.globalVariableValues ? Object.entries(config.globalVariableValues) : [];
 
+  // Look up which global variables are masked from the current view definition.
+  // If source variant was deleted, fall back to masking ALL globals as a safety net.
+  const maskedNames = useMemo(() => {
+    const names = new Set<string>();
+    if (!sourceInfo) {
+      // Source variant unavailable — mask all globals defensively
+      for (const [key] of globalEntries) names.add(key);
+      return names;
+    }
+    const globals = sourceInfo.view.globalVariables ?? [];
+    for (const g of globals) {
+      if (g.masked) names.add(g.name);
+    }
+    return names;
+  }, [sourceInfo, globalEntries]);
+
+  const hasMasked = maskedNames.size > 0;
+
+  // Collect masked secret values for replacement
+  const maskedValues = useMemo(() => {
+    if (!hasMasked || !config.globalVariableValues) return [];
+    const vals: string[] = [];
+    for (const name of maskedNames) {
+      const val = config.globalVariableValues[name];
+      if (val) vals.push(val);
+    }
+    return vals;
+  }, [hasMasked, maskedNames, config.globalVariableValues]);
+
+  // Mask secret values in config sections (sentinel-wrapped for ConfigPreview)
+  const displaySections = useMemo(() => {
+    if (showMasked || maskedValues.length === 0) return config.sections;
+    const maskedMarker = `${SUB_START}${'••••••••'}${SUB_END}`;
+    return config.sections.map((s) => {
+      let content = s.content;
+      for (const val of maskedValues) {
+        content = content.replaceAll(`${SUB_START}${val}${SUB_END}`, maskedMarker);
+      }
+      return content !== s.content ? { ...s, content } : s;
+    });
+  }, [config.sections, showMasked, maskedValues]);
+
+  // Mask secret values in fullConfig (plain text for Copy/Download)
+  const displayFullConfig = useMemo(() => {
+    if (showMasked || maskedValues.length === 0) return config.fullConfig;
+    let text = config.fullConfig;
+    for (const val of maskedValues) {
+      text = text.replaceAll(val, '••••••••');
+    }
+    return text;
+  }, [config.fullConfig, showMasked, maskedValues]);
+
   const handleDelete = () => {
     deleteGeneratedConfig(config.id);
     onBack();
@@ -81,8 +135,20 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
 
           {/* Action buttons */}
           <div className="flex items-center gap-2">
-            <CopyButton text={config.fullConfig} label="Copy All" />
-            <DownloadButton text={config.fullConfig} filename={`${config.name}.txt`} label="Download" />
+            {hasMasked && (
+              <button
+                onClick={() => setShowMasked(!showMasked)}
+                className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium
+                  text-slate-400 hover:text-slate-200 bg-forge-graphite/50 hover:bg-forge-graphite
+                  border border-forge-steel/50 rounded transition-colors duration-150"
+                title={showMasked ? 'Hide secrets' : 'Show secrets'}
+              >
+                {showMasked ? <EyeOff size={12} /> : <Eye size={12} />}
+                {showMasked ? 'Hide' : 'Show'} secrets
+              </button>
+            )}
+            <CopyButton text={displayFullConfig} label="Copy All" />
+            <DownloadButton text={displayFullConfig} filename={`${config.name}.txt`} label="Download" />
             {!confirmDelete ? (
               <button
                 onClick={() => setConfirmDelete(true)}
@@ -135,14 +201,17 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
           {globalsExpanded && (
             <div className="px-4 pb-3">
               <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
-                {globalEntries.map(([key, value]) => (
-                  <div key={key} className="contents">
-                    <span className="text-emerald-500 font-mono">${'{' + key + '}'}</span>
-                    <span className="text-slate-300 font-mono truncate">
-                      {value || <span className="text-slate-600 italic">empty</span>}
-                    </span>
-                  </div>
-                ))}
+                {globalEntries.map(([key, value]) => {
+                  const isMasked = maskedNames.has(key) && !showMasked;
+                  return (
+                    <div key={key} className="contents">
+                      <span className="text-emerald-500 font-mono">${'{' + key + '}'}</span>
+                      <span className="text-slate-300 font-mono truncate">
+                        {isMasked ? '••••••••' : value || <span className="text-slate-600 italic">empty</span>}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -178,7 +247,7 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
 
       {/* Config preview */}
       <div className="flex-1 min-h-0">
-        <ConfigPreview sections={config.sections} activeSection={null} configFormat={configFormat} />
+        <ConfigPreview sections={displaySections} activeSection={null} configFormat={configFormat} />
       </div>
     </div>
   );
