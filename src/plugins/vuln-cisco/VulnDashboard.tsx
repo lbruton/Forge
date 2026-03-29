@@ -8,6 +8,7 @@ import ScanReportViewer from './ScanReportViewer.tsx';
 
 interface VulnDashboardProps {
   pluginName: string;
+  viewId: string;
 }
 
 const SCAN_STEPS = ['SNMP Detection', 'PSIRT Lookup', 'Nuclei Scan'] as const;
@@ -610,15 +611,15 @@ function ScanProgressView({
 // Overview — device list
 // ========================
 
-function OverviewPage({ pluginName }: { pluginName: string }) {
+function OverviewPage({ pluginName, viewId }: { pluginName: string; viewId: string }) {
   const vulnDevices = useForgeStore((s) => s.vulnDevices);
   const pluginSettings = useForgeStore((s) => s.plugins[pluginName]?.settings);
   const setSelectedPluginNodeId = useForgeStore((s) => s.setSelectedPluginNodeId);
   const setSelectedPluginName = useForgeStore((s) => s.setSelectedPluginName);
 
   const sortedDevices = useMemo(
-    () => [...vulnDevices].sort((a, b) => a.hostname.localeCompare(b.hostname)),
-    [vulnDevices],
+    () => vulnDevices.filter((d) => d.viewId === viewId).sort((a, b) => a.hostname.localeCompare(b.hostname)),
+    [vulnDevices, viewId],
   );
 
   const [loading, setLoading] = useState(true);
@@ -649,7 +650,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
       }
 
       const data: DeviceSummary[] = await response.json();
-      const devices = state.vulnDevices;
+      const devices = state.vulnDevices.filter((d) => d.viewId === viewId);
       for (const summary of data) {
         const device = devices.find((d) => d.ip === summary.device);
         if (device) {
@@ -685,7 +686,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
     } finally {
       setLoading(false);
     }
-  }, [pluginName]);
+  }, [pluginName, viewId]);
 
   useEffect(() => {
     syncFromSidecar();
@@ -845,7 +846,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
 // Main VulnDashboard — routes based on selectedPluginNodeId
 // ========================
 
-export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
+export default function VulnDashboard({ pluginName, viewId }: VulnDashboardProps) {
   const selectedPluginNodeId = useForgeStore((s) => s.selectedPluginNodeId);
   const setSelectedPluginNodeId = useForgeStore((s) => s.setSelectedPluginNodeId);
   const getVulnDevice = useForgeStore((s) => s.getVulnDevice);
@@ -864,16 +865,16 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
   const editDevice = showEditModal && route.deviceId ? getVulnDevice(route.deviceId) : null;
 
   const handleSaveDevice = useCallback(
-    (device: VulnDevice) => {
+    (device: Omit<VulnDevice, 'viewId'>) => {
       const existing = getVulnDevice(device.id);
       if (existing) {
         updateVulnDevice(device.id, device);
       } else {
-        addVulnDevice(device);
+        addVulnDevice({ ...device, viewId });
       }
       setSelectedPluginNodeId(`device:${device.id}`);
     },
-    [getVulnDevice, addVulnDevice, updateVulnDevice, setSelectedPluginNodeId],
+    [getVulnDevice, addVulnDevice, updateVulnDevice, setSelectedPluginNodeId, viewId],
   );
 
   const handleCloseModal = useCallback(() => {
@@ -977,7 +978,7 @@ export default function VulnDashboard({ pluginName }: VulnDashboardProps) {
   // Default: overview + modals
   return (
     <>
-      <OverviewPage pluginName={pluginName} />
+      <OverviewPage pluginName={pluginName} viewId={viewId} />
 
       {/* Add Device Modal */}
       <DeviceModal open={showAddModal} device={null} onSave={handleSaveDevice} onClose={handleCloseModal} />

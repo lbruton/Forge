@@ -8,7 +8,7 @@ import { INFISICAL_MANIFEST } from '../infisical/manifest.ts';
 interface DeviceModalProps {
   open: boolean;
   device: VulnDevice | null;
-  onSave: (device: VulnDevice) => void;
+  onSave: (device: Omit<VulnDevice, 'viewId'>) => void;
   onClose: () => void;
 }
 
@@ -64,7 +64,10 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
       return;
     }
 
-    const keyName = prompt('Enter a key name for this SNMP credential:', `FORGE_SNMP_${hostname.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`);
+    const keyName = prompt(
+      'Enter a key name for this SNMP credential:',
+      `FORGE_SNMP_${hostname.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`,
+    );
     if (!keyName?.trim()) return;
 
     setSaving(true);
@@ -464,7 +467,8 @@ function SecretPickerOverlay({
 
         {/* Footer */}
         <div className="px-5 py-3 border-t border-forge-graphite/50 text-[11px] text-slate-500">
-          {secrets.length > 0 && `${secrets.length} secret${secrets.length === 1 ? '' : 's'} — keys only, values masked`}
+          {secrets.length > 0 &&
+            `${secrets.length} secret${secrets.length === 1 ? '' : 's'} — keys only, values masked`}
         </div>
       </div>
     </div>

@@ -53,6 +53,7 @@ describe('vuln-cisco type shapes', () => {
   it('VulnDevice has all required fields', () => {
     const device: VulnDevice = {
       id: 'dev-001',
+      viewId: 'view-001',
       hostname: 'core-sw-01',
       ip: '192.168.1.10',
     };
