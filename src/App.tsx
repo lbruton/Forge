@@ -54,6 +54,7 @@ function App() {
     pendingSaveCallback,
     setEditorDirty,
     registerSecretsProvider,
+    setSidebarWidth,
   } = useForgeStore();
 
   const [mode, setMode] = useState<AppMode>('generator');
@@ -65,6 +66,33 @@ function App() {
 
   // Wizard for "Add Template" button
   const [wizard, setWizard] = useState<WizardState | null>(null);
+
+  // Sidebar drag resize — local state for smooth dragging, committed to store on mouseup
+  const [dragWidth, setDragWidth] = useState<number | null>(null);
+  const sidebarWidth = dragWidth ?? preferences.sidebarWidth;
+
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = useForgeStore.getState().preferences.sidebarWidth;
+    const onMouseMove = (ev: MouseEvent) => {
+      const newWidth = Math.max(180, Math.min(400, startWidth + ev.clientX - startX));
+      setDragWidth(newWidth);
+    };
+    const onMouseUp = (ev: MouseEvent) => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      const finalWidth = Math.max(180, Math.min(400, startWidth + ev.clientX - startX));
+      setSidebarWidth(finalWidth);
+      setDragWidth(null);
+    };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [setSidebarWidth]);
 
   // Navigation guard state
   const [pendingNavAction, setPendingNavAction] = useState<(() => void) | null>(null);
@@ -491,13 +519,14 @@ function App() {
 
       {/* Body: sidebar + main */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar — 240px on desktop, overlay on mobile */}
+        {/* Sidebar — dynamic width on desktop, overlay on mobile */}
         {(!preferences.sidebarCollapsed || mobileMenuOpen) && (
           <div
             className={`
               ${mobileMenuOpen ? 'fixed inset-0 top-12 z-40 md:relative md:inset-auto' : 'hidden md:block'}
-              w-60 shrink-0
+              shrink-0
             `}
+            style={mobileMenuOpen ? undefined : { width: sidebarWidth }}
           >
             <Sidebar
               onSwitchToEditor={switchToEditor}
@@ -510,14 +539,22 @@ function App() {
           </div>
         )}
 
-        {/* Desktop sidebar collapse toggle */}
-        <button
-          onClick={toggleSidebar}
-          className="hidden md:flex items-center justify-center w-5 shrink-0 bg-forge-charcoal border-r border-forge-graphite text-slate-500 hover:text-slate-300 hover:bg-forge-graphite"
-          title={preferences.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {preferences.sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </button>
+        {/* Sidebar resize handle + collapse toggle */}
+        <div className="hidden md:flex shrink-0 relative">
+          {!preferences.sidebarCollapsed && (
+            <div
+              className="w-1 cursor-col-resize hover:bg-forge-amber/40 active:bg-forge-amber/60 transition-colors"
+              onMouseDown={handleDragStart}
+            />
+          )}
+          <button
+            onClick={toggleSidebar}
+            className="flex items-center justify-center w-4 bg-forge-charcoal border-r border-forge-graphite text-slate-500 hover:text-slate-300 hover:bg-forge-graphite"
+            title={preferences.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {preferences.sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+          </button>
+        </div>
 
         {/* Mobile overlay backdrop */}
         {mobileMenuOpen && (

@@ -50,11 +50,16 @@ function uuid(): string {
 
 const emptyTree: ForgeTree = { views: [] };
 
+const SIDEBAR_MIN_WIDTH = 180;
+const SIDEBAR_MAX_WIDTH = 400;
+const SIDEBAR_DEFAULT_WIDTH = 240;
+
 const defaultPreferences: Preferences = {
   lastSelectedVariantId: null,
   sidebarCollapsed: false,
   rightPanelCollapsed: false,
   expandedNodes: [],
+  sidebarWidth: SIDEBAR_DEFAULT_WIDTH,
 };
 
 // --- Store interface ---
@@ -111,6 +116,7 @@ interface ForgeStore {
   toggleSidebar: () => void;
   toggleRightPanel: () => void;
   toggleExpandedNode: (nodeId: string) => void;
+  setSidebarWidth: (width: number) => void;
 
   // Bulk operations
   loadFromStorage: () => void;
@@ -657,6 +663,14 @@ export const useForgeStore = create<ForgeStore>()(
         });
       },
 
+      setSidebarWidth: (width) => {
+        if (!Number.isFinite(width)) return;
+        const clamped = Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, width));
+        set((state) => ({
+          preferences: { ...state.preferences, sidebarWidth: clamped },
+        }));
+      },
+
       // --- Bulk operations ---
 
       loadFromStorage: () => {
@@ -962,6 +976,14 @@ export const useForgeStore = create<ForgeStore>()(
     {
       name: 'forge-store',
       storage: createJSONStorage(() => forgeStorage),
+      merge: (persisted, current) => {
+        const state = { ...current, ...(persisted as object) };
+        // Deep-merge preferences so new fields get defaults from current state
+        if (persisted && typeof persisted === 'object' && 'preferences' in persisted) {
+          state.preferences = { ...current.preferences, ...(persisted as Record<string, unknown>).preferences as Partial<Preferences> };
+        }
+        return state as ForgeStore;
+      },
       partialize: ({
         editorDirty: _editorDirty,
         pendingSaveCallback: _pendingSaveCallback,
