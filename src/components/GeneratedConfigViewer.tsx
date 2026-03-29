@@ -54,32 +54,57 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
   const variableEntries = Object.entries(config.variableValues);
   const globalEntries = config.globalVariableValues ? Object.entries(config.globalVariableValues) : [];
 
-  // Look up which global variables are masked from the current view definition
+  // Look up which global variables are masked from the current view definition.
+  // If source variant was deleted, fall back to masking ALL globals as a safety net.
   const maskedNames = useMemo(() => {
     const names = new Set<string>();
-    if (!sourceInfo) return names;
+    if (!sourceInfo) {
+      // Source variant unavailable — mask all globals defensively
+      for (const [key] of globalEntries) names.add(key);
+      return names;
+    }
     const globals = sourceInfo.view.globalVariables ?? [];
     for (const g of globals) {
       if (g.masked) names.add(g.name);
     }
     return names;
-  }, [sourceInfo]);
+  }, [sourceInfo, globalEntries]);
 
   const hasMasked = maskedNames.size > 0;
 
-  // Mask secret values in config sections
+  // Collect masked secret values for replacement
+  const maskedValues = useMemo(() => {
+    if (!hasMasked || !config.globalVariableValues) return [];
+    const vals: string[] = [];
+    for (const name of maskedNames) {
+      const val = config.globalVariableValues[name];
+      if (val) vals.push(val);
+    }
+    return vals;
+  }, [hasMasked, maskedNames, config.globalVariableValues]);
+
+  // Mask secret values in config sections (sentinel-wrapped for ConfigPreview)
   const displaySections = useMemo(() => {
-    if (showMasked || !hasMasked || !config.globalVariableValues) return config.sections;
+    if (showMasked || maskedValues.length === 0) return config.sections;
     const maskedMarker = `${SUB_START}${'••••••••'}${SUB_END}`;
     return config.sections.map((s) => {
       let content = s.content;
-      for (const name of maskedNames) {
-        const val = config.globalVariableValues?.[name];
-        if (val) content = content.replaceAll(`${SUB_START}${val}${SUB_END}`, maskedMarker);
+      for (const val of maskedValues) {
+        content = content.replaceAll(`${SUB_START}${val}${SUB_END}`, maskedMarker);
       }
       return content !== s.content ? { ...s, content } : s;
     });
-  }, [config.sections, config.globalVariableValues, showMasked, hasMasked, maskedNames]);
+  }, [config.sections, showMasked, maskedValues]);
+
+  // Mask secret values in fullConfig (plain text for Copy/Download)
+  const displayFullConfig = useMemo(() => {
+    if (showMasked || maskedValues.length === 0) return config.fullConfig;
+    let text = config.fullConfig;
+    for (const val of maskedValues) {
+      text = text.replaceAll(val, '••••••••');
+    }
+    return text;
+  }, [config.fullConfig, showMasked, maskedValues]);
 
   const handleDelete = () => {
     deleteGeneratedConfig(config.id);
@@ -122,8 +147,8 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
                 {showMasked ? 'Hide' : 'Show'} secrets
               </button>
             )}
-            <CopyButton text={config.fullConfig} label="Copy All" />
-            <DownloadButton text={config.fullConfig} filename={`${config.name}.txt`} label="Download" />
+            <CopyButton text={displayFullConfig} label="Copy All" />
+            <DownloadButton text={displayFullConfig} filename={`${config.name}.txt`} label="Download" />
             {!confirmDelete ? (
               <button
                 onClick={() => setConfirmDelete(true)}

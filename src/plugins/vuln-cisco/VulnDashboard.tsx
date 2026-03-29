@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ShieldAlert, Plus, Play, RefreshCw, Check, Cpu, Clock, Loader2 } from 'lucide-react';
 import { useForgeStore } from '../../store/index.ts';
 import { pluginFetch } from '../../lib/plugin-service.ts';
@@ -616,6 +616,11 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
   const setSelectedPluginNodeId = useForgeStore((s) => s.setSelectedPluginNodeId);
   const setSelectedPluginName = useForgeStore((s) => s.setSelectedPluginName);
 
+  const sortedDevices = useMemo(
+    () => [...vulnDevices].sort((a, b) => a.hostname.localeCompare(b.hostname)),
+    [vulnDevices],
+  );
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -759,7 +764,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
         )}
 
         {/* Empty state */}
-        {!loading && vulnDevices.length === 0 && (
+        {!loading && sortedDevices.length === 0 && (
           <div className="bg-forge-charcoal border border-forge-graphite rounded-xl">
             <div className="flex flex-col items-center justify-center py-16 gap-4">
               <ShieldAlert size={48} className="text-slate-600" />
@@ -782,7 +787,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
         )}
 
         {/* Device table */}
-        {!loading && vulnDevices.length > 0 && (
+        {!loading && sortedDevices.length > 0 && (
           <div className="bg-forge-charcoal border border-forge-graphite rounded-xl overflow-hidden">
             <table className="w-full border-collapse">
               <thead>
@@ -802,7 +807,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
                 </tr>
               </thead>
               <tbody>
-                {[...vulnDevices].sort((a, b) => a.hostname.localeCompare(b.hostname)).map((device) => (
+                {sortedDevices.map((device) => (
                   <tr
                     key={device.id}
                     className="hover:bg-white/[0.02] transition-colors border-b border-forge-graphite last:border-b-0 cursor-pointer"
