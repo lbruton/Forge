@@ -414,8 +414,12 @@ export const useForgeStore = create<ForgeStore>()(
 
       updateGlobalVariable: (viewId, name, updates) => {
         const ts = now();
-        set((state) => ({
-          tree: {
+        const newName = updates.name;
+        const isRename = newName && newName !== name;
+
+        set((state) => {
+          // Update the global variable definition
+          const nextTree = {
             views: state.tree.views.map((v) =>
               v.id === viewId
                 ? {
@@ -427,8 +431,42 @@ export const useForgeStore = create<ForgeStore>()(
                   }
                 : v,
             ),
-          },
-        }));
+          };
+
+          // If renamed, update ${oldName} → ${newName} in all templates for this view
+          if (!isRename) return { tree: nextTree };
+
+          const view = nextTree.views.find((v) => v.id === viewId);
+          if (!view) return { tree: nextTree };
+
+          // Collect all templateIds from the view's variants
+          const templateIds = new Set<string>();
+          for (const vendor of view.vendors) {
+            for (const model of vendor.models) {
+              for (const variant of model.variants) {
+                templateIds.add(variant.templateId);
+              }
+            }
+          }
+
+          // Replace references in template section text
+          const pattern = new RegExp(`\\$\\{${name}\\}`, 'g');
+          const replacement = `\${${newName}}`;
+          const nextTemplates = { ...state.templates };
+          for (const tid of templateIds) {
+            const tpl = nextTemplates[tid];
+            if (!tpl) continue;
+            const updated = tpl.sections.map((s) => {
+              const newText = s.template.replace(pattern, replacement);
+              return newText !== s.template ? { ...s, template: newText } : s;
+            });
+            if (updated.some((s, i) => s !== tpl.sections[i])) {
+              nextTemplates[tid] = { ...tpl, sections: updated, updatedAt: ts };
+            }
+          }
+
+          return { tree: nextTree, templates: nextTemplates };
+        });
       },
 
       deleteGlobalVariable: (viewId, name) => {
