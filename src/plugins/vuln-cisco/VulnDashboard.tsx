@@ -802,7 +802,7 @@ function OverviewPage({ pluginName }: { pluginName: string }) {
                 </tr>
               </thead>
               <tbody>
-                {vulnDevices.map((device) => (
+                {[...vulnDevices].sort((a, b) => a.hostname.localeCompare(b.hostname)).map((device) => (
                   <tr
                     key={device.id}
                     className="hover:bg-white/[0.02] transition-colors border-b border-forge-graphite last:border-b-0 cursor-pointer"
