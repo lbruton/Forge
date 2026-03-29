@@ -84,7 +84,7 @@ export async function fetchManifest(endpoint: string): Promise<PluginManifest> {
   clearTimeout(timeoutId);
 
   if (response.status === 401 || response.status === 403) {
-    throw new Error('Authentication failed — check your API key');
+    throw new Error('Manifest endpoint returned 401/403 — sidecar may require authentication on this route');
   }
 
   if (!response.ok) {

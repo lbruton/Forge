@@ -118,7 +118,7 @@ describe('fetchManifest', () => {
       status: 401,
     });
 
-    await expect(fetchManifest('http://localhost:9001')).rejects.toThrow('Authentication failed');
+    await expect(fetchManifest('http://localhost:9001')).rejects.toThrow('returned 401/403');
   });
 
   it('throws status error on 500', async () => {

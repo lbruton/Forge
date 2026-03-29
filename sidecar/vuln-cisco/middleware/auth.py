@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from pathlib import Path
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+logger = logging.getLogger(__name__)
 
 API_KEY_PATH = Path("/data/api-key.txt")
 
@@ -24,12 +27,12 @@ def init_api_key() -> str:
 
     if API_KEY_PATH.exists():
         _api_key = API_KEY_PATH.read_text().strip()
-        print(f"[auth] Loaded existing API key from {API_KEY_PATH}")
+        logger.info("Loaded existing API key from %s", API_KEY_PATH)
     else:
         _api_key = str(uuid.uuid4())
         API_KEY_PATH.parent.mkdir(parents=True, exist_ok=True)
         API_KEY_PATH.write_text(_api_key)
-        print(f"[auth] Generated new API key and stored it at {API_KEY_PATH}")
+        logger.info("Generated new API key and stored it at %s", API_KEY_PATH)
 
     return _api_key
 
