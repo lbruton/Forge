@@ -85,7 +85,7 @@ export default function PluginContentView({ pluginName, nodeId, viewId }: Plugin
 
   // Vuln-cisco sidecar plugin gets its own dashboard
   if (isVulnCiscoPlugin) {
-    return <VulnDashboard pluginName={pluginName} />;
+    return <VulnDashboard pluginName={pluginName} viewId={viewId} />;
   }
 
   return (

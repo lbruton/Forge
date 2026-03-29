@@ -980,7 +980,17 @@ export const useForgeStore = create<ForgeStore>()(
         const state = { ...current, ...(persisted as object) };
         // Deep-merge preferences so new fields get defaults from current state
         if (persisted && typeof persisted === 'object' && 'preferences' in persisted) {
-          state.preferences = { ...current.preferences, ...(persisted as Record<string, unknown>).preferences as Partial<Preferences> };
+          state.preferences = {
+            ...current.preferences,
+            ...((persisted as Record<string, unknown>).preferences as Partial<Preferences>),
+          };
+        }
+        // Migrate vuln devices: assign viewId to legacy devices missing one
+        if (state.vulnDevices?.length && state.tree?.views?.length) {
+          const defaultViewId = state.tree.views[0].id;
+          state.vulnDevices = state.vulnDevices.map((d: VulnDevice) =>
+            d.viewId ? d : { ...d, viewId: defaultViewId },
+          );
         }
         return state as ForgeStore;
       },
