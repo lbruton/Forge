@@ -59,7 +59,8 @@ plugin-powered network configuration platform.
 
 ### Security
 
-- Credentials never stored in localStorage — only Infisical key references
+- Infisical-managed secrets resolved at runtime, never stored in localStorage
+  (sidecar API keys still persist in browser storage — tracked in FORGE-64)
 - DOMPurify sanitization for all sidecar HTML
 - Sidecar API key managed via file store, never exposed in responses
 - SECURITY.md with vulnerability reporting policy
@@ -67,4 +68,5 @@ plugin-powered network configuration platform.
 ### Infrastructure
 
 - Docker Compose for Portainer GitOps deployment
-- Static web app — no backend, browser storage only
+- Static web app with browser storage — no server required (sidecar plugins
+  are optional Docker containers on the LAN)
