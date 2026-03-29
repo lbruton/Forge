@@ -67,6 +67,33 @@ function App() {
   // Wizard for "Add Template" button
   const [wizard, setWizard] = useState<WizardState | null>(null);
 
+  // Sidebar drag resize — local state for smooth dragging, committed to store on mouseup
+  const [dragWidth, setDragWidth] = useState<number | null>(null);
+  const sidebarWidth = dragWidth ?? preferences.sidebarWidth;
+
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = useForgeStore.getState().preferences.sidebarWidth;
+    const onMouseMove = (ev: MouseEvent) => {
+      const newWidth = Math.max(180, Math.min(400, startWidth + ev.clientX - startX));
+      setDragWidth(newWidth);
+    };
+    const onMouseUp = (ev: MouseEvent) => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      const finalWidth = Math.max(180, Math.min(400, startWidth + ev.clientX - startX));
+      setSidebarWidth(finalWidth);
+      setDragWidth(null);
+    };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [setSidebarWidth]);
+
   // Navigation guard state
   const [pendingNavAction, setPendingNavAction] = useState<(() => void) | null>(null);
 
@@ -499,7 +526,7 @@ function App() {
               ${mobileMenuOpen ? 'fixed inset-0 top-12 z-40 md:relative md:inset-auto' : 'hidden md:block'}
               shrink-0
             `}
-            style={{ width: preferences.sidebarWidth }}
+            style={mobileMenuOpen ? undefined : { width: sidebarWidth }}
           >
             <Sidebar
               onSwitchToEditor={switchToEditor}
@@ -516,25 +543,8 @@ function App() {
         <div className="hidden md:flex shrink-0 relative">
           {!preferences.sidebarCollapsed && (
             <div
-              className="w-1 cursor-col-resize group hover:bg-forge-amber/40 active:bg-forge-amber/60 transition-colors"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                const startX = e.clientX;
-                const startWidth = preferences.sidebarWidth;
-                const onMouseMove = (ev: MouseEvent) => {
-                  setSidebarWidth(startWidth + ev.clientX - startX);
-                };
-                const onMouseUp = () => {
-                  document.removeEventListener('mousemove', onMouseMove);
-                  document.removeEventListener('mouseup', onMouseUp);
-                  document.body.style.cursor = '';
-                  document.body.style.userSelect = '';
-                };
-                document.body.style.cursor = 'col-resize';
-                document.body.style.userSelect = 'none';
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp);
-              }}
+              className="w-1 cursor-col-resize hover:bg-forge-amber/40 active:bg-forge-amber/60 transition-colors"
+              onMouseDown={handleDragStart}
             />
           )}
           <button

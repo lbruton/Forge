@@ -664,6 +664,7 @@ export const useForgeStore = create<ForgeStore>()(
       },
 
       setSidebarWidth: (width) => {
+        if (!Number.isFinite(width)) return;
         const clamped = Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, width));
         set((state) => ({
           preferences: { ...state.preferences, sidebarWidth: clamped },
@@ -975,6 +976,14 @@ export const useForgeStore = create<ForgeStore>()(
     {
       name: 'forge-store',
       storage: createJSONStorage(() => forgeStorage),
+      merge: (persisted, current) => {
+        const state = { ...current, ...(persisted as object) };
+        // Deep-merge preferences so new fields get defaults from current state
+        if (persisted && typeof persisted === 'object' && 'preferences' in persisted) {
+          state.preferences = { ...current.preferences, ...(persisted as Record<string, unknown>).preferences as Partial<Preferences> };
+        }
+        return state as ForgeStore;
+      },
       partialize: ({
         editorDirty: _editorDirty,
         pendingSaveCallback: _pendingSaveCallback,
