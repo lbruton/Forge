@@ -134,8 +134,10 @@ interface ForgeStore {
   // Plugin state
   selectedPluginName: string | null;
   selectedPluginNodeId: string | null;
+  selectedPluginViewId: string | null;
   setSelectedPluginName: (name: string | null) => void;
   setSelectedPluginNodeId: (nodeId: string | null) => void;
+  setSelectedPluginViewId: (viewId: string | null) => void;
   registerPlugin: (manifest: PluginManifest, endpoint?: string, apiKey?: string) => void;
   unregisterPlugin: (pluginName: string) => void;
   setPluginEnabled: (pluginName: string, enabled: boolean) => void;
@@ -810,8 +812,10 @@ export const useForgeStore = create<ForgeStore>()(
 
       selectedPluginName: null,
       selectedPluginNodeId: null,
+      selectedPluginViewId: null,
       setSelectedPluginName: (name) => set({ selectedPluginName: name }),
       setSelectedPluginNodeId: (nodeId) => set({ selectedPluginNodeId: nodeId }),
+      setSelectedPluginViewId: (viewId) => set({ selectedPluginViewId: viewId }),
 
       registerPlugin: (manifest, endpoint, apiKey) => {
         set((state) => {
@@ -1001,6 +1005,7 @@ export const useForgeStore = create<ForgeStore>()(
         setPendingSaveCallback: _setPendingSaveCallback,
         selectedPluginName: _selectedPluginName,
         selectedPluginNodeId: _selectedPluginNodeId,
+        selectedPluginViewId: _selectedPluginViewId,
         secretsProviders: _secretsProviders,
         activeScan: _activeScan,
         ...rest

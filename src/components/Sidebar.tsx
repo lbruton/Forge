@@ -106,6 +106,7 @@ export function Sidebar({
     selectedPluginName,
     setSelectedPluginName,
     setSelectedPluginNodeId,
+    setSelectedPluginViewId,
     setPluginEnabled,
     getPlugin,
     preferences,
@@ -509,6 +510,7 @@ export function Sidebar({
                     setSelectedGeneratedConfigId(null);
                     setSelectedPluginName(VULN_CISCO_MANIFEST.name);
                     setSelectedPluginNodeId('vulnerabilities');
+                    setSelectedPluginViewId(view.id);
                     onSelectPlugin?.(VULN_CISCO_MANIFEST.name, 'vulnerabilities');
                   }}
                 >
@@ -528,12 +530,14 @@ export function Sidebar({
                           setSelectedGeneratedConfigId(null);
                           setSelectedPluginName(VULN_CISCO_MANIFEST.name);
                           setSelectedPluginNodeId('add-device');
+                          setSelectedPluginViewId(view.id);
                           onSelectPlugin?.(VULN_CISCO_MANIFEST.name, 'add-device');
                         }}
                         onSelect={() => {
                           setSelectedGeneratedConfigId(null);
                           setSelectedPluginName(VULN_CISCO_MANIFEST.name);
                           setSelectedPluginNodeId('cisco');
+                          setSelectedPluginViewId(view.id);
                           onSelectPlugin?.(VULN_CISCO_MANIFEST.name, 'cisco');
                         }}
                       >
@@ -549,12 +553,14 @@ export function Sidebar({
                               setSelectedGeneratedConfigId(null);
                               setSelectedPluginName(VULN_CISCO_MANIFEST.name);
                               setSelectedPluginNodeId(`device:${device.id}`);
+                              setSelectedPluginViewId(view.id);
                               onSelectPlugin?.(VULN_CISCO_MANIFEST.name, `device:${device.id}`);
                             }}
                             onEdit={() => {
                               setSelectedGeneratedConfigId(null);
                               setSelectedPluginName(VULN_CISCO_MANIFEST.name);
                               setSelectedPluginNodeId(`edit-device:${device.id}`);
+                              setSelectedPluginViewId(view.id);
                               onSelectPlugin?.(VULN_CISCO_MANIFEST.name, `edit-device:${device.id}`);
                             }}
                             onDelete={() => {
@@ -569,6 +575,7 @@ export function Sidebar({
                                   setSelectedGeneratedConfigId(null);
                                   setSelectedPluginName(VULN_CISCO_MANIFEST.name);
                                   setSelectedPluginNodeId(`scan:${device.id}`);
+                                  setSelectedPluginViewId(view.id);
                                   onSelectPlugin?.(VULN_CISCO_MANIFEST.name, `scan:${device.id}`);
                                 },
                               },
@@ -598,6 +605,7 @@ export function Sidebar({
                                         setSelectedGeneratedConfigId(null);
                                         setSelectedPluginName(VULN_CISCO_MANIFEST.name);
                                         setSelectedPluginNodeId(`report:${device.ip}:${scan.timestamp}`);
+                                        setSelectedPluginViewId(view.id);
                                         onSelectPlugin?.(
                                           VULN_CISCO_MANIFEST.name,
                                           `report:${device.ip}:${scan.timestamp}`,
@@ -634,6 +642,7 @@ export function Sidebar({
                           setSelectedGeneratedConfigId(null);
                           setSelectedPluginName(plugin.manifest.name);
                           setSelectedPluginNodeId(tn.id);
+                          setSelectedPluginViewId(view.id);
                           if (onSelectPlugin) {
                             onSelectPlugin(plugin.manifest.name, tn.id);
                           }
