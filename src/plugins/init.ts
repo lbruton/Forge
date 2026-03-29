@@ -24,7 +24,7 @@ export function initBundledPlugins(
 
     const existing = getPlugin(manifest.name);
     const needsConfig = manifest.type === 'sidecar' || manifest.type === 'integration';
-    const isConfigured = existing?.endpoint || Object.keys(existing?.settings ?? {}).length > 0;
+    const isConfigured = (existing?.endpoint && existing?.apiKey) || Object.keys(existing?.settings ?? {}).length > 0;
 
     if (needsConfig && !isConfigured) {
       setPluginHealth(manifest.name, {
