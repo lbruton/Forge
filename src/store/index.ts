@@ -18,6 +18,7 @@ import type {
 import type { PluginManifest, PluginRegistration, PluginHealthStatus } from '../types/plugin.ts';
 import type { SecretsProvider } from '../types/secrets-provider.ts';
 import type { VulnDevice, ScanEntry, ActiveScan, ScanStatus } from '../plugins/vuln-cisco/types.ts';
+import { BUNDLED_PLUGIN_NAMES } from '../plugins/init.ts';
 
 // --- Custom storage adapter for zustand persist ---
 
@@ -832,8 +833,7 @@ export const useForgeStore = create<ForgeStore>()(
       },
 
       unregisterPlugin: (pluginName) => {
-        const existing = get().plugins[pluginName];
-        if (existing?.manifest.type === 'bundled') return;
+        if (BUNDLED_PLUGIN_NAMES.has(pluginName)) return;
         set((state) => {
           const plugins = { ...state.plugins };
           delete plugins[pluginName];

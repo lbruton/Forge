@@ -109,7 +109,6 @@ export function Sidebar({
     selectedPluginName,
     setSelectedPluginName,
     setSelectedPluginNodeId,
-    unregisterPlugin,
     setPluginEnabled,
     getPlugin,
     preferences,
@@ -681,20 +680,7 @@ export function Sidebar({
                         onSelectPlugin(plugin.manifest.name, null);
                       }
                     }}
-                    onDelete={
-                      plugin.manifest.type !== 'bundled'
-                        ? () => {
-                            if (confirm(`Remove plugin "${plugin.manifest.displayName}"?`)) {
-                              const state = useForgeStore.getState();
-                              if (state.selectedPluginName === plugin.manifest.name) {
-                                setSelectedPluginName(null);
-                                setSelectedPluginNodeId(null);
-                              }
-                              unregisterPlugin(plugin.manifest.name);
-                            }
-                          }
-                        : undefined
-                    }
+                    onDelete={undefined}
                     contextMenuExtras={[
                       {
                         label: plugin.enabled ? 'Disable' : 'Enable',
