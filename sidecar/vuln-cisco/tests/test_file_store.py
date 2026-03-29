@@ -61,6 +61,18 @@ class TestSaveScan:
         # Verify HTML content
         assert (scan_dir / "report.html").read_text() == FIXTURE_HTML
 
+    @pytest.mark.parametrize("bad_segment", ["../escape", "/etc/passwd", "C:\\Windows", ".\x00evil", "..", ""])
+    def test_rejects_traversal_in_device(self, bad_segment):
+        """save_scan should reject unsafe device path segments."""
+        with pytest.raises(ValueError):
+            file_store.save_scan(bad_segment, "2026-03-27T12-00-00", FIXTURE_JSON, FIXTURE_HTML)
+
+    @pytest.mark.parametrize("bad_segment", ["../escape", "/etc/passwd", "C:\\Windows", ".\x00evil", "..", ""])
+    def test_rejects_traversal_in_timestamp(self, bad_segment):
+        """save_scan should reject unsafe timestamp path segments."""
+        with pytest.raises(ValueError):
+            file_store.save_scan("10.0.0.1", bad_segment, FIXTURE_JSON, FIXTURE_HTML)
+
 
 # ── list_devices ────────────────────────────────────────────────────────────
 
@@ -100,6 +112,11 @@ class TestListScans:
         assert scans[1]["timestamp"] == "2026-03-27T12-00-00"
         assert scans[2]["timestamp"] == "2026-03-27T10-00-00"
 
+    @pytest.mark.parametrize("bad_segment", ["../escape", "/etc/passwd", "C:\\Windows", ".\x00evil", "..", ""])
+    def test_rejects_unsafe_device_path(self, bad_segment):
+        """Unsafe device values should behave like a missing device."""
+        assert file_store.list_scans(bad_segment) == []
+
 
 # ── get_scan ────────────────────────────────────────────────────────────────
 
@@ -119,6 +136,20 @@ class TestGetScan:
     def test_nonexistent_scan_returns_none_none(self):
         """get_scan for a path that does not exist should return (None, None)."""
         json_data, html_content = file_store.get_scan("10.99.99.99", "never")
+        assert json_data is None
+        assert html_content is None
+
+    @pytest.mark.parametrize("bad_device,bad_ts", [
+        ("../escape", "never"),
+        ("/etc/passwd", "never"),
+        (".\x00evil", "never"),
+        ("10.0.0.1", "../escape"),
+        ("10.0.0.1", "/etc/passwd"),
+        ("10.0.0.1", ".\x00evil"),
+    ])
+    def test_rejects_traversal_in_requested_path(self, bad_device, bad_ts):
+        """Unsafe device/timestamp values should not escape DATA_DIR."""
+        json_data, html_content = file_store.get_scan(bad_device, bad_ts)
         assert json_data is None
         assert html_content is None
 
@@ -143,3 +174,15 @@ class TestDeleteScan:
         """delete_scan for a missing path should return False."""
         result = file_store.delete_scan("10.99.99.99", "never")
         assert result is False
+
+    @pytest.mark.parametrize("bad_device,bad_ts", [
+        ("../escape", "never"),
+        ("/etc/passwd", "never"),
+        (".\x00evil", "never"),
+        ("10.0.0.1", "../escape"),
+        ("10.0.0.1", "/etc/passwd"),
+        ("10.0.0.1", ".\x00evil"),
+    ])
+    def test_rejects_traversal_in_delete_path(self, bad_device, bad_ts):
+        """Unsafe device/timestamp values should not delete outside DATA_DIR."""
+        assert file_store.delete_scan(bad_device, bad_ts) is False

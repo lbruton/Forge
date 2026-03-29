@@ -28,6 +28,35 @@ def _results_dir() -> Path:
     return DATA_DIR
 
 
+def _is_safe_segment(segment: str) -> bool:
+    """Return True when a path segment is safe to join under DATA_DIR."""
+    return bool(segment) and segment not in {".", ".."} and "/" not in segment and "\\" not in segment and "\x00" not in segment
+
+
+def _resolve_results_path(*segments: str) -> Path | None:
+    """Resolve a child path under DATA_DIR, rejecting traversal attempts."""
+    if not segments or any(not _is_safe_segment(segment) for segment in segments):
+        logger.warning("Rejected unsafe results path segments: %s", segments)
+        return None
+
+    root = _results_dir().resolve()
+    candidate = root.joinpath(*segments).resolve(strict=False)
+
+    try:
+        candidate.relative_to(root)
+    except ValueError:
+        logger.warning("Rejected results path outside data dir: %s", candidate)
+        return None
+
+    return candidate
+
+
+def device_exists(device: str) -> bool:
+    """Return True if a safe device results directory exists."""
+    device_dir = _resolve_results_path(device)
+    return bool(device_dir and device_dir.is_dir())
+
+
 # ── Device listing ───────────────────────────────────────────────────────
 
 
@@ -79,8 +108,8 @@ def list_scans(device: str) -> list[dict]:
     Returns a list of ScanEntry-shaped dicts.  Returns an empty list if
     the device directory does not exist.
     """
-    device_dir = _results_dir() / device
-    if not device_dir.is_dir():
+    device_dir = _resolve_results_path(device)
+    if device_dir is None or not device_dir.is_dir():
         return []
 
     entries: list[dict] = []
@@ -113,8 +142,8 @@ def get_scan(device: str, timestamp: str) -> tuple[dict | None, str | None]:
 
     Returns (None, None) if the scan directory or files don't exist.
     """
-    scan_dir = _results_dir() / device / timestamp
-    if not scan_dir.is_dir():
+    scan_dir = _resolve_results_path(device, timestamp)
+    if scan_dir is None or not scan_dir.is_dir():
         return None, None
 
     json_path = scan_dir / "report.json"
@@ -149,7 +178,9 @@ def save_scan(
     Creates ``{DATA_DIR}/{device}/{timestamp}/`` and writes report.json
     and report.html.  Returns the scan directory path.
     """
-    scan_dir = _results_dir() / device / timestamp
+    scan_dir = _resolve_results_path(device, timestamp)
+    if scan_dir is None:
+        raise ValueError("Invalid device or timestamp for scan storage")
     scan_dir.mkdir(parents=True, exist_ok=True)
 
     json_path = scan_dir / "report.json"
@@ -167,16 +198,16 @@ def save_scan(
 
 def delete_scan(device: str, timestamp: str) -> bool:
     """Remove a scan directory.  Returns True if deleted, False if not found."""
-    scan_dir = _results_dir() / device / timestamp
-    if not scan_dir.is_dir():
+    scan_dir = _resolve_results_path(device, timestamp)
+    if scan_dir is None or not scan_dir.is_dir():
         return False
 
     shutil.rmtree(scan_dir)
     logger.info("Deleted scan %s/%s", device, timestamp)
 
     # Clean up empty device directory
-    device_dir = _results_dir() / device
-    if device_dir.is_dir() and not any(device_dir.iterdir()):
+    device_dir = _resolve_results_path(device)
+    if device_dir and device_dir.is_dir() and not any(device_dir.iterdir()):
         device_dir.rmdir()
         logger.info("Removed empty device directory %s", device)
 

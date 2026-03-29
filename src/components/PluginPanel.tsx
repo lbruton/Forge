@@ -184,8 +184,9 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
     setConnecting(true);
     setConnectError(null);
     try {
-      // Verify the sidecar is reachable and returns a valid manifest
-      await fetchManifest(endpoint, apiKey);
+      // Verify the sidecar is reachable and returns a valid manifest.
+      // The manifest endpoint is public, so we avoid sending the API key here.
+      await fetchManifest(endpoint);
       // Re-register with the endpoint and key
       registerPlugin(manifest, endpoint, apiKey);
       const health = await healthCheck(endpoint, apiKey);
@@ -324,7 +325,7 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
                     ) with SSL enabled
                   </li>
                   <li>
-                    Retrieve the API key from the container logs or run:{' '}
+                    Retrieve the API key from the running container:{' '}
                     <code className="text-[11px] text-cyan-400 bg-forge-obsidian px-1 py-0.5 rounded">
                       docker exec {manifest.name} cat /data/api-key.txt
                     </code>
@@ -374,7 +375,7 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
                     onBlur={() => {
                       if (isConfigured && editApiKey === registration.apiKey) setApiKeyRevealed(false);
                     }}
-                    placeholder="Paste API key from container logs"
+                    placeholder="Paste API key from /data/api-key.txt"
                     className={`${INPUT_CLASSES} font-mono`}
                   />
                 )}

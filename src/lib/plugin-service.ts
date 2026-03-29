@@ -62,14 +62,13 @@ export function validateManifest(data: unknown): PluginManifest {
 /**
  * Fetch and validate a plugin manifest from a sidecar endpoint.
  */
-export async function fetchManifest(endpoint: string, apiKey: string): Promise<PluginManifest> {
+export async function fetchManifest(endpoint: string): Promise<PluginManifest> {
   let response: Response;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
   try {
     response = await fetch(`${endpoint}/forge/manifest`, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${apiKey}` },
       credentials: 'omit',
       signal: controller.signal,
     });
@@ -85,7 +84,7 @@ export async function fetchManifest(endpoint: string, apiKey: string): Promise<P
   clearTimeout(timeoutId);
 
   if (response.status === 401 || response.status === 403) {
-    throw new Error('Authentication failed — check your API key');
+    throw new Error('Manifest endpoint returned 401/403 — sidecar may require authentication on this route');
   }
 
   if (!response.ok) {
