@@ -865,7 +865,7 @@ export default function VulnDashboard({ pluginName, viewId }: VulnDashboardProps
   const editDevice = showEditModal && route.deviceId ? getVulnDevice(route.deviceId) : null;
 
   const handleSaveDevice = useCallback(
-    (device: VulnDevice) => {
+    (device: Omit<VulnDevice, 'viewId'>) => {
       const existing = getVulnDevice(device.id);
       if (existing) {
         updateVulnDevice(device.id, device);

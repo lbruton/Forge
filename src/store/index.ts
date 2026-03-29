@@ -986,10 +986,10 @@ export const useForgeStore = create<ForgeStore>()(
           };
         }
         // Migrate vuln devices: assign viewId to legacy devices missing one
-        if (state.vulnDevices?.length && state.tree?.views?.length) {
-          const defaultViewId = state.tree.views[0].id;
+        const defaultView = state.tree?.views?.[0];
+        if (state.vulnDevices?.length && defaultView?.id) {
           state.vulnDevices = state.vulnDevices.map((d: VulnDevice) =>
-            d.viewId ? d : { ...d, viewId: defaultViewId },
+            d.viewId ? d : { ...d, viewId: defaultView.id },
           );
         }
         return state as ForgeStore;

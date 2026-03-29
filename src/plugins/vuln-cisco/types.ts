@@ -8,7 +8,7 @@ export interface SeveritySummary {
 
 export interface VulnDevice {
   id: string;
-  viewId?: string;
+  viewId: string;
   hostname: string;
   ip: string;
   snmpCommunity?: string;
