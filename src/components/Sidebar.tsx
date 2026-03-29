@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   FolderOpen,
   Cpu,
@@ -108,9 +108,13 @@ export function Sidebar({
 
   const vulnPlugin = getPlugin(VULN_CISCO_MANIFEST.name);
   const vulnEnabled = vulnPlugin?.enabled ?? false;
-  const vulnDevices = useForgeStore((s) => s.vulnDevices);
+  const vulnDevicesRaw = useForgeStore((s) => s.vulnDevices);
   const vulnScanCache = useForgeStore((s) => s.vulnScanCache);
   const deleteVulnDevice = useForgeStore((s) => s.deleteVulnDevice);
+  const vulnDevices = useMemo(
+    () => [...vulnDevicesRaw].sort((a, b) => a.hostname.localeCompare(b.hostname)),
+    [vulnDevicesRaw],
+  );
 
   // Auto-expand Configurations nodes for each view when plugin is enabled
   useEffect(() => {
@@ -382,7 +386,7 @@ export function Sidebar({
                                 })
                               }
                             >
-                              {model.variants.map((variant) => (
+                              {[...model.variants].sort((a, b) => a.name.localeCompare(b.name)).map((variant) => (
                                 <TreeNode
                                   key={variant.id}
                                   id={variant.id}
