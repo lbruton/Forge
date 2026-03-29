@@ -36,6 +36,18 @@ function getPluginIcon(name: string, size = 14) {
   return <Icon size={size} />;
 }
 
+/** Memoized alphabetical sort — usable inside nested .map() callbacks where hooks aren't allowed. */
+function Sorted<T extends { name: string }>({
+  items,
+  children,
+}: {
+  items: T[];
+  children: (sorted: T[]) => React.ReactNode;
+}) {
+  const sorted = useMemo(() => [...items].sort((a, b) => a.name.localeCompare(b.name)), [items]);
+  return <>{children(sorted)}</>;
+}
+
 interface ModalContext {
   type: CreateNodeType;
   viewId?: string;
@@ -386,49 +398,53 @@ export function Sidebar({
                                 })
                               }
                             >
-                              {[...model.variants].sort((a, b) => a.name.localeCompare(b.name)).map((variant) => (
-                                <TreeNode
-                                  key={variant.id}
-                                  id={variant.id}
-                                  label={variant.name}
-                                  icon={<FileCode2 size={14} />}
-                                  depth={5}
-                                  hasChildren={false}
-                                  isSelected={selectedVariantId === variant.id && selectedGeneratedConfigId === null}
-                                  onSelect={() => handleSelectVariant(variant.id)}
-                                  onEdit={() =>
-                                    handleEdit(
-                                      'variant',
-                                      {
-                                        viewId: view.id,
-                                        vendorId: vendor.id,
-                                        modelId: model.id,
-                                        variantId: variant.id,
-                                      },
-                                      variant.name,
-                                    )
-                                  }
-                                  onDuplicate={() => {
-                                    const source = getTemplate(variant.templateId);
-                                    if (!source) return;
-                                    const clone = structuredClone(source);
-                                    clone.id = crypto.randomUUID();
-                                    const now = new Date().toISOString();
-                                    clone.createdAt = now;
-                                    clone.updatedAt = now;
-                                    saveTemplate(clone);
-                                    addVariant(view.id, vendor.id, model.id, `${variant.name} (copy)`, clone.id);
-                                  }}
-                                  onDelete={() =>
-                                    handleDelete('variant', {
-                                      viewId: view.id,
-                                      vendorId: vendor.id,
-                                      modelId: model.id,
-                                      variantId: variant.id,
-                                    })
-                                  }
-                                />
-                              ))}
+                              <Sorted items={model.variants}>
+                                {(sorted) =>
+                                  sorted.map((variant) => (
+                                    <TreeNode
+                                      key={variant.id}
+                                      id={variant.id}
+                                      label={variant.name}
+                                      icon={<FileCode2 size={14} />}
+                                      depth={5}
+                                      hasChildren={false}
+                                      isSelected={selectedVariantId === variant.id && selectedGeneratedConfigId === null}
+                                      onSelect={() => handleSelectVariant(variant.id)}
+                                      onEdit={() =>
+                                        handleEdit(
+                                          'variant',
+                                          {
+                                            viewId: view.id,
+                                            vendorId: vendor.id,
+                                            modelId: model.id,
+                                            variantId: variant.id,
+                                          },
+                                          variant.name,
+                                        )
+                                      }
+                                      onDuplicate={() => {
+                                        const source = getTemplate(variant.templateId);
+                                        if (!source) return;
+                                        const clone = structuredClone(source);
+                                        clone.id = crypto.randomUUID();
+                                        const now = new Date().toISOString();
+                                        clone.createdAt = now;
+                                        clone.updatedAt = now;
+                                        saveTemplate(clone);
+                                        addVariant(view.id, vendor.id, model.id, `${variant.name} (copy)`, clone.id);
+                                      }}
+                                      onDelete={() =>
+                                        handleDelete('variant', {
+                                          viewId: view.id,
+                                          vendorId: vendor.id,
+                                          modelId: model.id,
+                                          variantId: variant.id,
+                                        })
+                                      }
+                                    />
+                                  ))
+                                }
+                              </Sorted>
                             </TreeNode>
 
                             {/* Generated sub-folder — only if there are generated configs */}
