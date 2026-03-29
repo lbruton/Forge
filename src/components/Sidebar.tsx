@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   FolderOpen,
   Cpu,
@@ -34,6 +34,18 @@ const PLUGIN_ICONS: Record<string, typeof Puzzle> = {
 function getPluginIcon(name: string, size = 14) {
   const Icon = PLUGIN_ICONS[name] ?? Puzzle;
   return <Icon size={size} />;
+}
+
+/** Memoized alphabetical sort — usable inside nested .map() callbacks where hooks aren't allowed. */
+function Sorted<T extends { name: string }>({
+  items,
+  children,
+}: {
+  items: T[];
+  children: (sorted: T[]) => React.ReactNode;
+}) {
+  const sorted = useMemo(() => [...items].sort((a, b) => a.name.localeCompare(b.name)), [items]);
+  return <>{children(sorted)}</>;
 }
 
 interface ModalContext {
@@ -108,9 +120,13 @@ export function Sidebar({
 
   const vulnPlugin = getPlugin(VULN_CISCO_MANIFEST.name);
   const vulnEnabled = vulnPlugin?.enabled ?? false;
-  const vulnDevices = useForgeStore((s) => s.vulnDevices);
+  const vulnDevicesRaw = useForgeStore((s) => s.vulnDevices);
   const vulnScanCache = useForgeStore((s) => s.vulnScanCache);
   const deleteVulnDevice = useForgeStore((s) => s.deleteVulnDevice);
+  const vulnDevices = useMemo(
+    () => [...vulnDevicesRaw].sort((a, b) => a.hostname.localeCompare(b.hostname)),
+    [vulnDevicesRaw],
+  );
 
   // Auto-expand Configurations nodes for each view when plugin is enabled
   useEffect(() => {
@@ -382,49 +398,53 @@ export function Sidebar({
                                 })
                               }
                             >
-                              {model.variants.map((variant) => (
-                                <TreeNode
-                                  key={variant.id}
-                                  id={variant.id}
-                                  label={variant.name}
-                                  icon={<FileCode2 size={14} />}
-                                  depth={5}
-                                  hasChildren={false}
-                                  isSelected={selectedVariantId === variant.id && selectedGeneratedConfigId === null}
-                                  onSelect={() => handleSelectVariant(variant.id)}
-                                  onEdit={() =>
-                                    handleEdit(
-                                      'variant',
-                                      {
-                                        viewId: view.id,
-                                        vendorId: vendor.id,
-                                        modelId: model.id,
-                                        variantId: variant.id,
-                                      },
-                                      variant.name,
-                                    )
-                                  }
-                                  onDuplicate={() => {
-                                    const source = getTemplate(variant.templateId);
-                                    if (!source) return;
-                                    const clone = structuredClone(source);
-                                    clone.id = crypto.randomUUID();
-                                    const now = new Date().toISOString();
-                                    clone.createdAt = now;
-                                    clone.updatedAt = now;
-                                    saveTemplate(clone);
-                                    addVariant(view.id, vendor.id, model.id, `${variant.name} (copy)`, clone.id);
-                                  }}
-                                  onDelete={() =>
-                                    handleDelete('variant', {
-                                      viewId: view.id,
-                                      vendorId: vendor.id,
-                                      modelId: model.id,
-                                      variantId: variant.id,
-                                    })
-                                  }
-                                />
-                              ))}
+                              <Sorted items={model.variants}>
+                                {(sorted) =>
+                                  sorted.map((variant) => (
+                                    <TreeNode
+                                      key={variant.id}
+                                      id={variant.id}
+                                      label={variant.name}
+                                      icon={<FileCode2 size={14} />}
+                                      depth={5}
+                                      hasChildren={false}
+                                      isSelected={selectedVariantId === variant.id && selectedGeneratedConfigId === null}
+                                      onSelect={() => handleSelectVariant(variant.id)}
+                                      onEdit={() =>
+                                        handleEdit(
+                                          'variant',
+                                          {
+                                            viewId: view.id,
+                                            vendorId: vendor.id,
+                                            modelId: model.id,
+                                            variantId: variant.id,
+                                          },
+                                          variant.name,
+                                        )
+                                      }
+                                      onDuplicate={() => {
+                                        const source = getTemplate(variant.templateId);
+                                        if (!source) return;
+                                        const clone = structuredClone(source);
+                                        clone.id = crypto.randomUUID();
+                                        const now = new Date().toISOString();
+                                        clone.createdAt = now;
+                                        clone.updatedAt = now;
+                                        saveTemplate(clone);
+                                        addVariant(view.id, vendor.id, model.id, `${variant.name} (copy)`, clone.id);
+                                      }}
+                                      onDelete={() =>
+                                        handleDelete('variant', {
+                                          viewId: view.id,
+                                          vendorId: vendor.id,
+                                          modelId: model.id,
+                                          variantId: variant.id,
+                                        })
+                                      }
+                                    />
+                                  ))
+                                }
+                              </Sorted>
                             </TreeNode>
 
                             {/* Generated sub-folder — only if there are generated configs */}
