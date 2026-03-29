@@ -114,6 +114,7 @@ export interface Preferences {
   sidebarCollapsed: boolean;
   rightPanelCollapsed: boolean;
   expandedNodes: string[];
+  sidebarWidth: number;
 }
 
 // Generated output

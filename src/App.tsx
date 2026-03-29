@@ -54,6 +54,7 @@ function App() {
     pendingSaveCallback,
     setEditorDirty,
     registerSecretsProvider,
+    setSidebarWidth,
   } = useForgeStore();
 
   const [mode, setMode] = useState<AppMode>('generator');
@@ -491,13 +492,14 @@ function App() {
 
       {/* Body: sidebar + main */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar — 240px on desktop, overlay on mobile */}
+        {/* Sidebar — dynamic width on desktop, overlay on mobile */}
         {(!preferences.sidebarCollapsed || mobileMenuOpen) && (
           <div
             className={`
               ${mobileMenuOpen ? 'fixed inset-0 top-12 z-40 md:relative md:inset-auto' : 'hidden md:block'}
-              w-60 shrink-0
+              shrink-0
             `}
+            style={{ width: preferences.sidebarWidth }}
           >
             <Sidebar
               onSwitchToEditor={switchToEditor}
@@ -510,14 +512,39 @@ function App() {
           </div>
         )}
 
-        {/* Desktop sidebar collapse toggle */}
-        <button
-          onClick={toggleSidebar}
-          className="hidden md:flex items-center justify-center w-5 shrink-0 bg-forge-charcoal border-r border-forge-graphite text-slate-500 hover:text-slate-300 hover:bg-forge-graphite"
-          title={preferences.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {preferences.sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </button>
+        {/* Sidebar resize handle + collapse toggle */}
+        <div className="hidden md:flex shrink-0 relative">
+          {!preferences.sidebarCollapsed && (
+            <div
+              className="w-1 cursor-col-resize group hover:bg-forge-amber/40 active:bg-forge-amber/60 transition-colors"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                const startX = e.clientX;
+                const startWidth = preferences.sidebarWidth;
+                const onMouseMove = (ev: MouseEvent) => {
+                  setSidebarWidth(startWidth + ev.clientX - startX);
+                };
+                const onMouseUp = () => {
+                  document.removeEventListener('mousemove', onMouseMove);
+                  document.removeEventListener('mouseup', onMouseUp);
+                  document.body.style.cursor = '';
+                  document.body.style.userSelect = '';
+                };
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+              }}
+            />
+          )}
+          <button
+            onClick={toggleSidebar}
+            className="flex items-center justify-center w-4 bg-forge-charcoal border-r border-forge-graphite text-slate-500 hover:text-slate-300 hover:bg-forge-graphite"
+            title={preferences.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {preferences.sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+          </button>
+        </div>
 
         {/* Mobile overlay backdrop */}
         {mobileMenuOpen && (

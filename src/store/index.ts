@@ -50,11 +50,16 @@ function uuid(): string {
 
 const emptyTree: ForgeTree = { views: [] };
 
+const SIDEBAR_MIN_WIDTH = 180;
+const SIDEBAR_MAX_WIDTH = 400;
+const SIDEBAR_DEFAULT_WIDTH = 240;
+
 const defaultPreferences: Preferences = {
   lastSelectedVariantId: null,
   sidebarCollapsed: false,
   rightPanelCollapsed: false,
   expandedNodes: [],
+  sidebarWidth: SIDEBAR_DEFAULT_WIDTH,
 };
 
 // --- Store interface ---
@@ -111,6 +116,7 @@ interface ForgeStore {
   toggleSidebar: () => void;
   toggleRightPanel: () => void;
   toggleExpandedNode: (nodeId: string) => void;
+  setSidebarWidth: (width: number) => void;
 
   // Bulk operations
   loadFromStorage: () => void;
@@ -655,6 +661,13 @@ export const useForgeStore = create<ForgeStore>()(
             preferences: { ...state.preferences, expandedNodes: next },
           };
         });
+      },
+
+      setSidebarWidth: (width) => {
+        const clamped = Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, width));
+        set((state) => ({
+          preferences: { ...state.preferences, sidebarWidth: clamped },
+        }));
       },
 
       // --- Bulk operations ---
