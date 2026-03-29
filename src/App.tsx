@@ -274,6 +274,7 @@ function App() {
         setSelectedPluginName(null);
         setSelectedPluginNodeId(null);
         setSelectedSection(null);
+        setSelectedGeneratedConfigId(null);
       });
     },
     [
@@ -292,6 +293,7 @@ function App() {
         setSelectedPluginName(null);
         setSelectedPluginNodeId(null);
         setSelectedSection(null);
+        setSelectedGeneratedConfigId(null);
       });
     },
     [guardNavigation, setSelectedGlobalVariablesViewId, setSelectedPluginName, setSelectedPluginNodeId],
