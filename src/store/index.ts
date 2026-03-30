@@ -77,10 +77,19 @@ async function decryptPluginSecrets(plugins: PluginsMap): Promise<PluginsMap> {
 
 // --- Custom storage adapter for zustand persist (async for credential encryption) ---
 
+// Hydration guard: prevent setItem from writing default/empty state before
+// the async getItem has finished decrypting and rehydrating the real data.
+// Without this, initializePlugins() triggers registerPlugin() → state change →
+// setItem before getItem resolves, overwriting encrypted credentials. (FORGE-64)
+let hydrated = false;
+
 const forgeStorage: StateStorage = {
   getItem: async (name: string) => {
     const val = storage.getItem<unknown>(name, null);
-    if (val === null) return null;
+    if (val === null) {
+      hydrated = true;
+      return null;
+    }
 
     // Decrypt sensitive plugin fields on read
     try {
@@ -95,9 +104,14 @@ const forgeStorage: StateStorage = {
       // If decryption fails, return as-is (backwards compat with plaintext)
     }
 
+    hydrated = true;
     return JSON.stringify(val);
   },
   setItem: async (name: string, value: string) => {
+    // Block writes until initial rehydration completes — prevents race
+    // condition where default state overwrites encrypted credentials.
+    if (!hydrated) return;
+
     try {
       const parsed = JSON.parse(value) as Record<string, unknown>;
 

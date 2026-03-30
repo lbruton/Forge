@@ -140,48 +140,67 @@ function App() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [editorDirty]);
 
-  // Register bundled plugins + health check all sidecar plugins on mount (fire-and-forget)
+  // Register bundled plugin manifests immediately (no credentials needed)
   useEffect(() => {
     initBundledPlugins(getPlugin, registerPlugin, setPluginHealth);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    const allPlugins = getPlugins();
-    const sidecarPlugins = allPlugins.filter((p) => p.manifest.type === 'sidecar' && p.endpoint && p.apiKey);
-    if (sidecarPlugins.length > 0) {
-      void Promise.allSettled(
-        sidecarPlugins.map(async (reg) => {
-          const result = await healthCheck(reg.endpoint!, reg.apiKey!);
-          setPluginHealth(reg.manifest.name, result);
-        }),
-      );
-    }
+  // Health check + secrets provider init AFTER hydration completes.
+  // Credentials are encrypted at rest and decrypted during async hydration.
+  // Running this before hydration would pass encrypted strings (or empty defaults)
+  // to InfisicalProvider/sidecar health checks. (FORGE-64)
+  useEffect(() => {
+    function initPluginConnections() {
+      const allPlugins = getPlugins();
+      const sidecarPlugins = allPlugins.filter((p) => p.manifest.type === 'sidecar' && p.endpoint && p.apiKey);
+      if (sidecarPlugins.length > 0) {
+        void Promise.allSettled(
+          sidecarPlugins.map(async (reg) => {
+            const result = await healthCheck(reg.endpoint!, reg.apiKey!);
+            setPluginHealth(reg.manifest.name, result);
+          }),
+        );
+      }
 
-    // Initialize Infisical secrets provider if plugin is enabled and configured
-    const infisicalPlugin = getPlugin(INFISICAL_MANIFEST.name);
-    if (infisicalPlugin?.enabled) {
-      const { endpoint, clientId, clientSecret } = infisicalPlugin.settings as Record<string, string>;
-      if (endpoint && clientId && clientSecret) {
-        const provider = new InfisicalProvider(endpoint, clientId, clientSecret);
-        void provider
-          .connect()
-          .then((result) => {
-            setPluginHealth(INFISICAL_MANIFEST.name, {
-              status: result.connected ? 'active' : 'inactive',
-              lastChecked: new Date().toISOString(),
-              error: result.error,
+      // Initialize Infisical secrets provider if plugin is enabled and configured
+      const infisicalPlugin = getPlugin(INFISICAL_MANIFEST.name);
+      if (infisicalPlugin?.enabled) {
+        const { endpoint, clientId, clientSecret } = infisicalPlugin.settings as Record<string, string>;
+        if (endpoint && clientId && clientSecret) {
+          const provider = new InfisicalProvider(endpoint, clientId, clientSecret);
+          void provider
+            .connect()
+            .then((result) => {
+              setPluginHealth(INFISICAL_MANIFEST.name, {
+                status: result.connected ? 'active' : 'inactive',
+                lastChecked: new Date().toISOString(),
+                error: result.error,
+              });
+              if (result.connected) {
+                registerSecretsProvider(provider);
+              }
+            })
+            .catch((err: unknown) => {
+              setPluginHealth(INFISICAL_MANIFEST.name, {
+                status: 'inactive',
+                lastChecked: new Date().toISOString(),
+                error: err instanceof Error ? err.message : 'Connection failed',
+              });
             });
-            if (result.connected) {
-              registerSecretsProvider(provider);
-            }
-          })
-          .catch((err: unknown) => {
-            setPluginHealth(INFISICAL_MANIFEST.name, {
-              status: 'inactive',
-              lastChecked: new Date().toISOString(),
-              error: err instanceof Error ? err.message : 'Connection failed',
-            });
-          });
+        }
       }
     }
+
+    // If already hydrated (sync storage or fast rehydration), init now
+    if (useForgeStore.persist.hasHydrated()) {
+      initPluginConnections();
+      return;
+    }
+
+    // Otherwise wait for async hydration to complete (credentials need decryption)
+    const unsub = useForgeStore.persist.onFinishHydration(initPluginConnections);
+    return unsub;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
