@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useForgeStore } from '../store/index.ts';
 import { fetchManifest, healthCheck } from '../lib/plugin-service.ts';
 import type { PluginRegistration, SettingsField } from '../types/plugin.ts';
+import { isPluginConfigured } from '../plugins/init.ts';
 import SetupWizard from '../plugins/infisical/SetupWizard.tsx';
 import PsirtCredentials from '../plugins/vuln-cisco/PsirtCredentials.tsx';
 import { VULN_CISCO_MANIFEST } from '../plugins/vuln-cisco/manifest.ts';
@@ -162,7 +163,7 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
   const { manifest } = registration;
   const isSidecar = manifest.type === 'sidecar';
   const isIntegration = manifest.type === 'integration';
-  const isConfigured = Boolean(registration.endpoint && registration.apiKey);
+  const isConfigured = isPluginConfigured(registration);
 
   // Sync editable fields if registration changes externally
   useEffect(() => {
@@ -436,9 +437,7 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
         )}
 
         {/* Vuln-cisco: PSIRT credentials via Infisical */}
-        {manifest.name === VULN_CISCO_MANIFEST.name && (
-          <PsirtCredentials pluginName={manifest.name} />
-        )}
+        {manifest.name === VULN_CISCO_MANIFEST.name && <PsirtCredentials pluginName={manifest.name} />}
       </div>
     </div>
   );

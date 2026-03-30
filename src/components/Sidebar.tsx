@@ -664,23 +664,20 @@ export function Sidebar({
               <TreeNode
                 key={plugin.manifest.name}
                 id={`plugin-${plugin.manifest.name}`}
-                label={
-                  <>
-                    {plugin.manifest.displayName}{' '}
-                    <span
-                      className={
-                        plugin.health.status === 'active'
-                          ? 'text-emerald-400'
-                          : plugin.health.status === 'inactive'
-                            ? 'text-red-400'
-                            : 'text-slate-500'
-                      }
-                    >
-                      {plugin.health.status === 'active' ? '●' : '○'}
-                    </span>
-                  </>
+                label={plugin.manifest.displayName}
+                icon={
+                  <span
+                    className={
+                      plugin.health.status === 'active'
+                        ? 'text-emerald-400'
+                        : plugin.health.status === 'inactive'
+                          ? 'text-red-400'
+                          : 'text-slate-500'
+                    }
+                  >
+                    {getPluginIcon(plugin.manifest.icon)}
+                  </span>
                 }
-                icon={getPluginIcon(plugin.manifest.icon)}
                 depth={depth}
                 hasChildren={false}
                 isSelected={selectedPluginName === plugin.manifest.name}
