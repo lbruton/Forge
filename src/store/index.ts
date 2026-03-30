@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import { storage } from '../lib/storage-service.ts';
+import { encryptCredential, decryptCredential, getSensitiveSettingsKeys } from '../lib/credential-store.ts';
 import type {
   ConfigFormat,
   ForgeTree,
@@ -20,16 +21,95 @@ import type { SecretsProvider } from '../types/secrets-provider.ts';
 import type { VulnDevice, ScanEntry, ActiveScan, ScanStatus } from '../plugins/vuln-cisco/types.ts';
 import { BUNDLED_PLUGIN_NAMES } from '../plugins/init.ts';
 
-// --- Custom storage adapter for zustand persist ---
+// --- Credential encryption helpers for storage adapter ---
+
+type PluginsMap = Record<string, PluginRegistration>;
+
+/** Encrypt sensitive plugin fields before writing to localStorage. */
+async function encryptPluginSecrets(plugins: PluginsMap): Promise<PluginsMap> {
+  const result: PluginsMap = {};
+  for (const [name, reg] of Object.entries(plugins)) {
+    const encrypted = { ...reg, settings: { ...reg.settings } };
+
+    // Encrypt sidecar apiKey
+    if (typeof encrypted.apiKey === 'string' && encrypted.apiKey) {
+      encrypted.apiKey = await encryptCredential(encrypted.apiKey);
+    }
+
+    // Encrypt password-type settings (e.g., Infisical clientSecret)
+    const sensitiveKeys = getSensitiveSettingsKeys(reg.manifest.settingsSchema);
+    for (const key of sensitiveKeys) {
+      const val = encrypted.settings[key];
+      if (typeof val === 'string' && val) {
+        encrypted.settings[key] = await encryptCredential(val);
+      }
+    }
+
+    result[name] = encrypted;
+  }
+  return result;
+}
+
+/** Decrypt sensitive plugin fields after reading from localStorage. */
+async function decryptPluginSecrets(plugins: PluginsMap): Promise<PluginsMap> {
+  const result: PluginsMap = {};
+  for (const [name, reg] of Object.entries(plugins)) {
+    const decrypted = { ...reg, settings: { ...reg.settings } };
+
+    // Decrypt sidecar apiKey
+    if (typeof decrypted.apiKey === 'string' && decrypted.apiKey) {
+      decrypted.apiKey = await decryptCredential(decrypted.apiKey);
+    }
+
+    // Decrypt password-type settings
+    const sensitiveKeys = getSensitiveSettingsKeys(reg.manifest.settingsSchema);
+    for (const key of sensitiveKeys) {
+      const val = decrypted.settings[key];
+      if (typeof val === 'string' && val) {
+        decrypted.settings[key] = await decryptCredential(val as string);
+      }
+    }
+
+    result[name] = decrypted;
+  }
+  return result;
+}
+
+// --- Custom storage adapter for zustand persist (async for credential encryption) ---
 
 const forgeStorage: StateStorage = {
-  getItem: (name: string) => {
+  getItem: async (name: string) => {
     const val = storage.getItem<unknown>(name, null);
-    return val === null ? null : JSON.stringify(val);
-  },
-  setItem: (name: string, value: string) => {
+    if (val === null) return null;
+
+    // Decrypt sensitive plugin fields on read
     try {
-      storage.setItem(name, JSON.parse(value));
+      const state = val as Record<string, unknown>;
+      if (state.state && typeof state.state === 'object') {
+        const inner = state.state as Record<string, unknown>;
+        if (inner.plugins && typeof inner.plugins === 'object') {
+          inner.plugins = await decryptPluginSecrets(inner.plugins as PluginsMap);
+        }
+      }
+    } catch {
+      // If decryption fails, return as-is (backwards compat with plaintext)
+    }
+
+    return JSON.stringify(val);
+  },
+  setItem: async (name: string, value: string) => {
+    try {
+      const parsed = JSON.parse(value) as Record<string, unknown>;
+
+      // Encrypt sensitive plugin fields on write
+      if (parsed.state && typeof parsed.state === 'object') {
+        const inner = parsed.state as Record<string, unknown>;
+        if (inner.plugins && typeof inner.plugins === 'object') {
+          inner.plugins = await encryptPluginSecrets(inner.plugins as PluginsMap);
+        }
+      }
+
+      storage.setItem(name, parsed);
     } catch {
       storage.setItem(name, value);
     }
@@ -798,13 +878,36 @@ export const useForgeStore = create<ForgeStore>()(
 
       exportData: () => {
         const state = get();
+
+        // Strip sensitive fields from plugin registrations before export.
+        // Exported vaults should never contain raw credentials — users
+        // reconnect plugins manually after import. (FORGE-64)
+        const sanitizedPlugins: Record<string, PluginRegistration> = {};
+        for (const [name, reg] of Object.entries(state.plugins)) {
+          const sanitized = { ...reg, settings: { ...reg.settings } };
+
+          // Strip sidecar apiKey
+          delete sanitized.apiKey;
+
+          // Strip password-type settings (e.g., Infisical clientSecret)
+          const sensitiveKeys = getSensitiveSettingsKeys(reg.manifest.settingsSchema);
+          for (const key of sensitiveKeys) {
+            delete sanitized.settings[key];
+          }
+
+          // Reset health — stale after export/import
+          sanitized.health = { status: 'unknown', lastChecked: '' };
+
+          sanitizedPlugins[name] = sanitized;
+        }
+
         return {
           exportedAt: now(),
           views: state.tree.views,
           templates: state.templates,
           variableValues: state.variableValues,
           generatedConfigs: state.generatedConfigs,
-          plugins: state.plugins,
+          plugins: sanitizedPlugins,
         };
       },
 
