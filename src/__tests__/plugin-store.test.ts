@@ -154,10 +154,10 @@ describe('exportData credential stripping', () => {
 
     const exported = useForgeStore.getState().exportData();
 
-    const plugin = exported.plugins!['forge-test-plugin'];
+    const plugin = exported.plugins?.['forge-test-plugin'];
     expect(plugin).toBeDefined();
-    expect(plugin.apiKey).toBeUndefined();
-    expect(plugin.endpoint).toBe('http://localhost:9001');
+    expect(plugin?.apiKey).toBeUndefined();
+    expect(plugin?.endpoint).toBe('http://localhost:9001');
   });
 
   it('strips password-type settings fields', () => {
@@ -180,10 +180,10 @@ describe('exportData credential stripping', () => {
 
     const exported = useForgeStore.getState().exportData();
 
-    const plugin = exported.plugins!['forge-infisical-test'];
-    expect(plugin.settings.endpoint).toBe('https://infisical.local');
-    expect(plugin.settings.clientId).toBe('my-client-id');
-    expect(plugin.settings.clientSecret).toBeUndefined();
+    const plugin = exported.plugins?.['forge-infisical-test'];
+    expect(plugin?.settings.endpoint).toBe('https://infisical.local');
+    expect(plugin?.settings.clientId).toBe('my-client-id');
+    expect(plugin?.settings.clientSecret).toBeUndefined();
   });
 
   it('resets health to unknown in exported data', () => {
@@ -196,9 +196,9 @@ describe('exportData credential stripping', () => {
 
     const exported = useForgeStore.getState().exportData();
 
-    const plugin = exported.plugins!['forge-test-plugin'];
-    expect(plugin.health.status).toBe('unknown');
-    expect(plugin.health.lastChecked).toBe('');
+    const plugin = exported.plugins?.['forge-test-plugin'];
+    expect(plugin?.health.status).toBe('unknown');
+    expect(plugin?.health.lastChecked).toBe('');
   });
 
   it('preserves non-sensitive settings and manifest', () => {
@@ -217,10 +217,10 @@ describe('exportData credential stripping', () => {
 
     const exported = useForgeStore.getState().exportData();
 
-    const plugin = exported.plugins!['forge-test-plugin'];
-    expect(plugin.manifest.name).toBe('forge-test-plugin');
-    expect(plugin.settings.url).toBe('http://example.com');
-    expect(plugin.settings.secret).toBeUndefined();
+    const plugin = exported.plugins?.['forge-test-plugin'];
+    expect(plugin?.manifest.name).toBe('forge-test-plugin');
+    expect(plugin?.settings.url).toBe('http://example.com');
+    expect(plugin?.settings.secret).toBeUndefined();
   });
 });
 

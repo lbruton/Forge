@@ -111,7 +111,9 @@ const forgeStorage: StateStorage = {
 
       storage.setItem(name, parsed);
     } catch {
-      storage.setItem(name, value);
+      // JSON.parse failed — store the raw value directly via localStorage
+      // to avoid StorageService.setItem double-encoding the string. (T2)
+      localStorage.setItem('forge_' + name, value);
     }
   },
   removeItem: (name: string) => {

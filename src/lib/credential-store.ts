@@ -25,6 +25,12 @@ const CREDENTIAL_KEY_STORAGE = 'forge_credential_key';
 let cachedKey: CryptoKey | null = null;
 
 async function getOrCreateKey(): Promise<CryptoKey> {
+  // Validate cache: if the key was evicted from localStorage (e.g., resetAll()),
+  // the in-memory cache is stale and must be discarded to avoid encrypting with
+  // a key that won't survive a page reload. (T1)
+  if (cachedKey && !localStorage.getItem(CREDENTIAL_KEY_STORAGE)) {
+    cachedKey = null;
+  }
   if (cachedKey) return cachedKey;
 
   // Try to load existing key from localStorage
@@ -50,6 +56,13 @@ async function getOrCreateKey(): Promise<CryptoKey> {
   cachedKey = key;
   return key;
 }
+
+// ---------------------------------------------------------------------------
+// Shared codec instances (stateless — safe to reuse)
+// ---------------------------------------------------------------------------
+
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
 
 // ---------------------------------------------------------------------------
 // Helpers (matching vault-engine.ts style)
@@ -94,9 +107,10 @@ interface EncryptedEnvelope {
  */
 export async function encryptCredential(plaintext: string): Promise<string> {
   if (!plaintext) return plaintext;
+  // Idempotency: don't double-encrypt a value that's already encrypted (T4)
+  if (isEncrypted(plaintext)) return plaintext;
 
   const key = await getOrCreateKey();
-  const encoder = new TextEncoder();
   const iv = crypto.getRandomValues(new Uint8Array(12));
 
   const ciphertext = await crypto.subtle.encrypt(
@@ -141,7 +155,7 @@ export async function decryptCredential(stored: string): Promise<string> {
       key,
       ciphertext as BufferSource,
     );
-    return new TextDecoder().decode(decrypted);
+    return decoder.decode(decrypted);
   } catch {
     // Key mismatch or corruption — return empty
     return '';
