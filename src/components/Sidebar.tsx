@@ -18,6 +18,7 @@ import { useForgeStore } from '../store/index.ts';
 import { TreeNode } from './TreeNode.tsx';
 import { CreateNodeModal, type CreateNodeType, type CreateNodeData } from './CreateNodeModal.tsx';
 import type { SectionSelection } from './SectionCardView.tsx';
+import { isPluginConfigured } from '../plugins/init.ts';
 import { VULN_CISCO_MANIFEST } from '../plugins/vuln-cisco/manifest.ts';
 
 const PLUGIN_ICONS: Record<string, typeof Puzzle> = {
@@ -653,9 +654,66 @@ export function Sidebar({
             </TreeNode>
           ))}
 
-          {/* Global Plugins node — top-level */}
+          {/* Global Plugins node — Configured / Needs Setup groups (FORGE-69-B) */}
           {(() => {
             const allPlugins = getPlugins();
+            const configured = allPlugins.filter((p) => isPluginConfigured(p));
+            const needsSetup = allPlugins.filter((p) => !isPluginConfigured(p));
+
+            const renderPluginNode = (plugin: (typeof allPlugins)[0], depth: number) => (
+              <TreeNode
+                key={plugin.manifest.name}
+                id={`plugin-${plugin.manifest.name}`}
+                label={
+                  <>
+                    {plugin.manifest.displayName}{' '}
+                    <span
+                      className={
+                        plugin.health.status === 'active'
+                          ? 'text-emerald-400'
+                          : plugin.health.status === 'inactive'
+                            ? 'text-red-400'
+                            : 'text-slate-500'
+                      }
+                    >
+                      {plugin.health.status === 'active' ? '●' : '○'}
+                    </span>
+                  </>
+                }
+                icon={getPluginIcon(plugin.manifest.icon)}
+                depth={depth}
+                hasChildren={false}
+                isSelected={selectedPluginName === plugin.manifest.name}
+                onSelect={() => {
+                  setSelectedPluginName(plugin.manifest.name);
+                  setSelectedPluginNodeId(null);
+                  if (onSelectPlugin) {
+                    onSelectPlugin(plugin.manifest.name, null);
+                  }
+                }}
+                onDelete={undefined}
+                contextMenuExtras={
+                  isPluginConfigured(plugin)
+                    ? [
+                        {
+                          label: plugin.enabled ? 'Disable' : 'Enable',
+                          onClick: () => setPluginEnabled(plugin.manifest.name, !plugin.enabled),
+                        },
+                      ]
+                    : [
+                        {
+                          label: 'Configure',
+                          onClick: () => {
+                            setSelectedPluginName(plugin.manifest.name);
+                            setSelectedPluginNodeId(null);
+                            if (onSelectPlugin) onSelectPlugin(plugin.manifest.name, null);
+                          },
+                        },
+                      ]
+                }
+              />
+            );
+
             return (
               <TreeNode
                 id="__plugins"
@@ -664,46 +722,36 @@ export function Sidebar({
                 depth={0}
                 hasChildren={allPlugins.length > 0}
                 isSection
-                onAdd={() => {
-                  setSelectedPluginName('__add_plugin__');
-                  setSelectedPluginNodeId(null);
-                  if (onSelectPlugin) {
-                    onSelectPlugin('__add_plugin__', null);
-                  }
-                }}
               >
-                {allPlugins.map((plugin) => (
+                {configured.length > 0 && (
                   <TreeNode
-                    key={plugin.manifest.name}
-                    id={`plugin-${plugin.manifest.name}`}
+                    id="__plugins-configured"
+                    label="Configured"
+                    icon={<Puzzle size={14} className="text-emerald-400" />}
+                    depth={1}
+                    hasChildren
+                  >
+                    {configured.map((p) => renderPluginNode(p, 2))}
+                  </TreeNode>
+                )}
+                {needsSetup.length > 0 && (
+                  <TreeNode
+                    id="__plugins-needs-setup"
                     label={
                       <>
-                        {plugin.manifest.displayName}{' '}
-                        <span className={plugin.health.status === 'active' ? 'text-emerald-400' : 'text-slate-500'}>
-                          {plugin.health.status === 'active' ? '●' : '○'}
+                        Needs Setup{' '}
+                        <span className="ml-1 text-[10px] font-medium text-forge-amber bg-forge-amber/15 px-1.5 py-0.5 rounded-full">
+                          {needsSetup.length}
                         </span>
                       </>
                     }
-                    icon={getPluginIcon(plugin.manifest.icon)}
+                    icon={<Puzzle size={14} className="text-slate-500" />}
                     depth={1}
-                    hasChildren={false}
-                    isSelected={selectedPluginName === plugin.manifest.name}
-                    onSelect={() => {
-                      setSelectedPluginName(plugin.manifest.name);
-                      setSelectedPluginNodeId(null);
-                      if (onSelectPlugin) {
-                        onSelectPlugin(plugin.manifest.name, null);
-                      }
-                    }}
-                    onDelete={undefined}
-                    contextMenuExtras={[
-                      {
-                        label: plugin.enabled ? 'Disable' : 'Enable',
-                        onClick: () => setPluginEnabled(plugin.manifest.name, !plugin.enabled),
-                      },
-                    ]}
-                  />
-                ))}
+                    hasChildren
+                  >
+                    {needsSetup.map((p) => renderPluginNode(p, 2))}
+                  </TreeNode>
+                )}
               </TreeNode>
             );
           })()}
