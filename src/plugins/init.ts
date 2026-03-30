@@ -9,6 +9,27 @@ const BUNDLED_MANIFESTS: PluginManifest[] = [CONFIGURATIONS_MANIFEST, INFISICAL_
 export const BUNDLED_PLUGIN_NAMES = new Set(BUNDLED_MANIFESTS.map((m) => m.name));
 
 /**
+ * Determine whether a plugin registration is fully configured and ready to use.
+ * - Bundled plugins with no external deps (type: 'bundled') → always configured
+ * - Integration plugins → configured when required settings are populated
+ * - Sidecar plugins → configured when endpoint + apiKey are set
+ */
+export function isPluginConfigured(reg: PluginRegistration): boolean {
+  if (reg.manifest.type === 'bundled') return true;
+  if (reg.manifest.type === 'sidecar') return Boolean(reg.endpoint && reg.apiKey);
+  // Integration: check that required settings are populated
+  const schema = reg.manifest.settingsSchema;
+  if (!schema) return true;
+  const requiredKeys = Object.entries(schema)
+    .filter(([, field]) => field.required)
+    .map(([key]) => key);
+  return requiredKeys.every((key) => {
+    const val = reg.settings[key];
+    return val !== undefined && val !== '';
+  });
+}
+
+/**
  * Register all bundled plugins that are not yet registered.
  * Accepts store callbacks as params for testability — does NOT import the store directly.
  */
@@ -23,10 +44,8 @@ export function initBundledPlugins(
     registerPlugin(manifest);
 
     const existing = getPlugin(manifest.name);
-    const needsConfig = manifest.type === 'sidecar' || manifest.type === 'integration';
-    const isConfigured = (existing?.endpoint && existing?.apiKey) || Object.keys(existing?.settings ?? {}).length > 0;
 
-    if (needsConfig && !isConfigured) {
+    if (existing && !isPluginConfigured(existing)) {
       setPluginHealth(manifest.name, {
         status: 'unknown',
         lastChecked: new Date().toISOString(),
