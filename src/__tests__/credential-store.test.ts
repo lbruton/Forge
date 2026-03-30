@@ -90,9 +90,10 @@ describe('credential encryption', () => {
     expect(result).toBe('');
   });
 
-  test.skipIf(!hasCrypto)('corrupted envelope returns empty string', async () => {
-    const result = await decryptCredential('$ENC:not-valid-json');
-    expect(result).toBe('');
+  test.skipIf(!hasCrypto)('corrupted envelope preserves encrypted value for retry', async () => {
+    const corrupted = '$ENC:not-valid-json';
+    const result = await decryptCredential(corrupted);
+    expect(result).toBe(corrupted);
   });
 
   test.skipIf(!hasCrypto)('handles unicode secrets', async () => {

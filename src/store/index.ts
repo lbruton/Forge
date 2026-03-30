@@ -126,8 +126,12 @@ const forgeStorage: StateStorage = {
       storage.setItem(name, parsed);
     } catch {
       // JSON.parse failed — store the raw value directly via localStorage
-      // to avoid StorageService.setItem double-encoding the string. (T2)
-      localStorage.setItem('forge_' + name, value);
+      // to avoid StorageService.setItem double-encoding the string.
+      try {
+        localStorage.setItem('forge_' + name, value);
+      } catch {
+        // localStorage unavailable (quota exceeded, private browsing) — drop silently (T3)
+      }
     }
   },
   removeItem: (name: string) => {
@@ -879,12 +883,33 @@ export const useForgeStore = create<ForgeStore>()(
             }
           }
 
-          // Also import root-level plugins (new format)
+          // Also import root-level plugins (new format).
+          // Preserve existing credentials (apiKey, password-type settings) when
+          // the imported data omits them — exportData() strips sensitive fields,
+          // so a naive overwrite would erase configured credentials. (T4/FORGE-64)
           const legacyData = data as unknown as Record<string, unknown>;
           const importedPlugins = legacyData.plugins as Record<string, PluginRegistration> | undefined;
           if (importedPlugins) {
             for (const [name, reg] of Object.entries(importedPlugins)) {
-              currentPlugins[name] = reg; // new format takes precedence
+              const existing = currentPlugins[name];
+              if (existing) {
+                // Merge: imported data wins for non-sensitive fields,
+                // but preserve existing apiKey and password settings if import omits them
+                const merged = { ...existing, ...reg, settings: { ...existing.settings, ...reg.settings } };
+                if (!reg.apiKey && existing.apiKey) {
+                  merged.apiKey = existing.apiKey;
+                }
+                // Preserve existing password-type settings not present in import
+                const sensitiveKeys = getSensitiveSettingsKeys(existing.manifest.settingsSchema);
+                for (const key of sensitiveKeys) {
+                  if (!(key in reg.settings) && existing.settings[key]) {
+                    merged.settings[key] = existing.settings[key];
+                  }
+                }
+                currentPlugins[name] = merged;
+              } else {
+                currentPlugins[name] = reg;
+              }
             }
           }
 

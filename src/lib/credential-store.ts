@@ -23,38 +23,52 @@ const CREDENTIAL_KEY_STORAGE = 'forge_credential_key';
 // ---------------------------------------------------------------------------
 
 let cachedKey: CryptoKey | null = null;
+// Serialization lock: prevents concurrent callers from racing through key
+// generation and overwriting each other's keys in localStorage. (T1)
+let keyPromise: Promise<CryptoKey> | null = null;
 
 async function getOrCreateKey(): Promise<CryptoKey> {
   // Validate cache: if the key was evicted from localStorage (e.g., resetAll()),
   // the in-memory cache is stale and must be discarded to avoid encrypting with
-  // a key that won't survive a page reload. (T1)
+  // a key that won't survive a page reload.
   if (cachedKey && !localStorage.getItem(CREDENTIAL_KEY_STORAGE)) {
     cachedKey = null;
   }
   if (cachedKey) return cachedKey;
 
-  // Try to load existing key from localStorage
-  const stored = localStorage.getItem(CREDENTIAL_KEY_STORAGE);
-  if (stored) {
-    try {
-      const jwk = JSON.parse(stored) as JsonWebKey;
-      cachedKey = await crypto.subtle.importKey('jwk', jwk, { name: 'AES-GCM' }, true, ['encrypt', 'decrypt']);
-      return cachedKey;
-    } catch {
-      // Corrupt key — regenerate
-      localStorage.removeItem(CREDENTIAL_KEY_STORAGE);
+  // Serialize concurrent callers — only one key generation at a time
+  if (keyPromise) return keyPromise;
+
+  keyPromise = (async () => {
+    // Try to load existing key from localStorage
+    const stored = localStorage.getItem(CREDENTIAL_KEY_STORAGE);
+    if (stored) {
+      try {
+        const jwk = JSON.parse(stored) as JsonWebKey;
+        cachedKey = await crypto.subtle.importKey('jwk', jwk, { name: 'AES-GCM' }, true, ['encrypt', 'decrypt']);
+        return cachedKey;
+      } catch {
+        // Corrupt key — regenerate
+        localStorage.removeItem(CREDENTIAL_KEY_STORAGE);
+      }
     }
+
+    // Generate a new 256-bit AES-GCM key
+    const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+
+    // Export and store as JWK
+    const jwk = await crypto.subtle.exportKey('jwk', key);
+    localStorage.setItem(CREDENTIAL_KEY_STORAGE, JSON.stringify(jwk));
+
+    cachedKey = key;
+    return key;
+  })();
+
+  try {
+    return await keyPromise;
+  } finally {
+    keyPromise = null;
   }
-
-  // Generate a new 256-bit AES-GCM key
-  const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
-
-  // Export and store as JWK
-  const jwk = await crypto.subtle.exportKey('jwk', key);
-  localStorage.setItem(CREDENTIAL_KEY_STORAGE, JSON.stringify(jwk));
-
-  cachedKey = key;
-  return key;
 }
 
 // ---------------------------------------------------------------------------
@@ -142,8 +156,10 @@ export async function decryptCredential(stored: string): Promise<string> {
   try {
     envelope = JSON.parse(json) as EncryptedEnvelope;
   } catch {
-    // Corrupted — return empty rather than leaking garbled data
-    return '';
+    // Corrupted envelope JSON — return the original encrypted string so it
+    // survives the persist cycle and can be retried later. Returning '' would
+    // cause the next setItem to overwrite with empty, losing the credential. (T2)
+    return stored;
   }
 
   const iv = base64ToArray(envelope.iv);
@@ -157,8 +173,9 @@ export async function decryptCredential(stored: string): Promise<string> {
     );
     return decoder.decode(decrypted);
   } catch {
-    // Key mismatch or corruption — return empty
-    return '';
+    // Key mismatch or corruption — preserve the encrypted value rather than
+    // replacing it with '' which would cause permanent data loss on next persist.
+    return stored;
   }
 }
 
