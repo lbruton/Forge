@@ -1,0 +1,15 @@
+---
+engines:
+  opengrep:
+    exclude_paths:
+      - 'src/__tests__/**'
+      - '**/*.test.ts'
+      - '**/*.test.tsx'
+      - '**/*.spec.ts'
+  eslint:
+    exclude_paths:
+      - 'src/__tests__/**'
+exclude_paths:
+  - 'node_modules/**'
+  - 'dist/**'
+  - '.claude/**'

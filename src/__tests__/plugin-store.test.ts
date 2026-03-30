@@ -145,6 +145,85 @@ describe('getPlugin', () => {
   });
 });
 
+// --- exportData: credential stripping (FORGE-64) ---
+
+describe('exportData credential stripping', () => {
+  it('strips apiKey from sidecar plugin registrations', () => {
+    createView();
+    useForgeStore.getState().registerPlugin(validManifest(), 'http://localhost:9001', 'secret-bearer-token');
+
+    const exported = useForgeStore.getState().exportData();
+
+    const plugin = exported.plugins?.['forge-test-plugin'];
+    expect(plugin).toBeDefined();
+    expect(plugin?.apiKey).toBeUndefined();
+    expect(plugin?.endpoint).toBe('http://localhost:9001');
+  });
+
+  it('strips password-type settings fields', () => {
+    createView();
+    const manifest = validManifest({
+      name: 'forge-infisical-test',
+      type: 'integration',
+      settingsSchema: {
+        endpoint: { type: 'string', label: 'URL', required: true },
+        clientId: { type: 'string', label: 'Client ID', required: true },
+        clientSecret: { type: 'password', label: 'Client Secret', required: true },
+      },
+    });
+    useForgeStore.getState().registerPlugin(manifest);
+    useForgeStore.getState().updatePluginSettings('forge-infisical-test', {
+      endpoint: 'https://infisical.local',
+      clientId: 'my-client-id',
+      clientSecret: 'super-secret',
+    });
+
+    const exported = useForgeStore.getState().exportData();
+
+    const plugin = exported.plugins?.['forge-infisical-test'];
+    expect(plugin?.settings.endpoint).toBe('https://infisical.local');
+    expect(plugin?.settings.clientId).toBe('my-client-id');
+    expect(plugin?.settings.clientSecret).toBeUndefined();
+  });
+
+  it('resets health to unknown in exported data', () => {
+    createView();
+    useForgeStore.getState().registerPlugin(validManifest(), 'http://localhost:9001', 'key');
+    useForgeStore.getState().setPluginHealth('forge-test-plugin', {
+      status: 'active',
+      lastChecked: '2026-03-30T00:00:00.000Z',
+    });
+
+    const exported = useForgeStore.getState().exportData();
+
+    const plugin = exported.plugins?.['forge-test-plugin'];
+    expect(plugin?.health.status).toBe('unknown');
+    expect(plugin?.health.lastChecked).toBe('');
+  });
+
+  it('preserves non-sensitive settings and manifest', () => {
+    createView();
+    const manifest = validManifest({
+      settingsSchema: {
+        url: { type: 'string', label: 'URL' },
+        secret: { type: 'password', label: 'Secret' },
+      },
+    });
+    useForgeStore.getState().registerPlugin(manifest);
+    useForgeStore.getState().updatePluginSettings('forge-test-plugin', {
+      url: 'http://example.com',
+      secret: 'hidden',
+    });
+
+    const exported = useForgeStore.getState().exportData();
+
+    const plugin = exported.plugins?.['forge-test-plugin'];
+    expect(plugin?.manifest.name).toBe('forge-test-plugin');
+    expect(plugin?.settings.url).toBe('http://example.com');
+    expect(plugin?.settings.secret).toBeUndefined();
+  });
+});
+
 // --- Migration: old view-scoped plugins → global ---
 
 describe('importData plugin migration', () => {
