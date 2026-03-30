@@ -140,18 +140,16 @@ function App() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [editorDirty]);
 
-  // Register bundled plugin manifests immediately (no credentials needed)
+  // ALL plugin initialization deferred to AFTER hydration completes.
+  // The async storage adapter decrypts credentials during hydration — running
+  // registerPlugin() or health checks before that finishes would either:
+  // (a) have writes dropped by the hydration guard, or
+  // (b) pass encrypted/empty values to providers. (FORGE-64, T4)
   useEffect(() => {
-    initBundledPlugins(getPlugin, registerPlugin, setPluginHealth);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    function initAllPlugins() {
+      // Register bundled manifests first (preserves existing settings via registerPlugin merge)
+      initBundledPlugins(getPlugin, registerPlugin, setPluginHealth);
 
-  // Health check + secrets provider init AFTER hydration completes.
-  // Credentials are encrypted at rest and decrypted during async hydration.
-  // Running this before hydration would pass encrypted strings (or empty defaults)
-  // to InfisicalProvider/sidecar health checks. (FORGE-64)
-  useEffect(() => {
-    function initPluginConnections() {
       const allPlugins = getPlugins();
       const sidecarPlugins = allPlugins.filter((p) => p.manifest.type === 'sidecar' && p.endpoint && p.apiKey);
       if (sidecarPlugins.length > 0) {
@@ -194,12 +192,12 @@ function App() {
 
     // If already hydrated (sync storage or fast rehydration), init now
     if (useForgeStore.persist.hasHydrated()) {
-      initPluginConnections();
+      initAllPlugins();
       return;
     }
 
     // Otherwise wait for async hydration to complete (credentials need decryption)
-    const unsub = useForgeStore.persist.onFinishHydration(initPluginConnections);
+    const unsub = useForgeStore.persist.onFinishHydration(initAllPlugins);
     return unsub;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

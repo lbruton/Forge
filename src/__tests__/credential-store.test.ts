@@ -1,7 +1,7 @@
 import { describe, expect, test, beforeEach, vi } from 'vitest';
 
 // Web Crypto API is available in Node 20+ via globalThis.crypto
-const hasCrypto = typeof globalThis.crypto.subtle !== 'undefined';
+const hasCrypto = typeof globalThis.crypto?.subtle !== 'undefined';
 
 // Mock localStorage for the credential-store module (Node doesn't provide .clear())
 const mockStorage = new Map<string, string>();
