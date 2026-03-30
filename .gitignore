@@ -21,6 +21,7 @@ seed-models/
 .idea
 .DS_Store
 .worktrees/
+.claude/worktrees/
 *.suo
 *.ntvs*
 *.njsproj
