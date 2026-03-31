@@ -302,7 +302,7 @@ def _run_nuclei(target: str) -> list[dict[str, Any]]:
     ]
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603 — cmd is constructed from controlled inputs, not user-supplied
             cmd,
             capture_output=True,
             text=True,

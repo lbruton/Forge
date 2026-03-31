@@ -25,8 +25,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application source
 COPY . .
 
-# Create data directory for results volume
-RUN mkdir -p /data
+# Create non-root user and data directory with correct ownership
+RUN adduser -D -u 1000 forge \
+    && mkdir -p /data \
+    && chown forge:forge /data \
+    && chown -R forge:forge /root/nuclei-templates 2>/dev/null || true
+
+USER forge
 
 EXPOSE 8400
 

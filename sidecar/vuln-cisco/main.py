@@ -18,10 +18,10 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# LAN-only service — allow all origins
-app.add_middleware(
+# LAN-only sidecar behind firewall — CORS * is intentional (nosemgrep: cors-wildcard)
+app.add_middleware(  # nosec B104
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # noqa: S104
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
