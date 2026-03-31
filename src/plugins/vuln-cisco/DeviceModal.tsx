@@ -209,7 +209,7 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
                 <div className="flex gap-1">
                   <button
                     type="button"
-                    onClick={() => setSnmpSource('manual')}
+                    onClick={() => { setSnmpSource('manual'); }}
                     className={`px-2 py-0.5 text-[10px] font-semibold uppercase rounded transition-colors ${
                       snmpSource === 'manual'
                         ? 'bg-forge-amber/20 text-forge-amber'
@@ -220,7 +220,7 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSnmpSource('infisical')}
+                    onClick={() => { setSnmpSource('infisical'); }}
                     className={`px-2 py-0.5 text-[10px] font-semibold uppercase rounded transition-colors flex items-center gap-1 ${
                       snmpSource === 'infisical'
                         ? 'bg-forge-amber/20 text-forge-amber'
@@ -240,13 +240,13 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
                   <input
                     type={showSnmp ? 'text' : 'password'}
                     value={snmpCommunity}
-                    onChange={(e) => setSnmpCommunity(e.target.value)}
+                    onChange={(e) => { setSnmpCommunity(e.target.value); }}
                     placeholder="e.g. public"
                     className="w-full px-3 py-2 pr-10 bg-forge-obsidian border border-forge-graphite rounded-lg font-mono text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowSnmp(!showSnmp)}
+                    onClick={() => { setShowSnmp(!showSnmp); }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-300 transition-colors"
                     title={showSnmp ? 'Hide' : 'Show'}
                   >
@@ -446,7 +446,7 @@ function SecretPickerOverlay({
               {filtered.map((secret) => (
                 <button
                   key={secret.id}
-                  onClick={() => onPick(secret.key)}
+                  onClick={() => { onPick(secret.key); }}
                   className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors bg-forge-obsidian border border-forge-graphite hover:border-forge-amber/40 hover:bg-forge-charcoal cursor-pointer"
                 >
                   <div className="flex flex-col min-w-0">

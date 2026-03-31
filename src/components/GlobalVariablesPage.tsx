@@ -440,7 +440,7 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                       <GripVertical size={14} className="text-slate-500 cursor-grab" />
                       <div className="flex flex-col">
                         <button
-                          onClick={() => handleMoveUp(index)}
+                          onClick={() => { handleMoveUp(index); }}
                           disabled={index === 0}
                           className="text-slate-600 hover:text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed"
                           title="Move up"
@@ -448,7 +448,7 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                           <ArrowUp size={10} />
                         </button>
                         <button
-                          onClick={() => handleMoveDown(index)}
+                          onClick={() => { handleMoveDown(index); }}
                           disabled={index === globalVariables.length - 1}
                           className="text-slate-600 hover:text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed"
                           title="Move down"
@@ -562,7 +562,7 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                     {confirmDeleteName === variable.name ? (
                       <div className="flex items-center gap-1">
                         <button
-                          onClick={() => handleDelete(variable.name)}
+                          onClick={() => { handleDelete(variable.name); }}
                           className="inline-flex items-center justify-center w-7 h-7 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
                           title="Confirm delete"
                         >
@@ -608,7 +608,7 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
               environment={settings.defaultEnvironment || 'dev'}
               existingNames={new Set(globalVariables.map((v) => v.name.toLowerCase()))}
               onImport={handleImportSecret}
-              onClose={() => setShowImportPicker(false)}
+              onClose={() => { setShowImportPicker(false); }}
             />
           );
         })()}

@@ -362,7 +362,9 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
             resolvedData.views = resolvedData.views.filter((v) => v.id !== conflict.id);
           }
           if (conflict.type === 'Template') {
-            delete resolvedData.templates[conflict.id];
+            const { [conflict.id]: _, ...rest } = resolvedData.templates;
+            void _;
+            resolvedData.templates = rest;
           }
         }
         if (conflict.resolution === 'rename') {
@@ -425,7 +427,7 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
         {/* Tabs */}
         <div className="flex border-b border-forge-graphite shrink-0">
           <button
-            onClick={() => setActiveTab('export')}
+            onClick={() => { setActiveTab('export'); }}
             className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
               activeTab === 'export'
                 ? 'text-forge-amber border-b-2 border-forge-amber'
@@ -436,7 +438,7 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
             Export
           </button>
           <button
-            onClick={() => setActiveTab('import')}
+            onClick={() => { setActiveTab('import'); }}
             className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
               activeTab === 'import'
                 ? 'text-forge-amber border-b-2 border-forge-amber'
@@ -476,7 +478,7 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
                           type="radio"
                           name="exportScope"
                           checked={selectedScope === 'all'}
-                          onChange={() => setSelectedScope('all')}
+                          onChange={() => { setSelectedScope('all'); }}
                           className="accent-amber-500"
                         />
                         <span className="text-sm text-slate-200">Everything</span>
@@ -487,7 +489,7 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
                             type="radio"
                             name="exportScope"
                             checked={selectedScope === 'scoped'}
-                            onChange={() => setSelectedScope('scoped')}
+                            onChange={() => { setSelectedScope('scoped'); }}
                             className="accent-amber-500"
                           />
                           <span className="text-sm text-slate-200">{scopeLabel(exportScope, tree)}</span>
@@ -502,7 +504,7 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
                     <input
                       type="password"
                       value={exportPassword}
-                      onChange={(e) => setExportPassword(e.target.value)}
+                      onChange={(e) => { setExportPassword(e.target.value); }}
                       placeholder="Enter encryption password"
                       className={inputClasses}
                     />
@@ -721,7 +723,7 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
                     <input
                       type="password"
                       value={importPassword}
-                      onChange={(e) => setImportPassword(e.target.value)}
+                      onChange={(e) => { setImportPassword(e.target.value); }}
                       placeholder="Enter vault password"
                       className={inputClasses}
                     />

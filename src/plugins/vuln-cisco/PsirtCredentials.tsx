@@ -141,10 +141,10 @@ export default function PsirtCredentials({ pluginName }: { pluginName: string })
           manualValue={manualClientId}
           onManualChange={setManualClientId}
           showValue={true}
-          onToggleShow={() => {}}
-          onRetrieve={() => setPickingField('clientId')}
+          onToggleShow={() => { /* Client ID visibility is always on */ }}
+          onRetrieve={() => { setPickingField('clientId'); }}
           onSave={() => void handleSaveToInfisical('clientId')}
-          onClear={() => handleClearKey('clientId')}
+          onClear={() => { handleClearKey('clientId'); }}
           saving={saving === 'clientId'}
           canWrite={!!writableProvider}
         />
@@ -157,10 +157,10 @@ export default function PsirtCredentials({ pluginName }: { pluginName: string })
           manualValue={manualClientSecret}
           onManualChange={setManualClientSecret}
           showValue={showClientSecret}
-          onToggleShow={() => setShowClientSecret(!showClientSecret)}
-          onRetrieve={() => setPickingField('clientSecret')}
+          onToggleShow={() => { setShowClientSecret(!showClientSecret); }}
+          onRetrieve={() => { setPickingField('clientSecret'); }}
           onSave={() => void handleSaveToInfisical('clientSecret')}
-          onClear={() => handleClearKey('clientSecret')}
+          onClear={() => { handleClearKey('clientSecret'); }}
           saving={saving === 'clientSecret'}
           canWrite={!!writableProvider}
           isSecret
@@ -336,7 +336,7 @@ function SecretPickerModal({
       .then((entries) => {
         if (!cancelled) setSecrets(entries);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load secrets');
       })
       .finally(() => {

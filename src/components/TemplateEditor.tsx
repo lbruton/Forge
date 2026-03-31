@@ -229,7 +229,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
 
     setEditorDirty(false);
     setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    setTimeout(() => { setSaved(false); }, 2500);
   }, [existingTemplate, sections, variables, customVariableOrder, rawText, saveTemplate, setEditorDirty]);
 
   // Register save callback for unsaved-changes guard (re-registers when handleSave changes)
@@ -686,7 +686,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
           <div
             className="fixed z-[100] bg-forge-charcoal border border-forge-steel rounded-md shadow-xl py-1 min-w-[200px]"
             style={{ left: contextMenu.x, top: contextMenu.y }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); }}
           >
             <button
               onClick={handleCut}
@@ -746,7 +746,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             {viewGlobalVariables.length > 0 && (
               <div className="shrink-0 border-b border-forge-graphite">
                 <button
-                  onClick={() => setGlobalVarsCollapsed(!globalVarsCollapsed)}
+                  onClick={() => { setGlobalVarsCollapsed(!globalVarsCollapsed); }}
                   className="w-full flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-green-400 hover:text-green-300 text-left"
                 >
                   <ChevronDown
@@ -913,10 +913,10 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
                         <div
                           key={section.id}
                           draggable
-                          onDragStart={() => handleDragStart(i)}
-                          onDragOver={(e) => handleDragOver(e, i)}
+                          onDragStart={() => { handleDragStart(i); }}
+                          onDragOver={(e) => { handleDragOver(e, i); }}
                           onDragEnd={handleDragEnd}
-                          onClick={() => handleSelectSection(section.name)}
+                          onClick={() => { handleSelectSection(section.name); }}
                           className={`flex items-center gap-2 px-2.5 py-1.5 rounded bg-forge-obsidian border text-[12px] cursor-pointer active:cursor-grabbing transition-all ${
                             isDragging
                               ? 'opacity-40 border-forge-amber/40'

@@ -53,7 +53,7 @@ export function TreeNode({
     return () => document.removeEventListener('mousedown', handler);
   }, [contextMenuOpen]);
 
-  const hasMenuActions = !!(onAdd || onEdit || onDuplicate || onDelete || contextMenuExtras?.length);
+  const hasMenuActions = !!(onAdd ?? onEdit ?? onDuplicate ?? onDelete ?? contextMenuExtras?.length);
 
   const handleContextMenu = (e: React.MouseEvent) => {
     if (!hasMenuActions) return; // no actions = no menu
@@ -84,8 +84,8 @@ export function TreeNode({
           onSelect?.();
         }}
         onContextMenu={handleContextMenu}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseEnter={() => { setHovered(true); }}
+        onMouseLeave={() => { setHovered(false); }}
       >
         {hasChildren ? (
           <ChevronRight
@@ -187,7 +187,7 @@ export function TreeNode({
             <button
               key={item.label}
               className={
-                item.className ||
+                item.className ??
                 'w-full text-left px-3 py-1.5 text-[13px] text-slate-300 hover:bg-forge-graphite hover:text-slate-100 transition-colors'
               }
               onClick={() => {

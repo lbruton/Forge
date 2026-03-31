@@ -90,7 +90,7 @@ export function CreateNodeModal({ open, nodeType, onClose, onSubmit }: CreateNod
               ref={nameRef}
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); }}
               placeholder={`Enter ${nodeLabels[nodeType].toLowerCase()} name`}
               className="w-full px-3 py-2 bg-forge-obsidian border border-forge-graphite rounded-lg text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors"
             />
@@ -102,7 +102,7 @@ export function CreateNodeModal({ open, nodeType, onClose, onSubmit }: CreateNod
               <label className="block text-[13px] font-medium text-slate-400 mb-1.5">Config Format</label>
               <select
                 value={configFormat}
-                onChange={(e) => setConfigFormat(e.target.value as ConfigFormat)}
+                onChange={(e) => { setConfigFormat(e.target.value as ConfigFormat); }}
                 className="w-full px-3 py-2 bg-forge-obsidian border border-forge-graphite rounded-lg text-sm text-slate-200 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors"
               >
                 {/* TODO: re-enable xml, json, yaml when formats are tested */}
@@ -118,7 +118,7 @@ export function CreateNodeModal({ open, nodeType, onClose, onSubmit }: CreateNod
               <input
                 type="text"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => { setDescription(e.target.value); }}
                 placeholder="Optional description"
                 className="w-full px-3 py-2 bg-forge-obsidian border border-forge-graphite rounded-lg text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors"
               />

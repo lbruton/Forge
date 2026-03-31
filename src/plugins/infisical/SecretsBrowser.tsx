@@ -59,7 +59,7 @@ export default function SecretsBrowser({ pluginName }: SecretsBrowserProps) {
   useEffect(() => {
     if (!selectedProject && projects.length > 0) {
       const defaultId = (settings.defaultProjectId as string) || '';
-      const match = defaultId && projects.find((p) => p.id === defaultId);
+      const match = defaultId ? projects.find((p) => p.id === defaultId) : undefined;
       setSelectedProject(match ? match.id : projects[0].id);
     }
   }, [projects, selectedProject, settings.defaultProjectId]);
@@ -188,7 +188,7 @@ export default function SecretsBrowser({ pluginName }: SecretsBrowserProps) {
         {/* Project selector */}
         <select
           value={selectedProject}
-          onChange={(e) => setSelectedProject(e.target.value)}
+          onChange={(e) => { setSelectedProject(e.target.value); }}
           disabled={projectsLoading || projects.length === 0}
           className="px-2.5 py-1.5 bg-forge-obsidian border border-forge-steel rounded text-xs text-slate-300 outline-none cursor-pointer focus:border-forge-amber/50 transition-colors"
         >

@@ -594,7 +594,7 @@ function App() {
       />
 
       {/* Vault Import/Export modal */}
-      <VaultModal isOpen={vaultOpen} onClose={() => setVaultOpen(false)} initialTab={vaultInitialTab} />
+      <VaultModal isOpen={vaultOpen} onClose={() => { setVaultOpen(false); }} initialTab={vaultInitialTab} />
 
       {/* Unsaved changes confirmation */}
       <UnsavedChangesModal
