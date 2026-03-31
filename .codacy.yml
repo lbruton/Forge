@@ -17,16 +17,11 @@ engines:
       - "sidecar/**/test_*.py"
       - "sidecar/**/tests/**"
 
-  # ESLint: exclude test files, disable base no-unused-vars (false positives on
-  # TypeScript interface parameter names — @typescript-eslint/no-unused-vars handles this)
-  eslint:
+  # ESLint9: uses repo's eslint.config.js (flat config) which includes
+  # argsIgnorePattern: "^_" for no-unused-vars. No pattern overrides needed.
+  eslint9:
     exclude_paths:
       - "src/__tests__/**"
-    patterns:
-      - patternId: "ESLint8_no-unused-vars"
-        enabled: false
-      - patternId: "ESLint8_security-node_non-literal-reg-expr"
-        enabled: false
 
   # markdownlint: exclude spec-workflow archives (generated/historical content)
   markdownlint:
