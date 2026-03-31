@@ -439,14 +439,26 @@ export const useForgeStore = create<ForgeStore>()(
           // Collect variant IDs and template IDs to clean up
           const varValKeysToRemove = new Set<string>();
           const templateKeysToRemove = new Set<string>();
+          // Hoist allVariants computation outside the loop (was O(n²) before)
+          const allVariants = tree.views.flatMap((v) =>
+            v.vendors.flatMap((vn) => vn.models.flatMap((m) => m.variants)),
+          );
+          const deletingVariantIds = new Set<string>();
           const collectVariantCleanup = (variants: Variant[]) => {
             for (const va of variants) {
               varValKeysToRemove.add(va.id);
-              // Only delete template if no other variant references it
-              const allVariants = tree.views.flatMap((v) =>
-                v.vendors.flatMap((vn) => vn.models.flatMap((m) => m.variants)),
+              deletingVariantIds.add(va.id);
+            }
+          };
+          // Resolve template cleanup after all variants are collected
+          const resolveTemplateCleanup = () => {
+            for (const vaId of deletingVariantIds) {
+              const va = allVariants.find((v) => v.id === vaId);
+              if (!va) continue;
+              // Only keep template if a non-deleted variant still references it
+              const otherRefs = allVariants.filter(
+                (other) => !deletingVariantIds.has(other.id) && other.templateId === va.templateId,
               );
-              const otherRefs = allVariants.filter((other) => other.id !== va.id && other.templateId === va.templateId);
               if (otherRefs.length === 0) {
                 templateKeysToRemove.add(va.templateId);
               }
@@ -505,6 +517,9 @@ export const useForgeStore = create<ForgeStore>()(
               break;
             }
           }
+
+          // Resolve which templates to remove now that all deleted variants are known
+          resolveTemplateCleanup();
 
           const filteredTemplates = Object.fromEntries(
             Object.entries(templates).filter(([k]) => !templateKeysToRemove.has(k)),
