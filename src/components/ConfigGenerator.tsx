@@ -91,7 +91,7 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
   const displaySections = useMemo(() => {
     if (showHidden || !hasMaskedVars) return generated.sections;
     // Replace sentinel-wrapped masked values with masked placeholder
-    const maskedMarker = `${SUB_START}${'••••••••'}${SUB_END}`;
+    const maskedMarker = `${SUB_START}••••••••${SUB_END}`;
     return generated.sections.map((s) => {
       let content = s.content;
       for (const val of maskedValues) {
@@ -102,7 +102,7 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
   }, [generated.sections, showHidden, hasMaskedVars, maskedValues]);
 
   // Derive hostname from variable values for download filenames
-  const hostname = debouncedValues['hostname'] || debouncedValues['HOSTNAME'] || 'config';
+  const hostname = debouncedValues.hostname || debouncedValues.HOSTNAME || 'config';
 
   if (!selectedVariantId || !found || !template) {
     return (
@@ -162,7 +162,7 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
             hostname={hostname}
             showHiddenToggle={hasMaskedVars}
             showHidden={showHidden}
-            onToggleHidden={() => setShowHidden((v) => !v)}
+            onToggleHidden={() => { setShowHidden((v) => !v); }}
           />
 
           {/* Config preview */}

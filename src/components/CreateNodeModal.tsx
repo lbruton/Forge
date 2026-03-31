@@ -47,7 +47,7 @@ export function CreateNodeModal({ open, nodeType, onClose, onSubmit }: CreateNod
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    return () => { document.removeEventListener('keydown', handler); };
   }, [open, onClose]);
 
   if (!open) return null;

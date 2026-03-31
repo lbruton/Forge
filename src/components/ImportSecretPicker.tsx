@@ -38,7 +38,7 @@ export function ImportSecretPicker({
       .then((entries) => {
         if (!cancelled) setSecrets(entries);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load secrets');
       })
       .finally(() => {
@@ -100,7 +100,7 @@ export function ImportSecretPicker({
               ref={filterRef}
               type="text"
               value={filter}
-              onChange={(e) => setFilter(e.target.value)}
+              onChange={(e) => { setFilter(e.target.value); }}
               placeholder="Filter secrets..."
               className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-700/50 rounded-lg text-[13px] text-slate-200 outline-none focus:border-amber-500/50 placeholder:text-slate-600 transition-colors"
             />

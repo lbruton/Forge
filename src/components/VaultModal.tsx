@@ -183,7 +183,7 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    return () => { document.removeEventListener('keydown', handler); };
   }, [isOpen, onClose]);
 
   // Focus trap
@@ -213,7 +213,7 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
       }
     };
     document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    return () => { document.removeEventListener('keydown', handler); };
   }, [isOpen]);
 
   // ---------------------------------------------------------------------------
@@ -516,7 +516,7 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
                     <input
                       type="password"
                       value={exportPasswordConfirm}
-                      onChange={(e) => setExportPasswordConfirm(e.target.value)}
+                      onChange={(e) => { setExportPasswordConfirm(e.target.value); }}
                       placeholder="Re-enter password"
                       className={inputClasses}
                     />

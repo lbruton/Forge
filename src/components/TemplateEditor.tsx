@@ -265,7 +265,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
 
     // Show toast
     setCleanUpToast(true);
-    setTimeout(() => setCleanUpToast(false), 3000);
+    setTimeout(() => { setCleanUpToast(false); }, 3000);
   }, [rawText, configFormat, buildVariableSectionMap, setEditorDirty]);
 
   // Auto-focus the add-section input when shown
@@ -517,9 +517,9 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   // Close context menu on click outside
   useEffect(() => {
     if (!contextMenu) return;
-    const close = () => setContextMenu(null);
+    const close = () => { setContextMenu(null); };
     window.addEventListener('click', close);
-    return () => window.removeEventListener('click', close);
+    return () => { window.removeEventListener('click', close); };
   }, [contextMenu]);
 
   // Build highlighted overlay text
@@ -798,7 +798,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             <div className="shrink-0 border-b border-forge-graphite">
               <div className="flex items-center shrink-0">
                 <button
-                  onClick={() => setVariablesCollapsed(!variablesCollapsed)}
+                  onClick={() => { setVariablesCollapsed(!variablesCollapsed); }}
                   className="flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-slate-500 hover:text-slate-400 text-left flex-1"
                 >
                   <ChevronDown size={12} className={`transition-transform ${variablesCollapsed ? '-rotate-90' : ''}`} />
@@ -848,7 +848,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             <div className="shrink-0 border-b border-forge-graphite">
               <div className="flex items-center shrink-0">
                 <button
-                  onClick={() => setSectionsCollapsed(!sectionsCollapsed)}
+                  onClick={() => { setSectionsCollapsed(!sectionsCollapsed); }}
                   className="flex items-center gap-1.5 px-5 py-2.5 text-[11px] font-semibold tracking-wider uppercase text-slate-500 hover:text-slate-400 text-left flex-1"
                 >
                   <ChevronDown size={12} className={`transition-transform ${sectionsCollapsed ? '-rotate-90' : ''}`} />
@@ -861,7 +861,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
                   )}
                 </button>
                 <button
-                  onClick={() => setShowAddSection(true)}
+                  onClick={() => { setShowAddSection(true); }}
                   className="p-1 rounded text-slate-400 hover:text-forge-amber hover:bg-forge-graphite transition-colors shrink-0"
                   title="Add Section"
                 >
@@ -884,7 +884,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
                     ref={addSectionInputRef}
                     type="text"
                     value={addSectionName}
-                    onChange={(e) => setAddSectionName(e.target.value)}
+                    onChange={(e) => { setAddSectionName(e.target.value); }}
                     onKeyDown={handleAddSectionKeyDown}
                     placeholder="Section name..."
                     className="flex-1 px-2 py-1 rounded bg-forge-obsidian border border-forge-graphite text-slate-200 text-[12px] font-medium placeholder:text-slate-600 outline-none focus:border-forge-amber/50"

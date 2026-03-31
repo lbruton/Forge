@@ -137,7 +137,7 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
           <div className="flex items-center gap-2">
             {hasMasked && (
               <button
-                onClick={() => setShowMasked(!showMasked)}
+                onClick={() => { setShowMasked(!showMasked); }}
                 className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium
                   text-slate-400 hover:text-slate-200 bg-forge-graphite/50 hover:bg-forge-graphite
                   border border-forge-steel/50 rounded transition-colors duration-150"
@@ -151,7 +151,7 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
             <DownloadButton text={displayFullConfig} filename={`${config.name}.txt`} label="Download" />
             {!confirmDelete ? (
               <button
-                onClick={() => setConfirmDelete(true)}
+                onClick={() => { setConfirmDelete(true); }}
                 className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium
                   text-red-400 hover:text-red-300 bg-forge-graphite/50 hover:bg-red-500/10
                   border border-forge-steel/50 hover:border-red-500/30 rounded transition-colors duration-150"
@@ -171,7 +171,7 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
                   Confirm
                 </button>
                 <button
-                  onClick={() => setConfirmDelete(false)}
+                  onClick={() => { setConfirmDelete(false); }}
                   className="inline-flex items-center px-2 py-1 text-xs font-medium
                     text-slate-400 hover:text-slate-200 bg-forge-graphite/50 hover:bg-forge-graphite
                     border border-forge-steel/50 rounded transition-colors duration-150"
@@ -191,7 +191,7 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
       {globalEntries.length > 0 && (
         <div className="shrink-0 border-b border-forge-graphite">
           <button
-            onClick={() => setGlobalsExpanded(!globalsExpanded)}
+            onClick={() => { setGlobalsExpanded(!globalsExpanded); }}
             className="w-full flex items-center gap-2 px-4 py-2 text-xs font-medium text-emerald-500/80 hover:text-emerald-400 transition-colors"
           >
             <Globe size={12} />

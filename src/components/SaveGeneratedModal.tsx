@@ -54,7 +54,7 @@ export function SaveGeneratedModal({
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    return () => { document.removeEventListener('keydown', handler); };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -113,7 +113,7 @@ export function SaveGeneratedModal({
               ref={nameRef}
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); }}
               placeholder="e.g., switch-01"
               className="w-full px-3 py-2 bg-forge-obsidian border border-forge-graphite rounded-lg text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors"
             />
@@ -124,7 +124,7 @@ export function SaveGeneratedModal({
             <label className="block text-[13px] font-medium text-slate-400 mb-1.5">Notes</label>
             <textarea
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => { setNotes(e.target.value); }}
               placeholder="e.g., Initial deploy, post-maintenance update"
               rows={3}
               className="w-full px-3 py-2 bg-forge-obsidian border border-forge-graphite rounded-lg text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors resize-none"

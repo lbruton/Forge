@@ -45,7 +45,7 @@ export function DropdownOptionsEditor({ options, onChange }: DropdownOptionsEdit
           <input
             type="text"
             value={valueInput}
-            onChange={(e) => setValueInput(e.target.value)}
+            onChange={(e) => { setValueInput(e.target.value); }}
             onKeyDown={handleKeyDown}
             placeholder="Value (substituted)..."
             className="bg-forge-charcoal border border-forge-graphite rounded px-2 py-1.5 text-[13px] text-slate-200 outline-none focus:border-forge-amber/50 flex-1 min-w-0"
@@ -93,7 +93,7 @@ export function DropdownOptionsEditor({ options, onChange }: DropdownOptionsEdit
                 </div>
                 <button
                   type="button"
-                  onClick={() => removeOption(index)}
+                  onClick={() => { removeOption(index); }}
                   className="text-slate-500 hover:text-red-400 shrink-0 ml-2"
                 >
                   <X size={12} />

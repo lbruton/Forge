@@ -43,7 +43,7 @@ export function SectionTabs({
       <div className="flex flex-wrap items-center gap-1">
         {/* All Sections tab */}
         <button
-          onClick={() => onSelectSection(null)}
+          onClick={() => { onSelectSection(null); }}
           className={`
             px-3 py-2 text-xs font-medium transition-colors duration-150 border-b-2
             ${
@@ -59,7 +59,7 @@ export function SectionTabs({
         {sections.map((section) => (
           <button
             key={section.name}
-            onClick={() => onSelectSection(section.name)}
+            onClick={() => { onSelectSection(section.name); }}
             className={`
               px-3 py-2 text-xs font-medium transition-colors duration-150 border-b-2
               ${

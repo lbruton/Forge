@@ -108,7 +108,7 @@ export class InfisicalClient {
   /**
    * List secrets in a project environment (values are not included).
    */
-  async listSecrets(projectId: string, environment: string, path: string = '/'): Promise<SecretEntry[]> {
+  async listSecrets(projectId: string, environment: string, path = '/'): Promise<SecretEntry[]> {
     const token = await this.ensureAuth();
     const params = new URLSearchParams({
       projectId,
@@ -133,7 +133,7 @@ export class InfisicalClient {
       id: s.id,
       key: s.secretKey,
       masked: true,
-      comment: s.secretComment || undefined,
+      comment: s.secretComment ?? undefined,
       updatedAt: s.updatedAt,
       tags: (s.tags ?? []).map((t) => t.name),
     }));

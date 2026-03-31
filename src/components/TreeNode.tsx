@@ -14,7 +14,7 @@ interface TreeNodeProps {
   onEdit?: () => void;
   onDuplicate?: () => void;
   onDelete?: () => void;
-  contextMenuExtras?: Array<{ label: string; onClick: () => void; className?: string }>;
+  contextMenuExtras?: { label: string; onClick: () => void; className?: string }[];
   isSection?: boolean;
   children?: ReactNode;
 }
@@ -50,7 +50,7 @@ export function TreeNode({
       }
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    return () => { document.removeEventListener('mousedown', handler); };
   }, [contextMenuOpen]);
 
   const hasMenuActions = !!(onAdd ?? onEdit ?? onDuplicate ?? onDelete ?? contextMenuExtras?.length);
@@ -120,7 +120,7 @@ export function TreeNode({
           </button>
         )}
 
-        {hovered && (onEdit || onDuplicate || onDelete) && (
+        {hovered && (onEdit ?? onDuplicate ?? onDelete) && (
           <button
             onClick={handleDotsClick}
             className="shrink-0 p-0.5 rounded text-slate-500 hover:text-slate-300 hover:bg-forge-graphite transition-colors"

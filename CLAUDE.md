@@ -93,6 +93,7 @@ Sync convention: variables synced to Infisical get a `FORGE_` prefix on the secr
 ## Branding
 
 All visual design decisions are documented in `/Users/lbruton/Devops/Forge/BRANDING.md`. Key points:
+
 - Dark mode only (slate backgrounds, amber accent)
 - Inter for UI text, JetBrains Mono for config/code content
 - Lucide icons
@@ -108,5 +109,6 @@ All visual design decisions are documented in `/Users/lbruton/Devops/Forge/BRAND
 ## Variable Pattern
 
 Uses DNAC-compatible syntax so team muscle memory transfers:
+
 - `$variable` — simple variable
 - `${variable}` — braced variable (for embedding in strings)

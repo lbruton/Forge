@@ -296,8 +296,8 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
         <input
           type={variable.masked ? 'password' : 'number'}
           value={variable.defaultValue}
-          onChange={(e) => handleUpdate(variable.name, { defaultValue: e.target.value })}
-          onBlur={() => void handleValueBlurSync(variable)}
+          onChange={(e) => { handleUpdate(variable.name, { defaultValue: e.target.value }); }}
+          onBlur={() => { void handleValueBlurSync(variable); }}
           className={inputClasses}
           placeholder="0"
         />
@@ -309,7 +309,7 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
         <input
           type={variable.masked ? 'password' : 'text'}
           value={variable.defaultValue}
-          onChange={(e) => handleUpdate(variable.name, { defaultValue: e.target.value })}
+          onChange={(e) => { handleUpdate(variable.name, { defaultValue: e.target.value }); }}
           onBlur={() => {
             if (variable.type === 'ip') {
               handleIpBlur(variable.name, variable.defaultValue);
@@ -501,7 +501,7 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                     {/* Type selector */}
                     <select
                       value={variable.type}
-                      onChange={(e) => handleUpdate(variable.name, { type: e.target.value as VariableType })}
+                      onChange={(e) => { handleUpdate(variable.name, { type: e.target.value as VariableType }); }}
                       className="px-2.5 py-1.5 bg-slate-950 border border-slate-600 rounded text-[12px] text-slate-400 outline-none cursor-pointer appearance-none"
                     >
                       {VARIABLE_TYPES.map((t) => (
@@ -513,7 +513,7 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
 
                     {/* Mask toggle */}
                     <button
-                      onClick={() => handleUpdate(variable.name, { masked: !variable.masked })}
+                      onClick={() => { handleUpdate(variable.name, { masked: !variable.masked }); }}
                       className={`inline-flex items-center justify-center w-7 h-7 rounded border-none cursor-pointer transition-colors ${
                         variable.masked
                           ? 'text-amber-500 bg-slate-700/50'
@@ -553,7 +553,7 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                     <input
                       type="text"
                       value={variable.description}
-                      onChange={(e) => handleUpdate(variable.name, { description: e.target.value })}
+                      onChange={(e) => { handleUpdate(variable.name, { description: e.target.value }); }}
                       placeholder="Optional description..."
                       className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700/50 rounded text-[12px] text-slate-400 outline-none focus:border-slate-500 placeholder:text-slate-600 transition-colors"
                     />
@@ -571,7 +571,7 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                       </div>
                     ) : (
                       <button
-                        onClick={() => setConfirmDeleteName(variable.name)}
+                        onClick={() => { setConfirmDeleteName(variable.name); }}
                         className="inline-flex items-center justify-center w-7 h-7 rounded bg-transparent text-slate-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
                         title="Delete variable"
                       >
