@@ -13,8 +13,10 @@ RUN apk add --no-cache curl unzip ca-certificates \
     && rm /tmp/nuclei.zip \
     && apk del curl unzip
 
-# Pre-cache Nuclei templates
-RUN nuclei -update-templates
+# Pre-cache Nuclei templates to a shared location (not /root which is mode 0700)
+ENV NUCLEI_TEMPLATES_DIR=/opt/nuclei-templates
+RUN mkdir -p "$NUCLEI_TEMPLATES_DIR" \
+    && HOME=/tmp nuclei -update-templates -ud "$NUCLEI_TEMPLATES_DIR"
 
 WORKDIR /app
 
@@ -29,7 +31,7 @@ COPY . .
 RUN adduser -D -u 1000 forge \
     && mkdir -p /data \
     && chown forge:forge /data \
-    && chown -R forge:forge /root/nuclei-templates 2>/dev/null || true
+    && chown -R forge:forge "$NUCLEI_TEMPLATES_DIR"
 
 USER forge
 
