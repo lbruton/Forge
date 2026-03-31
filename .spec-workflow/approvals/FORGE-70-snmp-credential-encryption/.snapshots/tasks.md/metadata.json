@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-70-snmp-credential-encryption/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-31T07:20:17.167Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774941617157_r86lnvp1o",
+      "approvalTitle": "Tasks: SNMP credential encryption at rest"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-31T07:21:07.939Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774941617157_r86lnvp1o",
+      "approvalTitle": "Tasks: SNMP credential encryption at rest"
+    }
+  ]
+}

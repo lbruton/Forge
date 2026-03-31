@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-70-snmp-credential-encryption/readiness-report.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-03-31T07:21:45.341Z",
+      "trigger": "initial",
+      "approvalId": "approval_1774941705337_fjdm166f7",
+      "approvalTitle": "Readiness Report: FORGE-70 SNMP credential encryption"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-03-31T07:21:59.873Z",
+      "trigger": "approved",
+      "approvalId": "approval_1774941705337_fjdm166f7",
+      "approvalTitle": "Readiness Report: FORGE-70 SNMP credential encryption"
+    }
+  ]
+}
