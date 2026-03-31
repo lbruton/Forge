@@ -123,7 +123,7 @@ function DevicePage({
 }: {
   device: VulnDevice;
   pluginName: string;
-  onScanStarted: (scanId: string) => void;
+  onScanStarted: (_scanId: string) => void;
 }) {
   const getPlugin = useForgeStore((s) => s.getPlugin);
   const getSecretsProviders = useForgeStore((s) => s.getSecretsProviders);
@@ -319,7 +319,9 @@ function DevicePage({
           <p className="text-sm text-red-400">{error}</p>
           <button
             type="button"
-            onClick={() => setError(null)}
+            onClick={() => {
+              setError(null);
+            }}
             className="text-red-400 hover:text-red-300 text-xs font-medium ml-4"
           >
             Dismiss
@@ -711,7 +713,9 @@ function OverviewPage({ pluginName, viewId }: { pluginName: string; viewId: stri
           </button>
           <button
             type="button"
-            onClick={() => setSelectedPluginNodeId('add-device')}
+            onClick={() => {
+              setSelectedPluginNodeId('add-device');
+            }}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-forge-amber text-forge-obsidian rounded-md hover:bg-forge-amber-bright transition-colors"
           >
             <Plus size={14} strokeWidth={2.5} />
@@ -743,7 +747,9 @@ function OverviewPage({ pluginName, viewId }: { pluginName: string; viewId: stri
           <p className="text-sm text-red-400">{error}</p>
           <button
             type="button"
-            onClick={() => setError(null)}
+            onClick={() => {
+              setError(null);
+            }}
             className="text-red-400 hover:text-red-300 text-xs font-medium ml-4"
           >
             Dismiss
@@ -777,7 +783,9 @@ function OverviewPage({ pluginName, viewId }: { pluginName: string; viewId: stri
               </div>
               <button
                 type="button"
-                onClick={() => setSelectedPluginNodeId('add-device')}
+                onClick={() => {
+                  setSelectedPluginNodeId('add-device');
+                }}
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-forge-amber text-forge-obsidian rounded-md hover:bg-forge-amber-bright transition-colors"
               >
                 <Plus size={14} strokeWidth={2.5} />
@@ -812,7 +820,9 @@ function OverviewPage({ pluginName, viewId }: { pluginName: string; viewId: stri
                   <tr
                     key={device.id}
                     className="hover:bg-white/[0.02] transition-colors border-b border-forge-graphite last:border-b-0 cursor-pointer"
-                    onClick={() => setSelectedPluginNodeId(`device:${device.id}`)}
+                    onClick={() => {
+                      setSelectedPluginNodeId(`device:${device.id}`);
+                    }}
                   >
                     <td className="px-4 py-3.5 text-sm font-medium text-slate-200">
                       <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1.5" />

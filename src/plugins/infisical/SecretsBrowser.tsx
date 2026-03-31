@@ -105,13 +105,13 @@ export default function SecretsBrowser({ pluginName }: SecretsBrowserProps) {
       // If already revealed, hide it
       if (revealedValues[key] !== undefined) {
         setRevealedValues((prev) => {
-          const next = { ...prev };
-          delete next[key];
-          return next;
+          const { [key]: _, ...remaining } = prev;
+          return remaining;
         });
         if (revealTimers.current[key]) {
           clearTimeout(revealTimers.current[key]);
-          delete revealTimers.current[key];
+          const { [key]: _, ...remainingTimers } = revealTimers.current;
+          revealTimers.current = remainingTimers;
         }
         return;
       }
@@ -125,11 +125,11 @@ export default function SecretsBrowser({ pluginName }: SecretsBrowserProps) {
         // Auto-hide after 60 seconds
         revealTimers.current[key] = setTimeout(() => {
           setRevealedValues((prev) => {
-            const next = { ...prev };
-            delete next[key];
-            return next;
+            const { [key]: _, ...remaining } = prev;
+            return remaining;
           });
-          delete revealTimers.current[key];
+          const { [key]: _, ...remainingTimers } = revealTimers.current;
+          revealTimers.current = remainingTimers;
         }, 60_000);
       } catch (err) {
         console.error(`Failed to reveal secret "${key}":`, err);

@@ -13,9 +13,9 @@ export interface SectionSelection {
 
 interface SectionCardViewProps {
   selection: SectionSelection;
-  onNavigateVariant: (variantId: string) => void;
-  onNavigateGeneratedConfig: (configId: string) => void;
-  onNavigateSection: (sel: SectionSelection) => void;
+  onNavigateVariant: (_variantId: string) => void;
+  onNavigateGeneratedConfig: (_configId: string) => void;
+  onNavigateSection: (_sel: SectionSelection) => void;
 }
 
 function formatDate(iso: string): string {
@@ -116,7 +116,7 @@ function VendorView({
 }: {
   vendor: Vendor;
   viewId: string;
-  getGeneratedConfigs: (modelId: string) => GeneratedConfig[];
+  getGeneratedConfigs: (_modelId: string) => GeneratedConfig[];
   onNavigateSection: (sel: SectionSelection) => void;
 }) {
   return (
@@ -170,8 +170,8 @@ function ModelView({
   onNavigateGeneratedConfig,
 }: {
   model: Model;
-  getTemplate: (id: string) => { sections: { id: string }[]; updatedAt: string } | undefined;
-  getGeneratedConfigs: (modelId: string) => GeneratedConfig[];
+  getTemplate: (_id: string) => { sections: { id: string }[]; updatedAt: string } | undefined;
+  getGeneratedConfigs: (_modelId: string) => GeneratedConfig[];
   onNavigateVariant: (variantId: string) => void;
   onNavigateGeneratedConfig: (configId: string) => void;
 }) {
@@ -244,7 +244,7 @@ function TemplatesView({
   onNavigateVariant,
 }: {
   model: Model;
-  getTemplate: (id: string) => { sections: { id: string }[]; updatedAt: string } | undefined;
+  getTemplate: (_id: string) => { sections: { id: string }[]; updatedAt: string } | undefined;
   onNavigateVariant: (variantId: string) => void;
 }) {
   return (
@@ -285,7 +285,7 @@ function GeneratedView({
   onNavigateGeneratedConfig,
 }: {
   model: Model;
-  getGeneratedConfigs: (modelId: string) => GeneratedConfig[];
+  getGeneratedConfigs: (_modelId: string) => GeneratedConfig[];
   onNavigateGeneratedConfig: (configId: string) => void;
 }) {
   const configs = getGeneratedConfigs(model.id);

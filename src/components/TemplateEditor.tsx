@@ -662,7 +662,9 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             <textarea
               ref={textareaRef}
               value={displayText}
-              onChange={(e) => handleFilteredTextChange(e.target.value)}
+              onChange={(e) => {
+                handleFilteredTextChange(e.target.value);
+              }}
               onScroll={handleTextareaScroll}
               onContextMenu={handleContextMenu}
               placeholder={`Paste your config template here...\n\nUse $variable_name or \${variable_name} for template variables.\n\nExample:\nhostname $hostname\ninterface vlan95\n ip address $vlan_95_ip_address 255.255.255.0`}

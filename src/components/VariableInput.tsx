@@ -6,7 +6,7 @@ import { isValidIpv4 } from '../lib/validators.ts';
 interface VariableInputProps {
   variableDefinition: VariableDefinition;
   value: string;
-  onChange: (value: string) => void;
+  onChange: (_value: string) => void;
 }
 
 export function VariableInput({ variableDefinition, value, onChange }: VariableInputProps) {

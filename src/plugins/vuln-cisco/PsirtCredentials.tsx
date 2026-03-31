@@ -119,13 +119,19 @@ export default function PsirtCredentials({ pluginName }: { pluginName: string })
         <p className="text-[12px] text-cyan-400 font-medium mb-1">Where to get these credentials</p>
         <ol className="text-[11px] text-slate-400 leading-relaxed space-y-1 list-decimal list-inside">
           <li>
-            Go to{' '}
-            <span className="text-cyan-400 font-mono text-[10px]">apiconsole.cisco.com</span>
-            {' '}and sign in with your Cisco CCO account
+            Go to <span className="text-cyan-400 font-mono text-[10px]">apiconsole.cisco.com</span> and sign in with
+            your Cisco CCO account
           </li>
-          <li>Register a new app under <span className="text-cyan-400">My Apps &amp; Keys</span></li>
-          <li>Select the <span className="text-cyan-400">Cisco PSIRT openVuln API</span> and request access</li>
-          <li>Copy the <span className="text-slate-200">Client ID</span> and <span className="text-slate-200">Client Secret</span> from your registered app</li>
+          <li>
+            Register a new app under <span className="text-cyan-400">My Apps &amp; Keys</span>
+          </li>
+          <li>
+            Select the <span className="text-cyan-400">Cisco PSIRT openVuln API</span> and request access
+          </li>
+          <li>
+            Copy the <span className="text-slate-200">Client ID</span> and{' '}
+            <span className="text-slate-200">Client Secret</span> from your registered app
+          </li>
         </ol>
         <p className="text-[11px] text-slate-500 mt-2">
           Credentials are stored in Infisical — never in the browser. Only the key name is saved locally.
@@ -202,7 +208,7 @@ function CredentialField({
   description: string;
   linkedKey: string;
   manualValue: string;
-  onManualChange: (v: string) => void;
+  onManualChange: (_v: string) => void;
   showValue: boolean;
   onToggleShow: () => void;
   onRetrieve: () => void;
@@ -309,8 +315,8 @@ function SecretPickerModal({
   onPick,
   onClose,
 }: {
-  provider: { listSecrets: (projectId: string, env: string) => Promise<SecretEntry[]>; name: string };
-  onPick: (key: string) => void;
+  provider: { listSecrets: (_projectId: string, _env: string) => Promise<SecretEntry[]>; name: string };
+  onPick: (_key: string) => void;
   onClose: () => void;
 }) {
   const getPlugin = useForgeStore((s) => s.getPlugin);
@@ -443,7 +449,8 @@ function SecretPickerModal({
 
         {/* Footer */}
         <div className="px-5 py-3 border-t border-forge-graphite/50 text-[11px] text-slate-500">
-          {secrets.length > 0 && `${secrets.length} secret${secrets.length === 1 ? '' : 's'} — keys only, values masked`}
+          {secrets.length > 0 &&
+            `${secrets.length} secret${secrets.length === 1 ? '' : 's'} — keys only, values masked`}
         </div>
       </div>
     </div>

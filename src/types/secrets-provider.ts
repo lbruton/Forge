@@ -7,9 +7,9 @@ export interface SecretsProvider {
   isConnected(): boolean;
   capabilities(): { read: boolean; write: boolean };
   listProjects(): Promise<SecretProject[]>;
-  listSecrets(projectId: string, environment: string, path?: string): Promise<SecretEntry[]>;
-  getSecret(projectId: string, environment: string, key: string): Promise<string>;
-  setSecret?(projectId: string, environment: string, key: string, value: string): Promise<void>;
+  listSecrets(_projectId: string, _environment: string, _path?: string): Promise<SecretEntry[]>;
+  getSecret(_projectId: string, _environment: string, _key: string): Promise<string>;
+  setSecret?(_projectId: string, _environment: string, _key: string, _value: string): Promise<void>;
 }
 
 /** SecretProject — a project in the secrets manager */

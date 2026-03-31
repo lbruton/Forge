@@ -5,7 +5,7 @@ import type { DropdownOption } from '../types/index.ts';
 
 interface DropdownOptionsEditorProps {
   options: (string | DropdownOption)[];
-  onChange: (options: (string | DropdownOption)[]) => void;
+  onChange: (_options: (string | DropdownOption)[]) => void;
 }
 
 export function DropdownOptionsEditor({ options, onChange }: DropdownOptionsEditorProps) {

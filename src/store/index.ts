@@ -180,95 +180,95 @@ interface ForgeStore {
   selectedGlobalVariablesViewId: string | null;
 
   // Tree CRUD
-  addView: (name: string) => View;
-  addVendor: (viewId: string, name: string, configFormat: ConfigFormat) => Vendor;
-  addModel: (viewId: string, vendorId: string, name: string, description: string) => Model;
-  addVariant: (viewId: string, vendorId: string, modelId: string, name: string, templateId: string) => Variant;
-  updateNode: (nodeType: string, path: Record<string, string>, updates: Record<string, unknown>) => void;
-  deleteNode: (nodeType: string, path: Record<string, string>) => void;
+  addView: (_name: string) => View;
+  addVendor: (_viewId: string, _name: string, _configFormat: ConfigFormat) => Vendor;
+  addModel: (_viewId: string, _vendorId: string, _name: string, _description: string) => Model;
+  addVariant: (_viewId: string, _vendorId: string, _modelId: string, _name: string, _templateId: string) => Variant;
+  updateNode: (_nodeType: string, _path: Record<string, string>, _updates: Record<string, unknown>) => void;
+  deleteNode: (_nodeType: string, _path: Record<string, string>) => void;
 
   // Global variable actions
-  addGlobalVariable: (viewId: string, variable: VariableDefinition) => void;
-  updateGlobalVariable: (viewId: string, name: string, updates: Partial<VariableDefinition>) => void;
-  deleteGlobalVariable: (viewId: string, name: string) => void;
-  reorderGlobalVariables: (viewId: string, orderedNames: string[]) => void;
-  autoSyncGlobals: (viewId: string, detectedNames: string[]) => void;
+  addGlobalVariable: (_viewId: string, _variable: VariableDefinition) => void;
+  updateGlobalVariable: (_viewId: string, _name: string, _updates: Partial<VariableDefinition>) => void;
+  deleteGlobalVariable: (_viewId: string, _name: string) => void;
+  reorderGlobalVariables: (_viewId: string, _orderedNames: string[]) => void;
+  autoSyncGlobals: (_viewId: string, _detectedNames: string[]) => void;
 
   // Template actions
-  saveTemplate: (template: Template) => void;
-  deleteTemplate: (templateId: string) => void;
-  getTemplate: (templateId: string) => Template | undefined;
+  saveTemplate: (_template: Template) => void;
+  deleteTemplate: (_templateId: string) => void;
+  getTemplate: (_templateId: string) => Template | undefined;
 
   // Variable values
-  setVariableValue: (variantId: string, variableName: string, value: string) => void;
-  getVariableValues: (variantId: string) => Record<string, string>;
+  setVariableValue: (_variantId: string, _variableName: string, _value: string) => void;
+  getVariableValues: (_variantId: string) => Record<string, string>;
 
   // Generated configs
-  saveGeneratedConfig: (config: GeneratedConfig) => void;
-  deleteGeneratedConfig: (id: string) => void;
-  renameGeneratedConfig: (id: string, name: string) => void;
-  getGeneratedConfigs: (modelId: string) => GeneratedConfig[];
+  saveGeneratedConfig: (_config: GeneratedConfig) => void;
+  deleteGeneratedConfig: (_id: string) => void;
+  renameGeneratedConfig: (_id: string, _name: string) => void;
+  getGeneratedConfigs: (_modelId: string) => GeneratedConfig[];
 
   // Selection
-  setSelectedVariant: (variantId: string | null) => void;
-  setSelectedGlobalVariablesViewId: (viewId: string | null) => void;
+  setSelectedVariant: (_variantId: string | null) => void;
+  setSelectedGlobalVariablesViewId: (_viewId: string | null) => void;
 
   // Preferences
   toggleSidebar: () => void;
   toggleRightPanel: () => void;
-  toggleExpandedNode: (nodeId: string) => void;
-  setSidebarWidth: (width: number) => void;
+  toggleExpandedNode: (_nodeId: string) => void;
+  setSidebarWidth: (_width: number) => void;
 
   // Bulk operations
   loadFromStorage: () => void;
   resetAll: () => void;
-  importData: (data: VaultExportData) => void;
-  exportData: (scope?: Record<string, string>) => VaultExportData;
+  importData: (_data: VaultExportData) => void;
+  exportData: (_scope?: Record<string, string>) => VaultExportData;
 
   // Editor dirty state (runtime-only, not persisted)
   editorDirty: boolean;
   pendingSaveCallback: (() => void) | null;
-  setEditorDirty: (dirty: boolean) => void;
-  setPendingSaveCallback: (cb: (() => void) | null) => void;
+  setEditorDirty: (_dirty: boolean) => void;
+  setPendingSaveCallback: (_cb: (() => void) | null) => void;
 
   // Plugin state
   selectedPluginName: string | null;
   selectedPluginNodeId: string | null;
   selectedPluginViewId: string | null;
-  setSelectedPluginName: (name: string | null) => void;
-  setSelectedPluginNodeId: (nodeId: string | null) => void;
-  setSelectedPluginViewId: (viewId: string | null) => void;
-  registerPlugin: (manifest: PluginManifest, endpoint?: string, apiKey?: string) => void;
-  unregisterPlugin: (pluginName: string) => void;
-  setPluginEnabled: (pluginName: string, enabled: boolean) => void;
-  setPluginHealth: (pluginName: string, status: PluginHealthStatus) => void;
-  updatePluginSettings: (pluginName: string, settings: Record<string, string | number | boolean>) => void;
+  setSelectedPluginName: (_name: string | null) => void;
+  setSelectedPluginNodeId: (_nodeId: string | null) => void;
+  setSelectedPluginViewId: (_viewId: string | null) => void;
+  registerPlugin: (_manifest: PluginManifest, _endpoint?: string, _apiKey?: string) => void;
+  unregisterPlugin: (_pluginName: string) => void;
+  setPluginEnabled: (_pluginName: string, _enabled: boolean) => void;
+  setPluginHealth: (_pluginName: string, _status: PluginHealthStatus) => void;
+  updatePluginSettings: (_pluginName: string, _settings: Record<string, string | number | boolean>) => void;
   getPlugins: () => PluginRegistration[];
-  getPlugin: (name: string) => PluginRegistration | undefined;
+  getPlugin: (_name: string) => PluginRegistration | undefined;
 
   // Secrets provider registry
-  registerSecretsProvider: (provider: SecretsProvider) => void;
-  unregisterSecretsProvider: (name: string) => void;
-  getSecretsProvider: (name: string) => SecretsProvider | undefined;
+  registerSecretsProvider: (_provider: SecretsProvider) => void;
+  unregisterSecretsProvider: (_name: string) => void;
+  getSecretsProvider: (_name: string) => SecretsProvider | undefined;
   getSecretsProviders: () => SecretsProvider[];
 
   // Vuln device state (persisted)
   vulnDevices: VulnDevice[];
   vulnScanCache: Record<string, ScanEntry[]>; // deviceId -> scan entries (from sidecar)
-  addVulnDevice: (device: VulnDevice) => void;
-  updateVulnDevice: (id: string, updates: Partial<VulnDevice>) => void;
-  deleteVulnDevice: (id: string) => void;
-  getVulnDevice: (id: string) => VulnDevice | undefined;
-  setVulnScanCache: (deviceId: string, scans: ScanEntry[]) => void;
+  addVulnDevice: (_device: VulnDevice) => void;
+  updateVulnDevice: (_id: string, _updates: Partial<VulnDevice>) => void;
+  deleteVulnDevice: (_id: string) => void;
+  getVulnDevice: (_id: string) => VulnDevice | undefined;
+  setVulnScanCache: (_deviceId: string, _scans: ScanEntry[]) => void;
 
   // Active scan (runtime-only, not persisted)
   activeScan: ActiveScan | null;
-  setActiveScan: (scan: ActiveScan | null) => void;
-  updateScanStatus: (status: ScanStatus) => void;
+  setActiveScan: (_scan: ActiveScan | null) => void;
+  updateScanStatus: (_status: ScanStatus) => void;
 
   // Helpers
-  findVariant: (variantId: string) => { view: View; vendor: Vendor; model: Model; variant: Variant } | null;
-  getConfigFormat: (variantId: string) => ConfigFormat;
+  findVariant: (_variantId: string) => { view: View; vendor: Vendor; model: Model; variant: Variant } | null;
+  getConfigFormat: (_variantId: string) => ConfigFormat;
 }
 
 // --- Store ---
@@ -437,16 +437,18 @@ export const useForgeStore = create<ForgeStore>()(
           const variableValues = { ...state.variableValues };
 
           // Collect variant IDs and template IDs to clean up
+          const varValKeysToRemove = new Set<string>();
+          const templateKeysToRemove = new Set<string>();
           const collectVariantCleanup = (variants: Variant[]) => {
             for (const va of variants) {
-              delete variableValues[va.id];
+              varValKeysToRemove.add(va.id);
               // Only delete template if no other variant references it
               const allVariants = tree.views.flatMap((v) =>
                 v.vendors.flatMap((vn) => vn.models.flatMap((m) => m.variants)),
               );
               const otherRefs = allVariants.filter((other) => other.id !== va.id && other.templateId === va.templateId);
               if (otherRefs.length === 0) {
-                delete templates[va.templateId];
+                templateKeysToRemove.add(va.templateId);
               }
             }
           };
@@ -504,7 +506,13 @@ export const useForgeStore = create<ForgeStore>()(
             }
           }
 
-          return { tree, templates, variableValues };
+          const filteredTemplates = Object.fromEntries(
+            Object.entries(templates).filter(([k]) => !templateKeysToRemove.has(k)),
+          );
+          const filteredVariableValues = Object.fromEntries(
+            Object.entries(variableValues).filter(([k]) => !varValKeysToRemove.has(k)),
+          );
+          return { tree, templates: filteredTemplates, variableValues: filteredVariableValues };
         });
       },
 
@@ -654,9 +662,8 @@ export const useForgeStore = create<ForgeStore>()(
 
       deleteTemplate: (templateId) => {
         set((state) => {
-          const templates = { ...state.templates };
-          delete templates[templateId];
-          return { templates };
+          const { [templateId]: _, ...rest } = state.templates;
+          return { templates: rest };
         });
       },
 

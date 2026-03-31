@@ -140,7 +140,7 @@ function StepAccessLevel({
   setAccessLevel,
 }: {
   accessLevel: 'read-only' | 'full';
-  setAccessLevel: (level: 'read-only' | 'full') => void;
+  setAccessLevel: (_level: 'read-only' | 'full') => void;
 }) {
   return (
     <div className="space-y-4">
@@ -216,11 +216,11 @@ function StepConnect({
   onTest,
 }: {
   endpoint: string;
-  setEndpoint: (v: string) => void;
+  setEndpoint: (_v: string) => void;
   clientId: string;
-  setClientId: (v: string) => void;
+  setClientId: (_v: string) => void;
   clientSecret: string;
-  setClientSecret: (v: string) => void;
+  setClientSecret: (_v: string) => void;
   testResult: { connected: boolean; canWrite: boolean; error?: string } | null;
   testing: boolean;
   onTest: () => void;
@@ -327,9 +327,9 @@ function StepSummary({
   canWrite: boolean;
   projects: SecretProject[];
   defaultProjectId: string;
-  setDefaultProjectId: (v: string) => void;
+  setDefaultProjectId: (_v: string) => void;
   defaultEnvironment: string;
-  setDefaultEnvironment: (v: string) => void;
+  setDefaultEnvironment: (_v: string) => void;
 }) {
   const selectedProject = projects.find((p) => p.id === defaultProjectId);
   const environments = selectedProject?.environments ?? [];
