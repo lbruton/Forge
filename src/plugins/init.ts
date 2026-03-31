@@ -34,9 +34,9 @@ export function isPluginConfigured(reg: PluginRegistration): boolean {
  * Accepts store callbacks as params for testability — does NOT import the store directly.
  */
 export function initBundledPlugins(
-  getPlugin: (name: string) => PluginRegistration | undefined,
-  registerPlugin: (manifest: PluginManifest) => void,
-  setPluginHealth: (name: string, health: PluginHealthStatus) => void,
+  getPlugin: (_name: string) => PluginRegistration | undefined,
+  registerPlugin: (_manifest: PluginManifest) => void,
+  setPluginHealth: (_name: string, _health: PluginHealthStatus) => void,
 ): void {
   for (const manifest of BUNDLED_MANIFESTS) {
     // Always re-register to update manifest (settingsSchema, treeNodes, etc.)

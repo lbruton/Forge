@@ -6,7 +6,7 @@ import type { GeneratedSection } from '../types/index.ts';
 interface SectionTabsProps {
   sections: GeneratedSection[];
   activeSection: string | null; // null = "All Sections"
-  onSelectSection: (sectionName: string | null) => void;
+  onSelectSection: (_sectionName: string | null) => void;
   hostname: string; // used for per-section download filename
   showHiddenToggle?: boolean;
   showHidden?: boolean;

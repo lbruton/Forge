@@ -3,7 +3,7 @@ import type { TemplateSection } from '../types/index.ts';
 interface EditorSectionTabsProps {
   sections: TemplateSection[];
   activeSectionName: string | null; // null = all sections
-  onSelectSection: (sectionName: string | null) => void;
+  onSelectSection: (_sectionName: string | null) => void;
 }
 
 export function EditorSectionTabs({ sections, activeSectionName, onSelectSection }: EditorSectionTabsProps) {

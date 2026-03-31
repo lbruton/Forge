@@ -8,7 +8,7 @@ import { INFISICAL_MANIFEST } from '../infisical/manifest.ts';
 interface DeviceModalProps {
   open: boolean;
   device: VulnDevice | null;
-  onSave: (device: Omit<VulnDevice, 'viewId'>) => void;
+  onSave: (_device: Omit<VulnDevice, 'viewId'>) => void;
   onClose: () => void;
 }
 
@@ -338,8 +338,8 @@ function SecretPickerOverlay({
   onPick,
   onClose,
 }: {
-  provider: { listSecrets: (projectId: string, env: string) => Promise<SecretEntry[]>; name: string };
-  onPick: (key: string) => void;
+  provider: { listSecrets: (_projectId: string, _env: string) => Promise<SecretEntry[]>; name: string };
+  onPick: (_key: string) => void;
   onClose: () => void;
 }) {
   const getPlugin = useForgeStore((s) => s.getPlugin);

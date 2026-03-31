@@ -163,9 +163,8 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
         // Disable sync — just clear the metadata
         handleUpdate(variable.name, { syncToSecrets: undefined });
         setSyncErrors((prev) => {
-          const next = { ...prev };
-          delete next[variable.name];
-          return next;
+          const { [variable.name]: _, ...rest } = prev;
+          return rest;
         });
         return;
       }
@@ -198,9 +197,8 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
           },
         });
         setSyncErrors((prev) => {
-          const next = { ...prev };
-          delete next[variable.name];
-          return next;
+          const { [variable.name]: _, ...rest } = prev;
+          return rest;
         });
       } catch (err) {
         setSyncErrors((prev) => ({
@@ -219,9 +217,8 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
       try {
         await writableProvider.setSecret(projectId, environment, secretKey, variable.defaultValue);
         setSyncErrors((prev) => {
-          const next = { ...prev };
-          delete next[variable.name];
-          return next;
+          const { [variable.name]: _, ...rest } = prev;
+          return rest;
         });
       } catch (err) {
         setSyncErrors((prev) => ({
@@ -348,7 +345,9 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
         <div className="flex items-center gap-2">
           {readableProvider && (
             <button
-              onClick={() => setShowImportPicker(true)}
+              onClick={() => {
+                setShowImportPicker(true);
+              }}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-700 text-slate-200 text-[13px] font-semibold rounded-md hover:bg-slate-600 border border-slate-600 transition-colors"
             >
               <Download size={14} />
@@ -390,7 +389,9 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
             <div className="mt-5 flex items-center justify-center gap-2">
               {readableProvider && (
                 <button
-                  onClick={() => setShowImportPicker(true)}
+                  onClick={() => {
+                    setShowImportPicker(true);
+                  }}
                   className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-700 text-slate-200 text-[13px] font-semibold rounded-md hover:bg-slate-600 border border-slate-600 transition-colors"
                 >
                   <Download size={14} />
@@ -428,8 +429,12 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                 <div key={variable.name} className="mb-2">
                   <div
                     draggable
-                    onDragStart={() => handleDragStart(index)}
-                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragStart={() => {
+                      handleDragStart(index);
+                    }}
+                    onDragOver={(e) => {
+                      handleDragOver(e, index);
+                    }}
                     onDragEnd={handleDragEnd}
                     className={`grid ${writableProvider ? 'grid-cols-[28px_1fr_180px_100px_36px_36px_200px_36px]' : 'grid-cols-[28px_1fr_180px_100px_36px_200px_36px]'} gap-2.5 items-center px-4 py-3 bg-slate-800 border border-slate-700/50 rounded-lg transition-colors hover:border-green-500/30 ${
                       dragIndex === index ? 'opacity-50 !border-green-500' : ''
@@ -474,9 +479,8 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                             handleUpdate(variable.name, { name: newName });
                           }
                           setEditingNames((prev) => {
-                            const next = { ...prev };
-                            delete next[variable.name];
-                            return next;
+                            const { [variable.name]: _, ...rest } = prev;
+                            return rest;
                           });
                         }}
                         onKeyDown={(e) => {
@@ -484,9 +488,8 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                             (e.target as HTMLInputElement).blur();
                           } else if (e.key === 'Escape') {
                             setEditingNames((prev) => {
-                              const next = { ...prev };
-                              delete next[variable.name];
-                              return next;
+                              const { [variable.name]: _, ...rest } = prev;
+                              return rest;
                             });
                             (e.target as HTMLInputElement).blur();
                           }
@@ -528,7 +531,9 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                     {writableProvider && (
                       <div className="flex flex-col items-center">
                         <button
-                          onClick={() => void handleSyncToggle(variable)}
+                          onClick={() => {
+                            void handleSyncToggle(variable);
+                          }}
                           className={`inline-flex items-center justify-center w-7 h-7 rounded border-none cursor-pointer transition-colors ${
                             variable.syncToSecrets
                               ? 'text-green-500 bg-slate-700/50'
@@ -584,7 +589,9 @@ export default function GlobalVariablesPage({ viewId }: GlobalVariablesPageProps
                       <label className="block text-[10px] uppercase tracking-wider text-slate-500 mb-1">Options</label>
                       <DropdownOptionsEditor
                         options={variable.options}
-                        onChange={(newOptions) => handleUpdate(variable.name, { options: newOptions })}
+                        onChange={(newOptions) => {
+                          handleUpdate(variable.name, { options: newOptions });
+                        }}
                       />
                     </div>
                   )}

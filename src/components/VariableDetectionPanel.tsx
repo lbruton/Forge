@@ -5,11 +5,11 @@ import { DropdownOptionsEditor } from './DropdownOptionsEditor.tsx';
 
 interface VariableDetectionPanelProps {
   variables: VariableDefinition[];
-  onChange: (variables: VariableDefinition[]) => void;
+  onChange: (_variables: VariableDefinition[]) => void;
   sectionNames: string[];
   variableSectionMap: Record<string, string>;
   hideHeader?: boolean;
-  onPromoteToGlobal?: (varName: string) => void;
+  onPromoteToGlobal?: (_varName: string) => void;
   onReorder?: () => void;
 }
 
@@ -142,7 +142,9 @@ export function VariableDetectionPanel({
                         <GripVertical size={14} className="text-slate-500 cursor-grab flex-shrink-0" />
                         <button
                           className="flex items-center gap-2 flex-1 min-w-0 text-left hover:bg-forge-graphite/50 transition-colors rounded"
-                          onClick={() => setExpandedVar(isExpanded ? null : variable.name)}
+                          onClick={() => {
+                            setExpandedVar(isExpanded ? null : variable.name);
+                          }}
                         >
                           <span className="text-forge-amber-dark font-mono text-[13px]">$</span>
                           <span className="text-forge-amber font-mono text-[13px] font-medium flex-1 truncate">
@@ -167,7 +169,9 @@ export function VariableDetectionPanel({
                             <input
                               type="text"
                               value={variable.label}
-                              onChange={(e) => updateVariable(index, { label: e.target.value })}
+                              onChange={(e) => {
+                                updateVariable(index, { label: e.target.value });
+                              }}
                               className="w-full bg-forge-charcoal border border-forge-graphite rounded px-2 py-1.5 text-[13px] text-slate-200 outline-none focus:border-forge-amber/50"
                             />
                           </div>
@@ -179,7 +183,9 @@ export function VariableDetectionPanel({
                             </label>
                             <select
                               value={variable.type}
-                              onChange={(e) => updateVariable(index, { type: e.target.value as VariableType })}
+                              onChange={(e) => {
+                                updateVariable(index, { type: e.target.value as VariableType });
+                              }}
                               className="w-full bg-forge-charcoal border border-forge-graphite rounded px-2 py-1.5 text-[13px] text-slate-200 outline-none focus:border-forge-amber/50 appearance-none cursor-pointer"
                             >
                               {VARIABLE_TYPES.map((t) => (
@@ -211,7 +217,9 @@ export function VariableDetectionPanel({
                             <input
                               type="text"
                               value={variable.description}
-                              onChange={(e) => updateVariable(index, { description: e.target.value })}
+                              onChange={(e) => {
+                                updateVariable(index, { description: e.target.value });
+                              }}
                               placeholder="Optional description..."
                               className="w-full bg-forge-charcoal border border-forge-graphite rounded px-2 py-1.5 text-[13px] text-slate-200 placeholder:text-slate-600 outline-none focus:border-forge-amber/50"
                             />
@@ -223,7 +231,9 @@ export function VariableDetectionPanel({
                               <input
                                 type="checkbox"
                                 checked={variable.required}
-                                onChange={(e) => updateVariable(index, { required: e.target.checked })}
+                                onChange={(e) => {
+                                  updateVariable(index, { required: e.target.checked });
+                                }}
                                 className="accent-forge-amber"
                               />
                               <span className="text-[12px] text-slate-400">Required</span>
@@ -231,7 +241,9 @@ export function VariableDetectionPanel({
                             <div className="flex items-center gap-1">
                               {onPromoteToGlobal && (
                                 <button
-                                  onClick={() => onPromoteToGlobal(variable.name)}
+                                  onClick={() => {
+                                    onPromoteToGlobal(variable.name);
+                                  }}
                                   className="p-1 rounded text-slate-600 hover:text-green-400 hover:bg-green-500/10 transition-colors"
                                   title={`Promote $${variable.name} to global \${${variable.name}}`}
                                 >

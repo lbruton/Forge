@@ -43,7 +43,7 @@ function Sorted<T extends { name: string }>({
   children,
 }: {
   items: T[];
-  children: (sorted: T[]) => React.ReactNode;
+  children: (_sorted: T[]) => React.ReactNode;
 }) {
   const sorted = useMemo(() => [...items].sort((a, b) => a.name.localeCompare(b.name)), [items]);
   return <>{children(sorted)}</>;
@@ -58,11 +58,11 @@ interface ModalContext {
 
 interface SidebarProps {
   onSwitchToEditor?: () => void;
-  onSelectGeneratedConfig?: (id: string) => void;
-  onSelectVariant?: (variantId: string) => void;
-  onSelectGlobalVariables?: (viewId: string) => void;
-  onSelectPlugin?: (pluginName: string | null, nodeId: string | null) => void;
-  onSelectSection?: (sel: SectionSelection) => void;
+  onSelectGeneratedConfig?: (_id: string) => void;
+  onSelectVariant?: (_variantId: string) => void;
+  onSelectGlobalVariables?: (_viewId: string) => void;
+  onSelectPlugin?: (_pluginName: string | null, _nodeId: string | null) => void;
+  onSelectSection?: (_sel: SectionSelection) => void;
 }
 
 function formatShortDate(iso: string): string {
@@ -279,7 +279,9 @@ export function Sidebar({
             <div className="px-4 py-8 text-center">
               <p className="text-sm text-slate-500">No templates yet</p>
               <button
-                onClick={() => openCreate('view')}
+                onClick={() => {
+                  openCreate('view');
+                }}
                 className="mt-3 text-sm text-forge-amber hover:text-forge-amber-bright transition-colors"
               >
                 + Add your first view
@@ -296,9 +298,15 @@ export function Sidebar({
               depth={0}
               hasChildren={true}
               isSection
-              onAdd={() => openCreate('vendor', view.id)}
-              onEdit={() => handleEdit('view', { viewId: view.id }, view.name)}
-              onDelete={() => handleDelete('view', { viewId: view.id })}
+              onAdd={() => {
+                openCreate('vendor', view.id);
+              }}
+              onEdit={() => {
+                handleEdit('view', { viewId: view.id }, view.name);
+              }}
+              onDelete={() => {
+                handleDelete('view', { viewId: view.id });
+              }}
             >
               {/* Configurations workbench node — wraps Global Variables + vendors */}
               {configurationsEnabled && (
@@ -309,8 +317,12 @@ export function Sidebar({
                   depth={1}
                   hasChildren={true}
                   isSection
-                  onAdd={() => openCreate('vendor', view.id)}
-                  onSelect={() => onSelectSection?.({ type: 'configurations', viewId: view.id })}
+                  onAdd={() => {
+                    openCreate('vendor', view.id);
+                  }}
+                  onSelect={() => {
+                    onSelectSection?.({ type: 'configurations', viewId: view.id });
+                  }}
                 >
                   <TreeNode
                     id={view.id + '__globals'}
@@ -338,9 +350,9 @@ export function Sidebar({
                       hasChildren={vendor.models.length > 0}
                       isSection
                       onAdd={() => { openCreate('model', view.id, vendor.id); }}
-                      onEdit={() => handleEdit('vendor', { viewId: view.id, vendorId: vendor.id }, vendor.name)}
-                      onDelete={() => handleDelete('vendor', { viewId: view.id, vendorId: vendor.id })}
-                      onSelect={() => onSelectSection?.({ type: 'vendor', viewId: view.id, vendorId: vendor.id })}
+                      onEdit={() => { handleEdit('vendor', { viewId: view.id, vendorId: vendor.id }, vendor.name); }}
+                      onDelete={() => { handleDelete('vendor', { viewId: view.id, vendorId: vendor.id }); }}
+                      onSelect={() => { onSelectSection?.({ type: 'vendor', viewId: view.id, vendorId: vendor.id }); }}
                     >
                       {vendor.models.map((model) => {
                         const generatedConfigs = getGeneratedConfigs(model.id);
@@ -355,25 +367,27 @@ export function Sidebar({
                             depth={3}
                             hasChildren={model.variants.length > 0 || hasGenerated}
                             isSection
-                            onAdd={() => openCreate('variant', view.id, vendor.id, model.id)}
-                            onEdit={() =>
+                            onAdd={() => {
+                              openCreate('variant', view.id, vendor.id, model.id);
+                            }}
+                            onEdit={() => {
                               handleEdit(
                                 'model',
                                 { viewId: view.id, vendorId: vendor.id, modelId: model.id },
                                 model.name,
-                              )
-                            }
-                            onDelete={() =>
-                              handleDelete('model', { viewId: view.id, vendorId: vendor.id, modelId: model.id })
-                            }
-                            onSelect={() =>
+                              );
+                            }}
+                            onDelete={() => {
+                              handleDelete('model', { viewId: view.id, vendorId: vendor.id, modelId: model.id });
+                            }}
+                            onSelect={() => {
                               onSelectSection?.({
                                 type: 'model',
                                 viewId: view.id,
                                 vendorId: vendor.id,
                                 modelId: model.id,
-                              })
-                            }
+                              });
+                            }}
                           >
                             {/* Templates sub-folder */}
                             <TreeNode
@@ -383,15 +397,17 @@ export function Sidebar({
                               depth={4}
                               hasChildren={model.variants.length > 0}
                               isSection
-                              onAdd={() => openCreate('variant', view.id, vendor.id, model.id)}
-                              onSelect={() =>
+                              onAdd={() => {
+                                openCreate('variant', view.id, vendor.id, model.id);
+                              }}
+                              onSelect={() => {
                                 onSelectSection?.({
                                   type: 'templates',
                                   viewId: view.id,
                                   vendorId: vendor.id,
                                   modelId: model.id,
-                                })
-                              }
+                                });
+                              }}
                             >
                               <Sorted items={model.variants}>
                                 {(sorted) =>
@@ -406,8 +422,8 @@ export function Sidebar({
                                       isSelected={
                                         selectedVariantId === variant.id && selectedGeneratedConfigId === null
                                       }
-                                      onSelect={() => handleSelectVariant(variant.id)}
-                                      onEdit={() =>
+                                      onSelect={() => { handleSelectVariant(variant.id); }}
+                                      onEdit={() => {
                                         handleEdit(
                                           'variant',
                                           {
@@ -417,8 +433,8 @@ export function Sidebar({
                                             variantId: variant.id,
                                           },
                                           variant.name,
-                                        )
-                                      }
+                                        );
+                                      }}
                                       onDuplicate={() => {
                                         const source = getTemplate(variant.templateId);
                                         if (!source) return;
@@ -430,14 +446,14 @@ export function Sidebar({
                                         saveTemplate(clone);
                                         addVariant(view.id, vendor.id, model.id, `${variant.name} (copy)`, clone.id);
                                       }}
-                                      onDelete={() =>
+                                      onDelete={() => {
                                         handleDelete('variant', {
                                           viewId: view.id,
                                           vendorId: vendor.id,
                                           modelId: model.id,
                                           variantId: variant.id,
-                                        })
-                                      }
+                                        });
+                                      }}
                                     />
                                   ))
                                 }
@@ -453,14 +469,14 @@ export function Sidebar({
                                 depth={4}
                                 hasChildren={true}
                                 isSection
-                                onSelect={() =>
+                                onSelect={() => {
                                   onSelectSection?.({
                                     type: 'generated',
                                     viewId: view.id,
                                     vendorId: vendor.id,
                                     modelId: model.id,
-                                  })
-                                }
+                                  });
+                                }}
                               >
                                 {generatedConfigs.map((gc) => (
                                   <TreeNode
@@ -471,7 +487,9 @@ export function Sidebar({
                                     depth={5}
                                     hasChildren={false}
                                     isSelected={selectedGeneratedConfigId === gc.id}
-                                    onSelect={() => handleSelectGeneratedConfig(gc.id)}
+                                    onSelect={() => {
+                                      handleSelectGeneratedConfig(gc.id);
+                                    }}
                                     onEdit={() => {
                                       const newName = prompt('Rename generated config:', gc.name);
                                       if (newName?.trim() && newName.trim() !== gc.name) {
@@ -758,7 +776,9 @@ export function Sidebar({
         {tree.views.length > 0 && (
           <div className="shrink-0 px-3 py-3 border-t border-forge-graphite">
             <button
-              onClick={() => openCreate('view')}
+              onClick={() => {
+                openCreate('view');
+              }}
               className="w-full flex items-center justify-center gap-2 px-3 py-2 text-[13px] font-semibold bg-forge-amber text-forge-obsidian rounded-md hover:bg-forge-amber-bright transition-colors"
             >
               + Add View
@@ -771,7 +791,9 @@ export function Sidebar({
       <CreateNodeModal
         open={modalContext !== null}
         nodeType={modalContext?.type ?? 'view'}
-        onClose={() => setModalContext(null)}
+        onClose={() => {
+          setModalContext(null);
+        }}
         onSubmit={handleCreate}
       />
 
@@ -779,7 +801,9 @@ export function Sidebar({
       <CreateNodeModal
         open={editContext !== null}
         nodeType={editContext?.type ?? 'view'}
-        onClose={() => setEditContext(null)}
+        onClose={() => {
+          setEditContext(null);
+        }}
         onSubmit={handleEditSubmit}
       />
     </>

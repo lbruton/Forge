@@ -164,7 +164,10 @@ function App() {
       // Initialize Infisical secrets provider if plugin is enabled and configured
       const infisicalPlugin = getPlugin(INFISICAL_MANIFEST.name);
       if (infisicalPlugin?.enabled) {
-        const { endpoint, clientId, clientSecret } = infisicalPlugin.settings as Record<string, string>;
+        const settings = infisicalPlugin.settings;
+        const endpoint = typeof settings.endpoint === 'string' ? settings.endpoint : '';
+        const clientId = typeof settings.clientId === 'string' ? settings.clientId : '';
+        const clientSecret = typeof settings.clientSecret === 'string' ? settings.clientSecret : '';
         if (endpoint && clientId && clientSecret) {
           const provider = new InfisicalProvider(endpoint, clientId, clientSecret);
           void provider
@@ -489,7 +492,11 @@ function App() {
         {selectedVariantId && (
           <div className="hidden sm:flex items-center gap-1 mr-4">
             <button
-              onClick={() => guardNavigation(() => setMode('generator'))}
+              onClick={() => {
+                guardNavigation(() => {
+                  setMode('generator');
+                });
+              }}
               className={`px-3 py-1.5 text-xs font-mono font-medium tracking-wider rounded transition-colors ${
                 mode === 'generator'
                   ? 'text-forge-amber border-b-2 border-forge-amber'
@@ -499,7 +506,9 @@ function App() {
               GENERATE
             </button>
             <button
-              onClick={() => setMode('editor')}
+              onClick={() => {
+                setMode('editor');
+              }}
               className={`px-3 py-1.5 text-xs font-mono font-medium tracking-wider rounded transition-colors ${
                 mode === 'editor'
                   ? 'text-forge-amber border-b-2 border-forge-amber'

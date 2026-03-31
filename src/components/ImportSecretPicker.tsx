@@ -8,7 +8,7 @@ interface ImportSecretPickerProps {
   projectId: string;
   environment: string;
   existingNames: Set<string>;
-  onImport: (key: string, value: string) => void;
+  onImport: (_key: string, _value: string) => void;
   onClose: () => void;
 }
 

@@ -8,7 +8,7 @@ interface CreateNodeModalProps {
   open: boolean;
   nodeType: CreateNodeType;
   onClose: () => void;
-  onSubmit: (data: CreateNodeData) => void;
+  onSubmit: (_data: CreateNodeData) => void;
 }
 
 export interface CreateNodeData {
