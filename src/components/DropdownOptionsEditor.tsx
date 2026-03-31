@@ -61,7 +61,7 @@ export function DropdownOptionsEditor({ options, onChange }: DropdownOptionsEdit
         <input
           type="text"
           value={labelInput}
-          onChange={(e) => setLabelInput(e.target.value)}
+          onChange={(e) => { setLabelInput(e.target.value); }}
           onKeyDown={handleKeyDown}
           placeholder="Label (optional, shown in dropdown)..."
           className="w-full bg-forge-charcoal border border-forge-graphite rounded px-2 py-1.5 text-[13px] text-slate-200 outline-none focus:border-forge-amber/50"

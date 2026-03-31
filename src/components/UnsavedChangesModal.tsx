@@ -17,7 +17,7 @@ export function UnsavedChangesModal({ open, onSave, onDiscard, onCancel }: Unsav
       if (e.key === 'Escape') onCancel();
     };
     document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    return () => { document.removeEventListener('keydown', handler); };
   }, [open, onCancel]);
 
   if (!open) return null;

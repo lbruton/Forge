@@ -146,7 +146,7 @@ function StepAccessLevel({
     <div className="space-y-4">
       <div className="space-y-3">
         <button
-          onClick={() => setAccessLevel('read-only')}
+          onClick={() => { setAccessLevel('read-only'); }}
           className={`w-full text-left p-4 rounded-lg border transition-colors ${
             accessLevel === 'read-only'
               ? 'border-forge-amber bg-forge-amber/5'
@@ -234,7 +234,7 @@ function StepConnect({
         <input
           type="text"
           value={endpoint}
-          onChange={(e) => setEndpoint(e.target.value)}
+          onChange={(e) => { setEndpoint(e.target.value); }}
           placeholder="https://infisical-api.example.com"
           className={INPUT_CLASSES}
         />

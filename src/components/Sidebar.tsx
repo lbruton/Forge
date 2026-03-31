@@ -337,7 +337,7 @@ export function Sidebar({
                       depth={2}
                       hasChildren={vendor.models.length > 0}
                       isSection
-                      onAdd={() => openCreate('model', view.id, vendor.id)}
+                      onAdd={() => { openCreate('model', view.id, vendor.id); }}
                       onEdit={() => handleEdit('vendor', { viewId: view.id, vendorId: vendor.id }, vendor.name)}
                       onDelete={() => handleDelete('vendor', { viewId: view.id, vendorId: vendor.id })}
                       onSelect={() => onSelectSection?.({ type: 'vendor', viewId: view.id, vendorId: vendor.id })}

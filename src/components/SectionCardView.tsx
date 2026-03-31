@@ -82,7 +82,7 @@ function ConfigurationsView({
           return (
             <Card
               key={vendor.id}
-              onClick={() => onNavigateSection({ type: 'vendor', viewId: view.id, vendorId: vendor.id })}
+              onClick={() => { onNavigateSection({ type: 'vendor', viewId: view.id, vendorId: vendor.id }); }}
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 bg-forge-graphite rounded-md">
@@ -191,7 +191,7 @@ function ModelView({
             {model.variants.map((variant) => {
               const tmpl = getTemplate(variant.templateId);
               return (
-                <Card key={variant.id} onClick={() => onNavigateVariant(variant.id)}>
+                <Card key={variant.id} onClick={() => { onNavigateVariant(variant.id); }}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 bg-forge-graphite rounded-md">
                       <FileCode2 size={18} className="text-forge-amber" />
@@ -214,7 +214,7 @@ function ModelView({
           <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Generated Configs</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {generatedConfigs.map((gc) => (
-              <Card key={gc.id} onClick={() => onNavigateGeneratedConfig(gc.id)}>
+              <Card key={gc.id} onClick={() => { onNavigateGeneratedConfig(gc.id); }}>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 bg-forge-graphite rounded-md">
                     <FileCheck size={18} className="text-emerald-400" />
@@ -257,7 +257,7 @@ function TemplatesView({
         {model.variants.map((variant) => {
           const tmpl = getTemplate(variant.templateId);
           return (
-            <Card key={variant.id} onClick={() => onNavigateVariant(variant.id)}>
+            <Card key={variant.id} onClick={() => { onNavigateVariant(variant.id); }}>
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 bg-forge-graphite rounded-md">
                   <FileCode2 size={18} className="text-forge-amber" />
@@ -297,7 +297,7 @@ function GeneratedView({
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {configs.map((gc) => (
-          <Card key={gc.id} onClick={() => onNavigateGeneratedConfig(gc.id)}>
+          <Card key={gc.id} onClick={() => { onNavigateGeneratedConfig(gc.id); }}>
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2 bg-forge-graphite rounded-md">
                 <FileCheck size={18} className="text-emerald-400" />

@@ -87,7 +87,7 @@ function SettingsForm({
                   <input
                     type="checkbox"
                     checked={Boolean(val)}
-                    onChange={(e) => handleChange(key, e.target.checked)}
+                    onChange={(e) => { handleChange(key, e.target.checked); }}
                     className="rounded border-forge-steel bg-forge-obsidian text-forge-amber focus:ring-forge-amber"
                   />
                   <span className="text-[12px] text-slate-400">{val ? 'Enabled' : 'Disabled'}</span>
@@ -122,7 +122,7 @@ function SettingsForm({
                   />
                   <button
                     type="button"
-                    onClick={() => toggleReveal(key)}
+                    onClick={() => { toggleReveal(key); }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
                   >
                     {revealedFields.has(key) ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -362,7 +362,7 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
                     </div>
                     <button
                       type="button"
-                      onClick={() => setApiKeyRevealed(true)}
+                      onClick={() => { setApiKeyRevealed(true); }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
                     >
                       <Eye size={14} />

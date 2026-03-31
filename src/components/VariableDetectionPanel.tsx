@@ -86,7 +86,7 @@ export function VariableDetectionPanel({
   });
 
   // Order groups by sectionNames, then Ungrouped at end
-  const orderedGroups = [...sectionNames.filter((s) => grouped[s]), ...(grouped['Ungrouped'] ? ['Ungrouped'] : [])];
+  const orderedGroups = [...sectionNames.filter((s) => grouped[s]), ...(grouped.Ungrouped ? ['Ungrouped'] : [])];
 
   return (
     <div className="flex flex-col h-full">
@@ -130,8 +130,8 @@ export function VariableDetectionPanel({
                     <div
                       key={`${variable.name}-${index}`}
                       draggable
-                      onDragStart={() => handleDragStart(index)}
-                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragStart={() => { handleDragStart(index); }}
+                      onDragOver={(e) => { handleDragOver(e, index); }}
                       onDragEnd={handleDragEnd}
                       className={`bg-forge-obsidian border border-forge-graphite rounded-md overflow-hidden transition-colors ${
                         dragIndex === index ? 'opacity-50 !border-amber-500' : ''
@@ -198,7 +198,7 @@ export function VariableDetectionPanel({
                               </label>
                               <DropdownOptionsEditor
                                 options={variable.options}
-                                onChange={(newOptions) => updateVariable(index, { options: newOptions })}
+                                onChange={(newOptions) => { updateVariable(index, { options: newOptions }); }}
                               />
                             </div>
                           )}
@@ -239,7 +239,7 @@ export function VariableDetectionPanel({
                                 </button>
                               )}
                               <button
-                                onClick={() => removeVariable(index)}
+                                onClick={() => { removeVariable(index); }}
                                 className="p-1 rounded text-slate-600 hover:text-red-400 hover:bg-forge-graphite transition-colors"
                                 title="Remove variable"
                               >

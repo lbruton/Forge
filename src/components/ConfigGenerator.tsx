@@ -128,7 +128,7 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
         </div>
 
         <button
-          onClick={() => setSaveModalOpen(true)}
+          onClick={() => { setSaveModalOpen(true); }}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
             text-forge-amber hover:text-forge-amber-bright bg-transparent hover:bg-forge-amber/10
             border border-forge-amber/50 rounded transition-colors duration-150"
@@ -179,7 +179,7 @@ function ConfigGenerator({ onEditTemplate }: ConfigGeneratorProps) {
       {/* Save Generated modal */}
       <SaveGeneratedModal
         isOpen={saveModalOpen}
-        onClose={() => setSaveModalOpen(false)}
+        onClose={() => { setSaveModalOpen(false); }}
         variantId={selectedVariantId}
         fullConfig={stripSubMarkers(generated.fullConfig)}
         sections={generated.sections}

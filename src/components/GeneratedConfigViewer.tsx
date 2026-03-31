@@ -86,7 +86,7 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
   // Mask secret values in config sections (sentinel-wrapped for ConfigPreview)
   const displaySections = useMemo(() => {
     if (showMasked || maskedValues.length === 0) return config.sections;
-    const maskedMarker = `${SUB_START}${'••••••••'}${SUB_END}`;
+    const maskedMarker = `${SUB_START}••••••••${SUB_END}`;
     return config.sections.map((s) => {
       let content = s.content;
       for (const val of maskedValues) {
@@ -222,7 +222,7 @@ export function GeneratedConfigViewer({ configId, onBack }: GeneratedConfigViewe
       {variableEntries.length > 0 && (
         <div className="shrink-0 border-b border-forge-graphite">
           <button
-            onClick={() => setVariablesExpanded(!variablesExpanded)}
+            onClick={() => { setVariablesExpanded(!variablesExpanded); }}
             className="w-full flex items-center gap-2 px-4 py-2 text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors"
           >
             {variablesExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}

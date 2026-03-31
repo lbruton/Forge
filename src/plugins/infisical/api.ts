@@ -29,7 +29,7 @@ export class InfisicalClient {
   private clientId: string;
   private clientSecret: string;
   private token: string | null = null;
-  private tokenExpiry: number = 0;
+  private tokenExpiry = 0;
 
   constructor(endpoint: string, clientId: string, clientSecret: string) {
     // Strip trailing slash for consistent URL building
