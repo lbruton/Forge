@@ -1,15 +1,73 @@
 ---
+# Codacy configuration for Forge
+# Last triaged: 2026-03-30 (codacy-resolve skill)
+#
+# Goal: keep signal-to-noise ratio high. Suppress tool noise on generated/archived
+# content and test files. Let Codacy focus on production code quality.
+
 engines:
+  # Opengrep (Semgrep-based SAST): exclude test files — fake credentials trigger
+  # hardcoded-password rules
   opengrep:
     exclude_paths:
-      - 'src/__tests__/**'
-      - '**/*.test.ts'
-      - '**/*.test.tsx'
-      - '**/*.spec.ts'
+      - "src/__tests__/**"
+      - "**/*.test.ts"
+      - "**/*.test.tsx"
+      - "**/*.spec.ts"
+      - "sidecar/**/test_*.py"
+      - "sidecar/**/tests/**"
+
+  # ESLint: exclude test files (project ESLint handles them locally)
   eslint:
     exclude_paths:
-      - 'src/__tests__/**'
+      - "src/__tests__/**"
+
+  # markdownlint: exclude spec-workflow archives (generated/historical content)
+  markdownlint:
+    exclude_paths:
+      - ".spec-workflow/**"
+      - "research/**"
+
+  # Bandit (Python SAST): exclude test files
+  bandit:
+    exclude_paths:
+      - "sidecar/**/test_*.py"
+      - "sidecar/**/tests/**"
+
+  # Pylint: exclude test files (test imports and fixtures trigger unused-import noise)
+  pylint:
+    exclude_paths:
+      - "sidecar/**/test_*.py"
+      - "sidecar/**/tests/**"
+
+  # Prospector: exclude test files
+  prospector:
+    exclude_paths:
+      - "sidecar/**/test_*.py"
+      - "sidecar/**/tests/**"
+
+  # Stylelint: exclude — Tailwind v4 @import syntax and CSS custom properties
+  # conflict with default Stylelint rules. Project uses Prettier for CSS formatting.
+  stylelint:
+    enabled: false
+
+  # Hadolint: sidecar Dockerfiles
+  hadolint:
+    enabled: true
+
+  # Trivy (SCA): enabled for CVE detection
+  trivy:
+    enabled: true
+
+# Global exclusions (all tools)
 exclude_paths:
-  - 'node_modules/**'
-  - 'dist/**'
-  - '.claude/**'
+  - "node_modules/**"
+  - "dist/**"
+  - ".claude/**"
+  - ".spec-workflow/**"
+  - "research/**"
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/*.spec.ts"
+  - "sidecar/**/tests/**"
+  - "sidecar/**/test_*.py"

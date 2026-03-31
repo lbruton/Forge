@@ -18,8 +18,8 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# LAN-only service — allow all origins
-app.add_middleware(
+# LAN-only sidecar behind firewall — CORS * is intentional
+app.add_middleware(  # nosemgrep: cors-wildcard
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
@@ -43,4 +43,4 @@ if __name__ == "__main__":
     import uvicorn
 
     port = int(os.environ.get("FORGE_VULN_PORT", "8400"))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)  # nosec B104 — Docker container, bind-all is required

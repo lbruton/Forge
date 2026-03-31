@@ -27,3 +27,6 @@ seed-models/
 *.njsproj
 *.sln
 *.sw?
+
+# Codacy triage log (local developer context)
+.codacy-triage.json
