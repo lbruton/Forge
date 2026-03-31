@@ -142,7 +142,7 @@ export default function ScanReportViewer({
   }, [pluginName, device, timestamp, getPlugin]);
 
   useEffect(() => {
-    fetchReport();
+    void fetchReport();
   }, [fetchReport]);
 
   const handleDelete = useCallback(async () => {
@@ -435,12 +435,12 @@ function FindingRow({ finding }: { finding: Finding }) {
 
       {/* Fix version */}
       <td className="px-3 py-2.5 text-xs text-slate-400 font-mono">
-        {finding.first_fixed?.join(', ') || '—'}
+        {finding.first_fixed.join(', ') || '—'}
       </td>
 
       {/* Bug IDs */}
       <td className="px-3 py-2.5 text-xs text-slate-400 font-mono">
-        {finding.bug_ids?.join(', ') || '—'}
+        {finding.bug_ids.join(', ') || '—'}
       </td>
 
       {/* Source badge */}

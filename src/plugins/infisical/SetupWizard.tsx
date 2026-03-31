@@ -170,7 +170,7 @@ function StepAccessLevel({
         </button>
 
         <button
-          onClick={() => setAccessLevel('full')}
+          onClick={() => { setAccessLevel('full'); }}
           className={`w-full text-left p-4 rounded-lg border transition-colors ${
             accessLevel === 'full'
               ? 'border-forge-amber bg-forge-amber/5'
@@ -245,7 +245,7 @@ function StepConnect({
         <input
           type="text"
           value={clientId}
-          onChange={(e) => setClientId(e.target.value)}
+          onChange={(e) => { setClientId(e.target.value); }}
           placeholder="Client ID from step 2"
           className={INPUT_CLASSES}
         />
@@ -257,13 +257,13 @@ function StepConnect({
           <input
             type={secretRevealed ? 'text' : 'password'}
             value={clientSecret}
-            onChange={(e) => setClientSecret(e.target.value)}
+            onChange={(e) => { setClientSecret(e.target.value); }}
             placeholder="Client Secret from step 2"
             className={INPUT_CLASSES}
           />
           <button
             type="button"
-            onClick={() => setSecretRevealed((prev) => !prev)}
+            onClick={() => { setSecretRevealed((prev) => !prev); }}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
           >
             {secretRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -305,7 +305,7 @@ function StepConnect({
           ) : (
             <>
               <XCircle size={16} className="text-red-400 shrink-0" />
-              <span className="text-[13px] text-red-400">{testResult.error || 'Connection failed'}</span>
+              <span className="text-[13px] text-red-400">{testResult.error ?? 'Connection failed'}</span>
             </>
           )}
         </div>
@@ -359,7 +359,7 @@ function StepSummary({
         <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">Default Project</label>
         <select
           value={defaultProjectId}
-          onChange={(e) => setDefaultProjectId(e.target.value)}
+          onChange={(e) => { setDefaultProjectId(e.target.value); }}
           className={`${INPUT_CLASSES} cursor-pointer`}
         >
           <option value="">Select a project...</option>
@@ -375,7 +375,7 @@ function StepSummary({
         <label className="block text-[11px] uppercase tracking-wider text-slate-500 mb-1">Default Environment</label>
         <select
           value={defaultEnvironment}
-          onChange={(e) => setDefaultEnvironment(e.target.value)}
+          onChange={(e) => { setDefaultEnvironment(e.target.value); }}
           className={`${INPUT_CLASSES} cursor-pointer`}
         >
           {environments.length > 0 ? (
@@ -478,7 +478,7 @@ export default function SetupWizard({ pluginName, onComplete, onCancel }: SetupW
 
   const canAdvance = (): boolean => {
     if (step === 4) {
-      return testResult !== null && testResult.connected;
+      return testResult?.connected ?? false;
     }
     return true;
   };
@@ -551,7 +551,7 @@ export default function SetupWizard({ pluginName, onComplete, onCancel }: SetupW
       {/* Footer navigation */}
       <div className="flex items-center justify-between px-6 py-4 border-t border-forge-graphite bg-forge-charcoal">
         <button
-          onClick={() => setStep((s) => s - 1)}
+          onClick={() => { setStep((s) => s - 1); }}
           disabled={isFirstStep}
           className="inline-flex items-center gap-1.5 px-4 py-2 text-[13px] text-slate-400 hover:text-slate-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
@@ -569,7 +569,7 @@ export default function SetupWizard({ pluginName, onComplete, onCancel }: SetupW
           </button>
         ) : (
           <button
-            onClick={() => setStep((s) => s + 1)}
+            onClick={() => { setStep((s) => s + 1); }}
             disabled={!canAdvance()}
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-forge-amber text-forge-obsidian text-[13px] font-semibold rounded-md hover:bg-amber-400 transition-colors disabled:opacity-50"
           >

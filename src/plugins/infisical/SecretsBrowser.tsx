@@ -52,7 +52,7 @@ export default function SecretsBrowser({ pluginName }: SecretsBrowserProps) {
       .catch((err) => {
         setError(`Failed to load projects: ${err instanceof Error ? err.message : String(err)}`);
       })
-      .finally(() => setProjectsLoading(false));
+      .finally(() => { setProjectsLoading(false); });
   }, [provider]);
 
   // Auto-select default project when projects load and none is selected
@@ -95,7 +95,7 @@ export default function SecretsBrowser({ pluginName }: SecretsBrowserProps) {
 
   useEffect(() => {
     if (selectedProject && selectedEnvironment) {
-      fetchSecrets();
+      void fetchSecrets();
     }
   }, [fetchSecrets, selectedProject, selectedEnvironment]);
 
@@ -149,7 +149,7 @@ export default function SecretsBrowser({ pluginName }: SecretsBrowserProps) {
 
         await navigator.clipboard.writeText(value);
         setCopiedKey(key);
-        setTimeout(() => setCopiedKey(null), 2000);
+        setTimeout(() => { setCopiedKey(null); }, 2000);
       } catch (err) {
         console.error(`Failed to copy secret "${key}":`, err);
       }
@@ -160,7 +160,7 @@ export default function SecretsBrowser({ pluginName }: SecretsBrowserProps) {
   const isReadOnly = provider ? !provider.capabilities().write : true;
 
   // Disconnected state
-  if (!provider || !provider.isConnected()) {
+  if (!provider?.isConnected()) {
     return (
       <div className="flex flex-col h-full bg-forge-charcoal">
         <div className="flex items-center gap-2 px-4 py-3 bg-forge-charcoal border-b border-forge-graphite">
@@ -203,7 +203,7 @@ export default function SecretsBrowser({ pluginName }: SecretsBrowserProps) {
         {/* Environment selector */}
         <select
           value={selectedEnvironment}
-          onChange={(e) => setSelectedEnvironment(e.target.value)}
+          onChange={(e) => { setSelectedEnvironment(e.target.value); }}
           disabled={environments.length === 0}
           className="px-2.5 py-1.5 bg-forge-obsidian border border-forge-steel rounded text-xs text-slate-300 outline-none cursor-pointer focus:border-forge-amber/50 transition-colors"
         >

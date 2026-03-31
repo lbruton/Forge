@@ -137,7 +137,7 @@ function App() {
       e.returnValue = '';
     };
     window.addEventListener('beforeunload', handler);
-    return () => window.removeEventListener('beforeunload', handler);
+    return () => { window.removeEventListener('beforeunload', handler); };
   }, [editorDirty]);
 
   // ALL plugin initialization deferred to AFTER hydration completes.
@@ -279,7 +279,7 @@ function App() {
     [wizard, addView, addVendor, addModel, addVariant, saveTemplate, setSelectedVariant, toggleExpandedNode],
   );
 
-  const switchToEditor = useCallback(() => setMode('editor'), []);
+  const switchToEditor = useCallback(() => { setMode('editor'); }, []);
 
   const openVaultImport = useCallback(() => {
     setVaultInitialTab('import');
@@ -447,7 +447,7 @@ function App() {
         <WelcomeScreen
           onRequestImport={openVaultImport}
           onRequestAddTemplate={handleAddTemplate}
-          onRequestPlugins={() => handleSelectPlugin('__add_plugin__', null)}
+          onRequestPlugins={() => { handleSelectPlugin('__add_plugin__', null); }}
         />
       );
     }
@@ -589,7 +589,7 @@ function App() {
       <CreateNodeModal
         open={wizard !== null}
         nodeType={wizard?.step ?? 'view'}
-        onClose={() => setWizard(null)}
+        onClose={() => { setWizard(null); }}
         onSubmit={handleWizardSubmit}
       />
 

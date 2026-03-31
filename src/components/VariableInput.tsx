@@ -44,7 +44,7 @@ export function VariableInput({ variableDefinition, value, onChange }: VariableI
         <select
           id={`var-${name}`}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { onChange(e.target.value); }}
           className={`${baseInputClasses} ${borderClass} cursor-pointer`}
         >
           <option value="">Select...</option>
@@ -62,7 +62,7 @@ export function VariableInput({ variableDefinition, value, onChange }: VariableI
           id={`var-${name}`}
           type="number"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { onChange(e.target.value); }}
           className={`${baseInputClasses} ${borderClass}`}
           placeholder={`Enter ${label.toLowerCase()}`}
         />
@@ -71,7 +71,7 @@ export function VariableInput({ variableDefinition, value, onChange }: VariableI
           id={`var-${name}`}
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { onChange(e.target.value); }}
           onBlur={type === 'ip' ? handleIpBlur : undefined}
           className={`${baseInputClasses} ${borderClass}`}
           placeholder={type === 'ip' ? '0.0.0.0' : `Enter ${label.toLowerCase()}`}

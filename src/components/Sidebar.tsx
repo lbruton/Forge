@@ -314,7 +314,7 @@ export function Sidebar({
                 >
                   <TreeNode
                     id={view.id + '__globals'}
-                    label={`Global Variables${(view.globalVariables?.length ?? 0) > 0 ? ` (${view.globalVariables!.length})` : ''}`}
+                    label={`Global Variables${(view.globalVariables?.length ?? 0) > 0 ? ` (${view.globalVariables?.length})` : ''}`}
                     icon={<Globe size={14} />}
                     depth={2}
                     hasChildren={false}

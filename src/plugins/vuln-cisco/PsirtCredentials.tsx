@@ -173,8 +173,8 @@ export default function PsirtCredentials({ pluginName }: { pluginName: string })
       {pickingField && readableProvider && (
         <SecretPickerModal
           provider={readableProvider}
-          onPick={(key) => handlePickSecret(pickingField, key)}
-          onClose={() => setPickingField(null)}
+          onPick={(key) => { handlePickSecret(pickingField, key); }}
+          onClose={() => { setPickingField(null); }}
         />
       )}
     </div>
@@ -261,7 +261,7 @@ function CredentialField({
             <input
               type={isSecret && !showValue ? 'password' : 'text'}
               value={manualValue}
-              onChange={(e) => onManualChange(e.target.value)}
+              onChange={(e) => { onManualChange(e.target.value); }}
               placeholder={`Enter ${label.toLowerCase()} or retrieve from Infisical...`}
               className="w-full px-3 py-2 pr-10 bg-forge-obsidian border border-forge-graphite rounded-lg font-mono text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors"
             />
@@ -357,7 +357,7 @@ function SecretPickerModal({
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    return () => { document.removeEventListener('keydown', handler); };
   }, [onClose]);
 
   const filtered = filter ? secrets.filter((s) => s.key.toLowerCase().includes(filter.toLowerCase())) : secrets;
@@ -390,7 +390,7 @@ function SecretPickerModal({
               ref={filterRef}
               type="text"
               value={filter}
-              onChange={(e) => setFilter(e.target.value)}
+              onChange={(e) => { setFilter(e.target.value); }}
               placeholder="Filter secrets..."
               className="w-full pl-9 pr-3 py-2 bg-forge-obsidian border border-forge-graphite rounded-lg text-[13px] text-slate-200 outline-none focus:border-forge-amber/50 placeholder:text-slate-600 transition-colors"
             />
@@ -425,7 +425,7 @@ function SecretPickerModal({
               {filtered.map((secret) => (
                 <button
                   key={secret.id}
-                  onClick={() => onPick(secret.key)}
+                  onClick={() => { onPick(secret.key); }}
                   className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors bg-forge-obsidian border border-forge-graphite hover:border-forge-amber/40 hover:bg-forge-charcoal cursor-pointer"
                 >
                   <div className="flex flex-col min-w-0">

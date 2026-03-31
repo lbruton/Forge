@@ -180,7 +180,7 @@ function DevicePage({
   }, [registration, device.ip, device.id, setVulnScanCache]);
 
   useEffect(() => {
-    fetchScans();
+    void fetchScans();
   }, [fetchScans]);
 
   // Start scan
@@ -689,7 +689,7 @@ function OverviewPage({ pluginName, viewId }: { pluginName: string; viewId: stri
   }, [pluginName, viewId]);
 
   useEffect(() => {
-    syncFromSidecar();
+    void syncFromSidecar();
   }, [syncFromSidecar]);
 
   return (

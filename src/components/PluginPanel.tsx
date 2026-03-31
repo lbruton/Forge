@@ -95,7 +95,7 @@ function SettingsForm({
               ) : field.type === 'select' ? (
                 <select
                   value={String(val)}
-                  onChange={(e) => handleChange(key, e.target.value)}
+                  onChange={(e) => { handleChange(key, e.target.value); }}
                   className={`${INPUT_CLASSES} cursor-pointer`}
                 >
                   <option value="">Select...</option>
@@ -109,7 +109,7 @@ function SettingsForm({
                 <input
                   type="number"
                   value={val === '' ? '' : Number(val)}
-                  onChange={(e) => handleChange(key, e.target.value === '' ? '' : Number(e.target.value))}
+                  onChange={(e) => { handleChange(key, e.target.value === '' ? '' : Number(e.target.value)); }}
                   className={INPUT_CLASSES}
                 />
               ) : field.type === 'password' ? (
@@ -117,7 +117,7 @@ function SettingsForm({
                   <input
                     type={revealedFields.has(key) ? 'text' : 'password'}
                     value={String(val)}
-                    onChange={(e) => handleChange(key, e.target.value)}
+                    onChange={(e) => { handleChange(key, e.target.value); }}
                     className={INPUT_CLASSES}
                   />
                   <button
@@ -132,7 +132,7 @@ function SettingsForm({
                 <input
                   type="text"
                   value={String(val)}
-                  onChange={(e) => handleChange(key, e.target.value)}
+                  onChange={(e) => { handleChange(key, e.target.value); }}
                   className={INPUT_CLASSES}
                 />
               )}
@@ -211,7 +211,7 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
   }, [manifest.name, registration.endpoint, registration.apiKey, setPluginHealth]);
 
   // Auto-show wizard for integration plugins with no endpoint configured
-  const hasEndpoint = Boolean(registration.settings?.endpoint);
+  const hasEndpoint = Boolean(registration.settings.endpoint);
   const shouldShowWizard = isIntegration && (!hasEndpoint || showWizard);
 
   if (shouldShowWizard) {
@@ -346,7 +346,7 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
               <input
                 type="text"
                 value={editEndpoint}
-                onChange={(e) => setEditEndpoint(e.target.value)}
+                onChange={(e) => { setEditEndpoint(e.target.value); }}
                 placeholder="http://localhost:8400"
                 className={INPUT_CLASSES}
               />
@@ -372,7 +372,7 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
                   <input
                     type="text"
                     value={editApiKey}
-                    onChange={(e) => setEditApiKey(e.target.value)}
+                    onChange={(e) => { setEditApiKey(e.target.value); }}
                     onBlur={() => {
                       if (isConfigured && editApiKey === registration.apiKey) setApiKeyRevealed(false);
                     }}
@@ -419,7 +419,7 @@ function PluginDetail({ registration, onBack }: { registration: PluginRegistrati
         {/* Integration reconfigure button */}
         {isIntegration && hasEndpoint && (
           <button
-            onClick={() => setShowWizard(true)}
+            onClick={() => { setShowWizard(true); }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-forge-charcoal border border-forge-graphite text-[12px] text-slate-300 rounded hover:border-forge-amber transition-colors"
           >
             <Settings size={12} />

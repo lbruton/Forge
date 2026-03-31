@@ -75,7 +75,7 @@ export default function PluginContentView({ pluginName, nodeId, viewId }: Plugin
   }, [isIntegrationPlugin, isVulnCiscoPlugin, registration, pluginName, nodeId, displayName]);
 
   useEffect(() => {
-    fetchContent();
+    void fetchContent();
   }, [fetchContent]);
 
   // Integration plugins get their own dedicated UI

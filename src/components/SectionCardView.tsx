@@ -131,7 +131,7 @@ function VendorView({
           return (
             <Card
               key={model.id}
-              onClick={() => onNavigateSection({ type: 'model', viewId, vendorId: vendor.id, modelId: model.id })}
+              onClick={() => { onNavigateSection({ type: 'model', viewId, vendorId: vendor.id, modelId: model.id }); }}
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 bg-forge-graphite rounded-md">
