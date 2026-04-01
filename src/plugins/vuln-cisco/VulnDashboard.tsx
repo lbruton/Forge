@@ -399,7 +399,7 @@ function DevicePage({
                     <td className="px-4 py-3.5">
                       <span className="font-mono text-sm text-slate-200">
                         {scan.totalFindings || (scan.severity
-                          ? scan.severity.critical + scan.severity.high + scan.severity.medium + scan.severity.low + scan.severity.info
+                          ? Object.values(scan.severity).reduce((sum, count) => sum + count, 0)
                           : 0)}
                       </span>
                     </td>
