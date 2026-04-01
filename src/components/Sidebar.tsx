@@ -73,7 +73,7 @@ function formatShortDate(iso: string): string {
   return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function truncateName(name: string, max = 12): string {
+function truncateName(name: string, max = 256): string {
   return name.length > max ? name.slice(0, max) + '...' : name;
 }
 
@@ -105,6 +105,7 @@ export function Sidebar({
     renameGeneratedConfig,
     getPlugins,
     selectedPluginName,
+    selectedPluginNodeId,
     setSelectedPluginName,
     setSelectedPluginNodeId,
     setSelectedPluginViewId,
@@ -698,7 +699,7 @@ export function Sidebar({
                 }
                 depth={depth}
                 hasChildren={false}
-                isSelected={selectedPluginName === plugin.manifest.name}
+                isSelected={selectedPluginName === plugin.manifest.name && selectedPluginNodeId === null}
                 onSelect={() => {
                   setSelectedPluginName(plugin.manifest.name);
                   setSelectedPluginNodeId(null);
