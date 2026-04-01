@@ -33,8 +33,12 @@ RUN adduser -D -u 1000 forge \
     && chown forge:forge /data \
     && chown -R forge:forge "$NUCLEI_TEMPLATES_DIR"
 
+# Writability check on startup — fail fast with actionable error if volume has wrong ownership
+RUN chmod +x /app/entrypoint.sh
+
 USER forge
 
 EXPOSE 8400
 
-ENTRYPOINT ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8400"]
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8400"]
