@@ -75,6 +75,32 @@ async function decryptPluginSecrets(plugins: PluginsMap): Promise<PluginsMap> {
   return result;
 }
 
+/** Encrypt snmpCommunity fields on VulnDevice[] before writing to localStorage. */
+export async function encryptVulnDeviceSecrets(devices: VulnDevice[]): Promise<VulnDevice[]> {
+  const result: VulnDevice[] = [];
+  for (const device of devices) {
+    if (typeof device.snmpCommunity === 'string' && device.snmpCommunity) {
+      result.push({ ...device, snmpCommunity: await encryptCredential(device.snmpCommunity) });
+    } else {
+      result.push(device);
+    }
+  }
+  return result;
+}
+
+/** Decrypt snmpCommunity fields on VulnDevice[] after reading from localStorage. */
+export async function decryptVulnDeviceSecrets(devices: VulnDevice[]): Promise<VulnDevice[]> {
+  const result: VulnDevice[] = [];
+  for (const device of devices) {
+    if (typeof device.snmpCommunity === 'string' && device.snmpCommunity) {
+      result.push({ ...device, snmpCommunity: await decryptCredential(device.snmpCommunity) });
+    } else {
+      result.push(device);
+    }
+  }
+  return result;
+}
+
 // --- Custom storage adapter for zustand persist (async for credential encryption) ---
 
 // Hydration guard: prevent setItem from writing default/empty state before
@@ -99,6 +125,9 @@ const forgeStorage: StateStorage = {
         if (inner.plugins && typeof inner.plugins === 'object') {
           inner.plugins = await decryptPluginSecrets(inner.plugins as PluginsMap);
         }
+        if (inner.vulnDevices && Array.isArray(inner.vulnDevices)) {
+          inner.vulnDevices = await decryptVulnDeviceSecrets(inner.vulnDevices as VulnDevice[]);
+        }
       }
     } catch {
       // If decryption fails, return as-is (backwards compat with plaintext)
@@ -120,6 +149,9 @@ const forgeStorage: StateStorage = {
         const inner = parsed.state as Record<string, unknown>;
         if (inner.plugins && typeof inner.plugins === 'object') {
           inner.plugins = await encryptPluginSecrets(inner.plugins as PluginsMap);
+        }
+        if (inner.vulnDevices && Array.isArray(inner.vulnDevices)) {
+          inner.vulnDevices = await encryptVulnDeviceSecrets(inner.vulnDevices as VulnDevice[]);
         }
       }
 
