@@ -19,6 +19,7 @@ This file provides core guidance to Claude Code when working with code in this r
 | Path | `/Volumes/DATA/GitHub/Forge/` |
 | Issue Prefix | `FORGE` |
 | DocVault | `Projects/Forge/` |
+| Version Lock | `devops/version.lock` |
 
 ## Technical Baseline
 
@@ -43,6 +44,20 @@ npx tsc --noEmit -p tsconfig.app.json
 ```
 
 The `dompurify` type error is pre-existing — ignore it.
+
+## Versioning
+
+Forge uses a simplified version lock workflow (no `dev` branch, no GitHub Releases yet).
+
+**Version files** (bumped by `/release patch`):
+1. `package.json` — Vite reads this at build time → `__APP_VERSION__` in header
+2. `devops/version.lock` — claim system for concurrent agent coordination
+3. `CHANGELOG.md` — new version heading + entries
+
+**Workflow:** Each PR with runtime code changes gets a patch bump before merge.
+Exception: `chore:` PRs from `/gsd` sessions roll into the next release.
+
+**Display:** Version shows in the app header via `v{__APP_VERSION__}`.
 
 ## Architecture
 
