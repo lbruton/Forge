@@ -397,7 +397,11 @@ function DevicePage({
                       </span>
                     </td>
                     <td className="px-4 py-3.5">
-                      <span className="font-mono text-sm text-slate-200">{scan.totalFindings}</span>
+                      <span className="font-mono text-sm text-slate-200">
+                        {scan.totalFindings || (scan.severity
+                          ? Object.values(scan.severity).reduce((sum, count) => sum + count, 0)
+                          : 0)}
+                      </span>
                     </td>
                     <td className="px-4 py-3.5">{severityBadges(scan.severity)}</td>
                   </tr>
@@ -615,6 +619,7 @@ function ScanProgressView({
 
 function OverviewPage({ pluginName, viewId }: { pluginName: string; viewId: string }) {
   const vulnDevices = useForgeStore((s) => s.vulnDevices);
+  const vulnScanCache = useForgeStore((s) => s.vulnScanCache);
   const pluginSettings = useForgeStore((s) => s.plugins[pluginName]?.settings);
   const setSelectedPluginNodeId = useForgeStore((s) => s.setSelectedPluginNodeId);
   const setSelectedPluginName = useForgeStore((s) => s.setSelectedPluginName);
@@ -832,13 +837,16 @@ function OverviewPage({ pluginName, viewId }: { pluginName: string; viewId: stri
                       <span className="font-mono text-xs text-slate-300">{device.ip}</span>
                     </td>
                     <td className="px-4 py-3.5">
-                      {device.lastScanAt ? (
-                        <span className="font-mono text-[11px] text-slate-500">
-                          {formatScanDate(device.lastScanAt)}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-slate-600">Never</span>
-                      )}
+                      {(() => {
+                        const lastScan = device.lastScanAt || vulnScanCache[device.id]?.[0]?.timestamp;
+                        return lastScan ? (
+                          <span className="font-mono text-[11px] text-slate-500">
+                            {formatScanDate(lastScan)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-600">Never</span>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3.5">{severityBadges(device.lastSeverity)}</td>
                   </tr>
