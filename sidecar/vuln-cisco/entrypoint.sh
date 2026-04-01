@@ -1,15 +1,14 @@
 #!/bin/sh
 set -e
 
-# Ensure the data directory is writable by the forge user.
+# Verify the data volume is writable by the forge user.
 # Named Docker volumes may retain root ownership from prior builds.
-if [ "$(id -u)" = "0" ]; then
-  if [ -d /data ] && [ "$(stat -c %u /data 2>/dev/null || stat -f %u /data)" != "1000" ]; then
-    echo "entrypoint: fixing /data ownership for forge user" >&2
-    chown -R forge:forge /data || echo "entrypoint: WARNING — failed to chown /data" >&2
-  fi
-  exec gosu forge "$@"
+# If this check fails, fix it from the host:
+#   docker exec -u root forge-vuln-cisco chown -R forge:forge /data
+if [ ! -w /data ]; then
+  echo "FATAL: /data is not writable by user $(id -un) (UID $(id -u))." >&2
+  echo "Fix with: docker exec -u root forge-vuln-cisco chown -R forge:forge /data" >&2
+  exit 1
 fi
 
-# Already running as non-root (e.g. --user or K8s runAsUser) — skip gosu
 exec "$@"
