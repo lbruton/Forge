@@ -3,8 +3,8 @@ FROM python:3.12-alpine
 ARG TARGETARCH
 ARG NUCLEI_VERSION=3.3.7
 
-# Install Nuclei binary (supports amd64 and arm64)
-RUN apk add --no-cache curl unzip ca-certificates \
+# Install Nuclei binary and gosu for privilege drop (supports amd64 and arm64)
+RUN apk add --no-cache curl unzip ca-certificates gosu \
     && ARCH=$(case "${TARGETARCH}" in arm64) echo "arm64" ;; *) echo "amd64" ;; esac) \
     && curl -sSL "https://github.com/projectdiscovery/nuclei/releases/download/v${NUCLEI_VERSION}/nuclei_${NUCLEI_VERSION}_linux_${ARCH}.zip" \
        -o /tmp/nuclei.zip \
@@ -33,8 +33,7 @@ RUN adduser -D -u 1000 forge \
     && chown forge:forge /data \
     && chown -R forge:forge "$NUCLEI_TEMPLATES_DIR"
 
-USER forge
-
+# Entrypoint runs as root to fix volume ownership, then drops to forge via gosu
 EXPOSE 8400
 
-ENTRYPOINT ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8400"]
+ENTRYPOINT ["/app/entrypoint.sh"]
