@@ -34,6 +34,9 @@ RUN adduser -D -u 1000 forge \
     && chown -R forge:forge "$NUCLEI_TEMPLATES_DIR"
 
 # Entrypoint runs as root to fix volume ownership, then drops to forge via gosu
+RUN chmod +x /app/entrypoint.sh
+
 EXPOSE 8400
 
 ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8400"]
