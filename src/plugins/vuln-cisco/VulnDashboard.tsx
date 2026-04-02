@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ShieldAlert, Plus, Play, RefreshCw, Check, Cpu, Clock, Loader2 } from 'lucide-react';
 import { useForgeStore } from '../../store/index.ts';
 import { pluginFetch } from '../../lib/plugin-service.ts';
+import { resolveInfisicalEnv } from '../../lib/infisical-env.ts';
 import type { VulnDevice, DeviceSummary, ScanStatus, ScanEntry, SeveritySummary } from './types.ts';
 import DeviceModal from './DeviceModal.tsx';
 import ScanReportViewer from './ScanReportViewer.tsx';
@@ -199,7 +200,7 @@ function DevicePage({
     const providers = getSecretsProviders();
     const infisicalPlugin = getPlugin('forge-infisical');
     const projectId = infisicalPlugin?.settings?.defaultProjectId as string | undefined;
-    const env = (infisicalPlugin?.settings?.defaultEnvironment as string) || 'dev';
+    const env = resolveInfisicalEnv('forge-vuln-cisco', getPlugin);
 
     if (providers.length === 0 || !projectId) {
       setError('Infisical is not connected. Connect it first to resolve PSIRT credentials.');
@@ -398,9 +399,8 @@ function DevicePage({
                     </td>
                     <td className="px-4 py-3.5">
                       <span className="font-mono text-sm text-slate-200">
-                        {scan.totalFindings || (scan.severity
-                          ? Object.values(scan.severity).reduce((sum, count) => sum + count, 0)
-                          : 0)}
+                        {scan.totalFindings ||
+                          (scan.severity ? Object.values(scan.severity).reduce((sum, count) => sum + count, 0) : 0)}
                       </span>
                     </td>
                     <td className="px-4 py-3.5">{severityBadges(scan.severity)}</td>
@@ -840,9 +840,7 @@ function OverviewPage({ pluginName, viewId }: { pluginName: string; viewId: stri
                       {(() => {
                         const lastScan = device.lastScanAt || vulnScanCache[device.id]?.[0]?.timestamp;
                         return lastScan ? (
-                          <span className="font-mono text-[11px] text-slate-500">
-                            {formatScanDate(lastScan)}
-                          </span>
+                          <span className="font-mono text-[11px] text-slate-500">{formatScanDate(lastScan)}</span>
                         ) : (
                           <span className="text-xs text-slate-600">Never</span>
                         );

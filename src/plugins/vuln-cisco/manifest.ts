@@ -8,5 +8,13 @@ export const VULN_CISCO_MANIFEST: PluginManifest = {
   type: 'sidecar',
   vendors: ['cisco'],
   treeNodes: [{ id: 'vulnerabilities', label: 'Vulnerabilities', icon: 'shield-alert', vendorScoped: false }],
-  // No settingsSchema — PSIRT credentials are managed via Infisical (PsirtCredentials component)
+  settingsSchema: {
+    infisicalEnvironment: {
+      type: 'string',
+      label: 'Infisical Environment',
+      description:
+        'Infisical environment slug for this plugin\'s secrets (e.g., "vulnerabilities"). Leave blank to use the global default.',
+      required: false,
+    },
+  },
 };

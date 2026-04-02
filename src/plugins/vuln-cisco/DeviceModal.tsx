@@ -4,6 +4,7 @@ import { useForgeStore } from '../../store/index.ts';
 import type { SecretEntry } from '../../types/secrets-provider.ts';
 import type { VulnDevice } from './types.ts';
 import { INFISICAL_MANIFEST } from '../infisical/manifest.ts';
+import { resolveInfisicalEnv } from '../../lib/infisical-env.ts';
 
 interface DeviceModalProps {
   open: boolean;
@@ -58,7 +59,7 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
 
     const infisicalPlugin = getPlugin(INFISICAL_MANIFEST.name);
     const projectId = infisicalPlugin?.settings?.defaultProjectId as string | undefined;
-    const env = (infisicalPlugin?.settings?.defaultEnvironment as string) || 'dev';
+    const env = resolveInfisicalEnv('forge-vuln-cisco', getPlugin);
     if (!projectId) {
       setSaveError('No default project configured in Infisical plugin settings.');
       return;
@@ -95,7 +96,7 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
       if (!readableProvider) return;
       const infisicalPlugin = getPlugin(INFISICAL_MANIFEST.name);
       const projectId = infisicalPlugin?.settings?.defaultProjectId as string | undefined;
-      const env = (infisicalPlugin?.settings?.defaultEnvironment as string) || 'dev';
+      const env = resolveInfisicalEnv('forge-vuln-cisco', getPlugin);
       if (!projectId) return;
 
       try {
@@ -121,7 +122,9 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
       }
     };
     document.addEventListener('keydown', handler);
-    return () => { document.removeEventListener('keydown', handler); };
+    return () => {
+      document.removeEventListener('keydown', handler);
+    };
   }, [open, onClose, showSecretPicker]);
 
   if (!open) return null;
@@ -176,7 +179,9 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
               ref={hostnameRef}
               type="text"
               value={hostname}
-              onChange={(e) => { setHostname(e.target.value); }}
+              onChange={(e) => {
+                setHostname(e.target.value);
+              }}
               placeholder="e.g. SW-CORE-01"
               className="w-full px-3 py-2 bg-forge-obsidian border border-forge-graphite rounded-lg text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors"
             />
@@ -191,7 +196,9 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
             <input
               type="text"
               value={ip}
-              onChange={(e) => { setIp(e.target.value); }}
+              onChange={(e) => {
+                setIp(e.target.value);
+              }}
               placeholder="e.g. 192.168.1.253"
               className="w-full px-3 py-2 bg-forge-obsidian border border-forge-graphite rounded-lg font-mono text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors"
             />
@@ -209,7 +216,9 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
                 <div className="flex gap-1">
                   <button
                     type="button"
-                    onClick={() => { setSnmpSource('manual'); }}
+                    onClick={() => {
+                      setSnmpSource('manual');
+                    }}
                     className={`px-2 py-0.5 text-[10px] font-semibold uppercase rounded transition-colors ${
                       snmpSource === 'manual'
                         ? 'bg-forge-amber/20 text-forge-amber'
@@ -220,7 +229,9 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setSnmpSource('infisical'); }}
+                    onClick={() => {
+                      setSnmpSource('infisical');
+                    }}
                     className={`px-2 py-0.5 text-[10px] font-semibold uppercase rounded transition-colors flex items-center gap-1 ${
                       snmpSource === 'infisical'
                         ? 'bg-forge-amber/20 text-forge-amber'
@@ -240,13 +251,17 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
                   <input
                     type={showSnmp ? 'text' : 'password'}
                     value={snmpCommunity}
-                    onChange={(e) => { setSnmpCommunity(e.target.value); }}
+                    onChange={(e) => {
+                      setSnmpCommunity(e.target.value);
+                    }}
                     placeholder="e.g. public"
                     className="w-full px-3 py-2 pr-10 bg-forge-obsidian border border-forge-graphite rounded-lg font-mono text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-forge-amber/50 focus:ring-1 focus:ring-forge-amber/25 transition-colors"
                   />
                   <button
                     type="button"
-                    onClick={() => { setShowSnmp(!showSnmp); }}
+                    onClick={() => {
+                      setShowSnmp(!showSnmp);
+                    }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-300 transition-colors"
                     title={showSnmp ? 'Hide' : 'Show'}
                   >
@@ -281,7 +296,9 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
                 {/* Retrieve from Infisical button */}
                 <button
                   type="button"
-                  onClick={() => { setShowSecretPicker(true); }}
+                  onClick={() => {
+                    setShowSecretPicker(true);
+                  }}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-slate-300 border border-forge-steel rounded-md hover:border-forge-amber/40 hover:text-forge-amber transition-colors"
                 >
                   <Download size={12} />
@@ -322,7 +339,9 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
         <SecretPickerOverlay
           provider={readableProvider}
           onPick={handlePickSecret}
-          onClose={() => { setShowSecretPicker(false); }}
+          onClose={() => {
+            setShowSecretPicker(false);
+          }}
         />
       )}
     </div>
@@ -346,7 +365,7 @@ function SecretPickerOverlay({
   const infisicalPlugin = getPlugin(INFISICAL_MANIFEST.name);
   const settings = (infisicalPlugin?.settings ?? {}) as Record<string, string>;
   const projectId = settings.defaultProjectId || '';
-  const environment = settings.defaultEnvironment || 'dev';
+  const environment = resolveInfisicalEnv('forge-vuln-cisco', getPlugin);
 
   const [secrets, setSecrets] = useState<SecretEntry[]>([]);
   const [filter, setFilter] = useState('');
@@ -411,7 +430,9 @@ function SecretPickerOverlay({
               ref={filterRef}
               type="text"
               value={filter}
-              onChange={(e) => { setFilter(e.target.value); }}
+              onChange={(e) => {
+                setFilter(e.target.value);
+              }}
               placeholder="Filter secrets..."
               className="w-full pl-9 pr-3 py-2 bg-forge-obsidian border border-forge-graphite rounded-lg text-[13px] text-slate-200 outline-none focus:border-forge-amber/50 placeholder:text-slate-600 transition-colors"
             />
@@ -446,7 +467,9 @@ function SecretPickerOverlay({
               {filtered.map((secret) => (
                 <button
                   key={secret.id}
-                  onClick={() => { onPick(secret.key); }}
+                  onClick={() => {
+                    onPick(secret.key);
+                  }}
                   className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors bg-forge-obsidian border border-forge-graphite hover:border-forge-amber/40 hover:bg-forge-charcoal cursor-pointer"
                 >
                   <div className="flex flex-col min-w-0">
