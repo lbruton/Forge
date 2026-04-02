@@ -866,6 +866,8 @@ export const useForgeStore = create<ForgeStore>()(
           preferences: defaultPreferences,
           selectedVariantId: null,
           selectedGlobalVariablesViewId: null,
+          vulnDevices: [],
+          vulnScanCache: {},
         });
       },
 
@@ -1010,7 +1012,7 @@ export const useForgeStore = create<ForgeStore>()(
 
       exportData: (options?: ExportOptions) => {
         const state = get();
-        const opts = options ?? defaultExportOptions;
+        const opts = { ...defaultExportOptions, ...options };
 
         // Strip sensitive fields from plugin registrations before export.
         // Exported vaults should never contain raw credentials — users

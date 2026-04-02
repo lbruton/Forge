@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, type DragEvent } from 'react'
 import { X, Upload, Download, Lock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { encryptVault, decryptVault } from '../lib/vault-engine.ts';
-import type { VaultExportData, View, ExportOptions } from '../types/index.ts';
+import type { VaultExportData, ExportOptions } from '../types/index.ts';
 import { defaultExportOptions } from '../types/index.ts';
 
 // ---------------------------------------------------------------------------
@@ -43,42 +43,6 @@ function formatDate(): string {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
-}
-
-function scopeLabel(scope: ExportScope | undefined, tree: { views: View[] }): string {
-  if (!scope || scope.type === 'all') return 'Everything';
-  if (scope.type === 'view') {
-    const v = tree.views.find((x) => x.id === scope.viewId);
-    return v ? `View: ${v.name}` : 'Selected View';
-  }
-  if (scope.type === 'vendor') {
-    for (const view of tree.views) {
-      const vn = view.vendors.find((x) => x.id === scope.vendorId);
-      if (vn) return `Vendor: ${vn.name}`;
-    }
-    return 'Selected Vendor';
-  }
-  if (scope.type === 'model') {
-    for (const view of tree.views) {
-      for (const vendor of view.vendors) {
-        const m = vendor.models.find((x) => x.id === scope.modelId);
-        if (m) return `Model: ${m.name}`;
-      }
-    }
-    return 'Selected Model';
-  }
-  if (scope.type === 'variant') {
-    for (const view of tree.views) {
-      for (const vendor of view.vendors) {
-        for (const model of vendor.models) {
-          const va = model.variants.find((x) => x.id === scope.variantId);
-          if (va) return `Variant: ${va.name}`;
-        }
-      }
-    }
-    return 'Selected Variant';
-  }
-  return 'Everything';
 }
 
 interface DataCounts {
@@ -159,8 +123,6 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
   const [exportLoading, setExportLoading] = useState(false);
   const [exportError, setExportError] = useState('');
   const [exportSuccess, setExportSuccess] = useState(false);
-  const [selectedScope, setSelectedScope] = useState<'all' | 'scoped'>('all');
-
   // Import state
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importPassword, setImportPassword] = useState('');
@@ -198,7 +160,6 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
       setExportLoading(false);
       setExportError('');
       setExportSuccess(false);
-      setSelectedScope(exportScope && exportScope.type !== 'all' ? 'scoped' : 'all');
       setImportFile(null);
       setImportPassword('');
       setImportLoading(false);
@@ -443,7 +404,11 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
       importData(filteredData);
       setImportSuccess(true);
     } catch {
-      setImportError('Failed to import data. Your existing data has not been modified.');
+      setImportError(
+        importStrategy === 'replace'
+          ? 'Failed to import data. Existing data was cleared but import failed — re-import or restore from a backup.'
+          : 'Failed to import data. Your existing data has not been modified.',
+      );
     }
   }, [decryptedData, conflicts, importData, importStrategy, replaceConfirmed, importCategories, resetAll]);
 
@@ -530,35 +495,6 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
                 </div>
               ) : (
                 <>
-                  {/* Scope selector */}
-                  <div>
-                    <label className="block text-[13px] font-medium text-slate-400 mb-2">Export Scope</label>
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="exportScope"
-                          checked={selectedScope === 'all'}
-                          onChange={() => { setSelectedScope('all'); }}
-                          className="accent-amber-500"
-                        />
-                        <span className="text-sm text-slate-200">Everything</span>
-                      </label>
-                      {exportScope && exportScope.type !== 'all' && (
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="exportScope"
-                            checked={selectedScope === 'scoped'}
-                            onChange={() => { setSelectedScope('scoped'); }}
-                            className="accent-amber-500"
-                          />
-                          <span className="text-sm text-slate-200">{scopeLabel(exportScope, tree)}</span>
-                        </label>
-                      )}
-                    </div>
-                  </div>
-
                   {/* Category checkboxes */}
                   <div>
                     <label className="block text-[13px] font-medium text-slate-400 mb-2">Include in Export</label>
@@ -655,8 +591,8 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
                         if (deviceCount > 0) parts.push(`${deviceCount} device${deviceCount !== 1 ? 's' : ''}`);
                       }
                       if (exportOptions.includeVulnScanCache) {
-                        const scanCount = Object.keys(vulnScanCache).length;
-                        if (scanCount > 0) parts.push(`${scanCount} scan record${scanCount !== 1 ? 's' : ''}`);
+                        const devicesWithScans = Object.keys(vulnScanCache).length;
+                        if (devicesWithScans > 0) parts.push(`${devicesWithScans} device${devicesWithScans !== 1 ? 's' : ''} with cached scans`);
                       }
                       return parts.length > 0 ? (
                         <p className="text-xs text-slate-500 mt-2">{parts.join(', ')}</p>
