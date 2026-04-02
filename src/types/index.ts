@@ -4,6 +4,9 @@ export * from './plugin.ts';
 // Secrets provider types
 export * from './secrets-provider.ts';
 
+// Vuln-cisco types (type-only import for vault export)
+import type { VulnDevice, ScanEntry } from '../plugins/vuln-cisco/types.ts';
+
 // Navigation hierarchy
 export type ConfigFormat = 'cli' | 'xml' | 'json' | 'yaml';
 export type VariableType = 'string' | 'ip' | 'integer' | 'dropdown';
@@ -159,6 +162,22 @@ export interface VaultEnvelope {
   data: string;
 }
 
+export interface ExportOptions {
+  includeGeneratedConfigs: boolean;
+  includePlugins: boolean;
+  includeVulnDevices: boolean;
+  includeVulnScanCache: boolean;
+  includePreferences: boolean;
+}
+
+export const defaultExportOptions: ExportOptions = {
+  includeGeneratedConfigs: true,
+  includePlugins: true,
+  includeVulnDevices: true,
+  includeVulnScanCache: false,  // off by default — can be large
+  includePreferences: true,
+};
+
 export interface VaultExportData {
   exportedAt: string;
   views?: View[];
@@ -169,4 +188,8 @@ export interface VaultExportData {
   variableValues: Record<string, VariableValues>;
   generatedConfigs?: Record<string, GeneratedConfig>;
   plugins?: Record<string, import('./plugin.ts').PluginRegistration>;
+  vulnDevices?: VulnDevice[];
+  vulnScanCache?: Record<string, ScanEntry[]>;
+  preferences?: Partial<Preferences>;
+  exportOptions?: ExportOptions;
 }
