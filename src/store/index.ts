@@ -15,7 +15,9 @@ import type {
   VaultExportData,
   Vendor,
   View,
+  ExportOptions,
 } from '../types/index.ts';
+import { defaultExportOptions } from '../types/index.ts';
 import type { PluginManifest, PluginRegistration, PluginHealthStatus } from '../types/plugin.ts';
 import type { SecretsProvider } from '../types/secrets-provider.ts';
 import type { VulnDevice, ScanEntry, ActiveScan, ScanStatus } from '../plugins/vuln-cisco/types.ts';
@@ -255,7 +257,7 @@ interface ForgeStore {
   loadFromStorage: () => void;
   resetAll: () => void;
   importData: (_data: VaultExportData) => void;
-  exportData: (_scope?: Record<string, string>) => VaultExportData;
+  exportData: (_options?: ExportOptions) => VaultExportData;
 
   // Editor dirty state (runtime-only, not persisted)
   editorDirty: boolean;
@@ -864,6 +866,8 @@ export const useForgeStore = create<ForgeStore>()(
           preferences: defaultPreferences,
           selectedVariantId: null,
           selectedGlobalVariablesViewId: null,
+          vulnDevices: [],
+          vulnScanCache: {},
         });
       },
 
@@ -967,12 +971,48 @@ export const useForgeStore = create<ForgeStore>()(
             }
           }
 
-          return { tree, templates, variableValues, generatedConfigs, plugins: currentPlugins };
+          // Merge vuln devices (new only, skip existing by ID)
+          const mergedVulnDevices = [...state.vulnDevices];
+          if (data.vulnDevices) {
+            const existingIds = new Set(mergedVulnDevices.map(d => d.id));
+            const availableViewIds = new Set(tree.views.map(v => v.id));
+            const fallbackViewId = tree.views[0]?.id;
+
+            for (const device of data.vulnDevices) {
+              if (!existingIds.has(device.id)) {
+                // Reassign orphaned viewId to first available view
+                const viewId = availableViewIds.has(device.viewId) ? device.viewId : (fallbackViewId ?? device.viewId);
+                mergedVulnDevices.push({ ...device, viewId });
+              }
+            }
+          }
+
+          // Deep-merge preferences (imported values override, current defaults fill gaps)
+          const mergedPreferences = data.preferences
+            ? { ...state.preferences, ...data.preferences }
+            : state.preferences;
+
+          // Merge scan cache (additive per device)
+          const mergedScanCache = { ...state.vulnScanCache };
+          if (data.vulnScanCache) {
+            for (const [deviceId, entries] of Object.entries(data.vulnScanCache)) {
+              const existing = mergedScanCache[deviceId] ?? [];
+              mergedScanCache[deviceId] = [...existing, ...entries];
+            }
+          }
+
+          return {
+            tree, templates, variableValues, generatedConfigs, plugins: currentPlugins,
+            vulnDevices: mergedVulnDevices,
+            vulnScanCache: mergedScanCache,
+            preferences: mergedPreferences,
+          };
         });
       },
 
-      exportData: () => {
+      exportData: (options?: ExportOptions) => {
         const state = get();
+        const opts = { ...defaultExportOptions, ...options };
 
         // Strip sensitive fields from plugin registrations before export.
         // Exported vaults should never contain raw credentials — users
@@ -996,13 +1036,25 @@ export const useForgeStore = create<ForgeStore>()(
           sanitizedPlugins[name] = sanitized;
         }
 
+        // Strip SNMP communities from vuln devices (same pattern as plugin secret stripping)
+        const sanitizedDevices = state.vulnDevices.map(
+          ({ snmpCommunity: _c, snmpSecretKey: _s, ...rest }) => rest,
+        );
+
+        // Exclude expandedNodes (tied to specific node IDs, not portable)
+        const { expandedNodes: _, ...exportablePrefs } = state.preferences;
+
         return {
           exportedAt: now(),
           views: state.tree.views,
           templates: state.templates,
           variableValues: state.variableValues,
-          generatedConfigs: state.generatedConfigs,
-          plugins: sanitizedPlugins,
+          ...(opts.includeGeneratedConfigs && { generatedConfigs: state.generatedConfigs }),
+          ...(opts.includePlugins && { plugins: sanitizedPlugins }),
+          ...(opts.includeVulnDevices && { vulnDevices: sanitizedDevices }),
+          ...(opts.includeVulnScanCache && { vulnScanCache: state.vulnScanCache }),
+          ...(opts.includePreferences && { preferences: exportablePrefs }),
+          exportOptions: opts,
         };
       },
 

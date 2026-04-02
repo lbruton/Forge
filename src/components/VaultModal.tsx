@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback, type DragEvent } from 'react'
 import { X, Upload, Download, Lock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useForgeStore } from '../store/index.ts';
 import { encryptVault, decryptVault } from '../lib/vault-engine.ts';
-import type { VaultExportData, View } from '../types/index.ts';
+import type { VaultExportData, ExportOptions } from '../types/index.ts';
+import { defaultExportOptions } from '../types/index.ts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -44,43 +45,20 @@ function formatDate(): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function scopeLabel(scope: ExportScope | undefined, tree: { views: View[] }): string {
-  if (!scope || scope.type === 'all') return 'Everything';
-  if (scope.type === 'view') {
-    const v = tree.views.find((x) => x.id === scope.viewId);
-    return v ? `View: ${v.name}` : 'Selected View';
-  }
-  if (scope.type === 'vendor') {
-    for (const view of tree.views) {
-      const vn = view.vendors.find((x) => x.id === scope.vendorId);
-      if (vn) return `Vendor: ${vn.name}`;
-    }
-    return 'Selected Vendor';
-  }
-  if (scope.type === 'model') {
-    for (const view of tree.views) {
-      for (const vendor of view.vendors) {
-        const m = vendor.models.find((x) => x.id === scope.modelId);
-        if (m) return `Model: ${m.name}`;
-      }
-    }
-    return 'Selected Model';
-  }
-  if (scope.type === 'variant') {
-    for (const view of tree.views) {
-      for (const vendor of view.vendors) {
-        for (const model of vendor.models) {
-          const va = model.variants.find((x) => x.id === scope.variantId);
-          if (va) return `Variant: ${va.name}`;
-        }
-      }
-    }
-    return 'Selected Variant';
-  }
-  return 'Everything';
+interface DataCounts {
+  views: number;
+  vendors: number;
+  models: number;
+  variants: number;
+  templates: number;
+  generatedConfigs: number;
+  plugins: number;
+  vulnDevices: number;
+  scanEntries: number;
+  hasPreferences: boolean;
 }
 
-function countData(data: VaultExportData): { views: number; vendors: number; models: number; variants: number } {
+function countData(data: VaultExportData): DataCounts {
   let views = 0;
   let vendors = 0;
   let models = 0;
@@ -117,7 +95,19 @@ function countData(data: VaultExportData): { views: number; vendors: number; mod
     variants += data.variants.length;
   }
 
-  return { views, vendors, models, variants };
+  const templates = Object.keys(data.templates).length;
+  const generatedConfigs = Object.keys(data.generatedConfigs ?? {}).length;
+  const plugins = Object.keys(data.plugins ?? {}).length;
+  const vulnDevices = (data.vulnDevices ?? []).length;
+  let scanEntries = 0;
+  if (data.vulnScanCache) {
+    for (const entries of Object.values(data.vulnScanCache)) {
+      scanEntries += entries.length;
+    }
+  }
+  const hasPreferences = !!data.preferences;
+
+  return { views, vendors, models, variants, templates, generatedConfigs, plugins, vulnDevices, scanEntries, hasPreferences };
 }
 
 // ---------------------------------------------------------------------------
@@ -133,8 +123,6 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
   const [exportLoading, setExportLoading] = useState(false);
   const [exportError, setExportError] = useState('');
   const [exportSuccess, setExportSuccess] = useState(false);
-  const [selectedScope, setSelectedScope] = useState<'all' | 'scoped'>('all');
-
   // Import state
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importPassword, setImportPassword] = useState('');
@@ -145,14 +133,23 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
   const [decryptedData, setDecryptedData] = useState<VaultExportData | null>(null);
   const [conflicts, setConflicts] = useState<ConflictItem[]>([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [importStrategy, setImportStrategy] = useState<'merge' | 'replace'>('merge');
+  const [importCategories, setImportCategories] = useState<Record<string, boolean>>({});
+  const [replaceConfirmed, setReplaceConfirmed] = useState(false);
 
   const overlayRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const tree = useForgeStore((s) => s.tree);
   const templates = useForgeStore((s) => s.templates);
+  const generatedConfigs = useForgeStore((s) => s.generatedConfigs);
+  const vulnDevices = useForgeStore((s) => s.vulnDevices);
+  const vulnScanCache = useForgeStore((s) => s.vulnScanCache);
   const exportData = useForgeStore((s) => s.exportData);
   const importData = useForgeStore((s) => s.importData);
+  const resetAll = useForgeStore((s) => s.resetAll);
+
+  const [exportOptions, setExportOptions] = useState<ExportOptions>({ ...defaultExportOptions });
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -163,7 +160,6 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
       setExportLoading(false);
       setExportError('');
       setExportSuccess(false);
-      setSelectedScope(exportScope && exportScope.type !== 'all' ? 'scoped' : 'all');
       setImportFile(null);
       setImportPassword('');
       setImportLoading(false);
@@ -173,6 +169,10 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
       setDecryptedData(null);
       setConflicts([]);
       setShowSummary(false);
+      setExportOptions({ ...defaultExportOptions });
+      setImportStrategy('merge');
+      setImportCategories({});
+      setReplaceConfirmed(false);
     }
   }, [isOpen, initialTab, exportScope]);
 
@@ -239,8 +239,7 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
 
     setExportLoading(true);
     try {
-      const scope = selectedScope === 'scoped' && exportScope ? exportScope : undefined;
-      const data = exportData(scope as Record<string, string> | undefined);
+      const data = exportData(exportOptions);
       const blob = await encryptVault(data, exportPassword);
 
       // Trigger download
@@ -259,7 +258,7 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
     } finally {
       setExportLoading(false);
     }
-  }, [exportPassword, exportPasswordConfirm, selectedScope, exportScope, exportData]);
+  }, [exportPassword, exportPasswordConfirm, exportData, exportOptions]);
 
   // ---------------------------------------------------------------------------
   // Import — file handling
@@ -332,6 +331,15 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
       setDecryptedData(data);
       setConflicts(foundConflicts);
       setShowSummary(true);
+      setImportCategories({
+        views: true,
+        templates: true,
+        generatedConfigs: !!data.generatedConfigs,
+        plugins: !!data.plugins,
+        vulnDevices: !!data.vulnDevices,
+        vulnScanCache: !!data.vulnScanCache,
+        preferences: !!data.preferences,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       if (message.includes('Incorrect password') || message.includes('corrupted file')) {
@@ -352,6 +360,7 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
 
   const handleConfirmImport = useCallback(() => {
     if (!decryptedData) return;
+    if (importStrategy === 'replace' && !replaceConfirmed) return;
 
     try {
       // Apply conflict resolutions: filter out skipped items
@@ -379,12 +388,29 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
         // 'overwrite' — keep as-is, importData will handle
       }
 
-      importData(resolvedData);
+      // Filter by selected import categories
+      const filteredData = { ...resolvedData };
+      if (!importCategories.generatedConfigs) delete filteredData.generatedConfigs;
+      if (!importCategories.plugins) delete filteredData.plugins;
+      if (!importCategories.vulnDevices) delete filteredData.vulnDevices;
+      if (!importCategories.vulnScanCache) delete filteredData.vulnScanCache;
+      if (!importCategories.preferences) delete filteredData.preferences;
+
+      // Replace strategy: erase all existing data first
+      if (importStrategy === 'replace') {
+        resetAll();
+      }
+
+      importData(filteredData);
       setImportSuccess(true);
     } catch {
-      setImportError('Failed to import data. Your existing data has not been modified.');
+      setImportError(
+        importStrategy === 'replace'
+          ? 'Failed to import data. Existing data was cleared but import failed — re-import or restore from a backup.'
+          : 'Failed to import data. Your existing data has not been modified.',
+      );
     }
-  }, [decryptedData, conflicts, importData]);
+  }, [decryptedData, conflicts, importData, importStrategy, replaceConfirmed, importCategories, resetAll]);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -469,33 +495,109 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
                 </div>
               ) : (
                 <>
-                  {/* Scope selector */}
+                  {/* Category checkboxes */}
                   <div>
-                    <label className="block text-[13px] font-medium text-slate-400 mb-2">Export Scope</label>
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="block text-[13px] font-medium text-slate-400 mb-2">Include in Export</label>
+                    <div className="space-y-1.5">
+                      {/* Views & Templates — always included */}
+                      <label className="flex items-start gap-2">
                         <input
-                          type="radio"
-                          name="exportScope"
-                          checked={selectedScope === 'all'}
-                          onChange={() => { setSelectedScope('all'); }}
-                          className="accent-amber-500"
+                          type="checkbox"
+                          checked
+                          disabled
+                          className="accent-amber-500 mt-0.5"
                         />
-                        <span className="text-sm text-slate-200">Everything</span>
+                        <span className="text-sm text-slate-400">Views & Templates</span>
                       </label>
-                      {exportScope && exportScope.type !== 'all' && (
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="exportScope"
-                            checked={selectedScope === 'scoped'}
-                            onChange={() => { setSelectedScope('scoped'); }}
-                            className="accent-amber-500"
-                          />
-                          <span className="text-sm text-slate-200">{scopeLabel(exportScope, tree)}</span>
-                        </label>
-                      )}
+
+                      {/* Generated Configs */}
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={exportOptions.includeGeneratedConfigs}
+                          onChange={(e) => { setExportOptions((prev) => ({ ...prev, includeGeneratedConfigs: e.target.checked })); }}
+                          className="accent-amber-500 mt-0.5"
+                        />
+                        <span className="text-sm text-slate-200">Generated Configs</span>
+                      </label>
+
+                      {/* Plugin Settings */}
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={exportOptions.includePlugins}
+                          onChange={(e) => { setExportOptions((prev) => ({ ...prev, includePlugins: e.target.checked })); }}
+                          className="accent-amber-500 mt-0.5"
+                        />
+                        <div>
+                          <span className="text-sm text-slate-200">Plugin Settings</span>
+                          <p className="text-xs text-slate-500">Credentials will be stripped</p>
+                        </div>
+                      </label>
+
+                      {/* Vulnerability Devices */}
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={exportOptions.includeVulnDevices}
+                          onChange={(e) => { setExportOptions((prev) => ({ ...prev, includeVulnDevices: e.target.checked })); }}
+                          className="accent-amber-500 mt-0.5"
+                        />
+                        <div>
+                          <span className="text-sm text-slate-200">Vulnerability Devices</span>
+                          <p className="text-xs text-slate-500">SNMP communities will be stripped</p>
+                        </div>
+                      </label>
+
+                      {/* Scan History */}
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={exportOptions.includeVulnScanCache}
+                          onChange={(e) => { setExportOptions((prev) => ({ ...prev, includeVulnScanCache: e.target.checked })); }}
+                          className="accent-amber-500 mt-0.5"
+                        />
+                        <div>
+                          <span className="text-sm text-slate-200">Scan History</span>
+                          <p className="text-xs text-slate-500">May increase file size significantly</p>
+                        </div>
+                      </label>
+
+                      {/* Preferences */}
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={exportOptions.includePreferences}
+                          onChange={(e) => { setExportOptions((prev) => ({ ...prev, includePreferences: e.target.checked })); }}
+                          className="accent-amber-500 mt-0.5"
+                        />
+                        <span className="text-sm text-slate-200">Preferences</span>
+                      </label>
                     </div>
+
+                    {/* Item count summary */}
+                    {(() => {
+                      const parts: string[] = [];
+                      const viewCount = tree.views.length;
+                      const templateCount = Object.keys(templates).length;
+                      if (viewCount > 0) parts.push(`${viewCount} view${viewCount !== 1 ? 's' : ''}`);
+                      if (templateCount > 0) parts.push(`${templateCount} template${templateCount !== 1 ? 's' : ''}`);
+                      if (exportOptions.includeGeneratedConfigs) {
+                        const configCount = Object.keys(generatedConfigs).length;
+                        if (configCount > 0) parts.push(`${configCount} config${configCount !== 1 ? 's' : ''}`);
+                      }
+                      if (exportOptions.includeVulnDevices) {
+                        const deviceCount = vulnDevices.length;
+                        if (deviceCount > 0) parts.push(`${deviceCount} device${deviceCount !== 1 ? 's' : ''}`);
+                      }
+                      if (exportOptions.includeVulnScanCache) {
+                        const devicesWithScans = Object.keys(vulnScanCache).length;
+                        if (devicesWithScans > 0) parts.push(`${devicesWithScans} device${devicesWithScans !== 1 ? 's' : ''} with cached scans`);
+                      }
+                      return parts.length > 0 ? (
+                        <p className="text-xs text-slate-500 mt-2">{parts.join(', ')}</p>
+                      ) : null;
+                    })()}
                   </div>
 
                   {/* Password */}
@@ -580,12 +682,53 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
                 </div>
               ) : showSummary && decryptedData ? (
                 /* ---- Summary / Conflict view ---- */
-                <>
-                  <div>
-                    <h4 className="text-sm font-medium text-slate-200 mb-2">Archive Contents</h4>
-                    {(() => {
-                      const counts = countData(decryptedData);
-                      return (
+                (() => {
+                  const counts = countData(decryptedData);
+                  const pluginNames = decryptedData.plugins ? Object.keys(decryptedData.plugins) : [];
+                  const canConfirm = importStrategy === 'merge' || replaceConfirmed;
+                  return (
+                    <>
+                      {/* Import Strategy */}
+                      <div>
+                        <label className="block text-[13px] font-medium text-slate-400 mb-2">Import Strategy</label>
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="importStrategy"
+                              checked={importStrategy === 'merge'}
+                              onChange={() => { setImportStrategy('merge'); setReplaceConfirmed(false); }}
+                              className="accent-amber-500"
+                            />
+                            <span className="text-sm text-slate-200">Merge with existing</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="importStrategy"
+                              checked={importStrategy === 'replace'}
+                              onChange={() => { setImportStrategy('replace'); }}
+                              className="accent-amber-500"
+                            />
+                            <span className="text-sm text-slate-200">Replace all (erase current data first)</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Replace confirmation warning */}
+                      {importStrategy === 'replace' && (
+                        <div className="border border-red-500/50 bg-red-500/5 rounded-lg px-3 py-2">
+                          <p className="text-sm text-red-400">This will erase all existing data before importing. This cannot be undone.</p>
+                          <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                            <input type="checkbox" checked={replaceConfirmed} onChange={(e) => { setReplaceConfirmed(e.target.checked); }} className="accent-red-500" />
+                            <span className="text-xs text-slate-300">I understand, proceed with replace</span>
+                          </label>
+                        </div>
+                      )}
+
+                      {/* Archive Contents */}
+                      <div>
+                        <h4 className="text-sm font-medium text-slate-200 mb-2">Archive Contents</h4>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <div className="bg-forge-obsidian rounded-lg px-3 py-2">
                             <span className="text-slate-400">Views:</span>{' '}
@@ -603,78 +746,211 @@ export default function VaultModal({ isOpen, onClose, exportScope, initialTab = 
                             <span className="text-slate-400">Variants:</span>{' '}
                             <span className="text-slate-200 font-medium">{counts.variants}</span>
                           </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {/* Conflicts */}
-                  {conflicts.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium text-amber-400 mb-2">
-                        <AlertCircle size={14} className="inline-block mr-1 -mt-0.5" />
-                        {conflicts.length} conflict{conflicts.length > 1 ? 's' : ''} found
-                      </h4>
-                      <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {conflicts.map((c, i) => (
-                          <div
-                            key={`${c.id}-${i}`}
-                            className="flex items-center justify-between bg-forge-obsidian rounded-lg px-3 py-2"
-                          >
-                            <div className="text-sm">
-                              <span className="text-slate-400 text-xs">{c.type}:</span>{' '}
-                              <span className="text-slate-200">{c.name}</span>
-                            </div>
-                            <select
-                              value={c.resolution}
-                              onChange={(e) => {
-                                const updated = [...conflicts];
-                                updated[i] = { ...updated[i], resolution: e.target.value as ConflictResolution };
-                                setConflicts(updated);
-                              }}
-                              className="bg-forge-graphite border border-forge-steel rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-forge-amber/50"
-                            >
-                              <option value="skip">Skip</option>
-                              <option value="overwrite">Overwrite</option>
-                              <option value="rename">Rename</option>
-                            </select>
+                          <div className="bg-forge-obsidian rounded-lg px-3 py-2">
+                            <span className="text-slate-400">Templates:</span>{' '}
+                            <span className="text-slate-200 font-medium">{counts.templates}</span>
                           </div>
-                        ))}
+                          {counts.generatedConfigs > 0 && (
+                            <div className="bg-forge-obsidian rounded-lg px-3 py-2">
+                              <span className="text-slate-400">Configs:</span>{' '}
+                              <span className="text-slate-200 font-medium">{counts.generatedConfigs}</span>
+                            </div>
+                          )}
+                          {counts.plugins > 0 && (
+                            <div className="bg-forge-obsidian rounded-lg px-3 py-2">
+                              <span className="text-slate-400">Plugins:</span>{' '}
+                              <span className="text-slate-200 font-medium">{counts.plugins}</span>
+                            </div>
+                          )}
+                          {counts.vulnDevices > 0 && (
+                            <div className="bg-forge-obsidian rounded-lg px-3 py-2">
+                              <span className="text-slate-400">Vuln Devices:</span>{' '}
+                              <span className="text-slate-200 font-medium">{counts.vulnDevices}</span>
+                            </div>
+                          )}
+                          {counts.scanEntries > 0 && (
+                            <div className="bg-forge-obsidian rounded-lg px-3 py-2">
+                              <span className="text-slate-400">Scan Entries:</span>{' '}
+                              <span className="text-slate-200 font-medium">{counts.scanEntries}</span>
+                            </div>
+                          )}
+                          {counts.hasPreferences && (
+                            <div className="bg-forge-obsidian rounded-lg px-3 py-2">
+                              <span className="text-slate-400">Preferences:</span>{' '}
+                              <span className="text-slate-200 font-medium">Yes</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
 
-                  {/* Error */}
-                  {importError && (
-                    <div className="flex items-center gap-2 text-red-400 text-sm">
-                      <AlertCircle size={14} className="shrink-0" />
-                      <span>{importError}</span>
-                    </div>
-                  )}
+                      {/* Import Categories */}
+                      <div>
+                        <label className="block text-[13px] font-medium text-slate-400 mb-2">Import Categories</label>
+                        <div className="space-y-1.5">
+                          {/* Views & Templates — always on */}
+                          <label className="flex items-start gap-2">
+                            <input type="checkbox" checked disabled className="accent-amber-500 mt-0.5" />
+                            <span className="text-sm text-slate-400">Views & Templates</span>
+                          </label>
 
-                  {/* Actions */}
-                  <div className="flex justify-end gap-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowSummary(false);
-                        setDecryptedData(null);
-                        setConflicts([]);
-                      }}
-                      className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-slate-200 rounded-lg hover:bg-forge-graphite transition-colors"
-                    >
-                      Back
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleConfirmImport}
-                      className="px-4 py-2 text-sm font-semibold bg-forge-amber text-forge-obsidian rounded-lg hover:bg-forge-amber-bright transition-colors flex items-center gap-2"
-                    >
-                      <Upload size={14} />
-                      Confirm Import
-                    </button>
-                  </div>
-                </>
+                          {/* Generated Configs */}
+                          {counts.generatedConfigs > 0 && (
+                            <label className="flex items-start gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={!!importCategories.generatedConfigs}
+                                onChange={(e) => { setImportCategories((prev) => ({ ...prev, generatedConfigs: e.target.checked })); }}
+                                className="accent-amber-500 mt-0.5"
+                              />
+                              <span className="text-sm text-slate-200">Generated Configs</span>
+                            </label>
+                          )}
+
+                          {/* Plugin Settings */}
+                          {counts.plugins > 0 && (
+                            <label className="flex items-start gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={!!importCategories.plugins}
+                                onChange={(e) => { setImportCategories((prev) => ({ ...prev, plugins: e.target.checked })); }}
+                                className="accent-amber-500 mt-0.5"
+                              />
+                              <span className="text-sm text-slate-200">Plugin Settings</span>
+                            </label>
+                          )}
+
+                          {/* Vulnerability Devices */}
+                          {counts.vulnDevices > 0 && (
+                            <label className="flex items-start gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={!!importCategories.vulnDevices}
+                                onChange={(e) => { setImportCategories((prev) => ({ ...prev, vulnDevices: e.target.checked })); }}
+                                className="accent-amber-500 mt-0.5"
+                              />
+                              <span className="text-sm text-slate-200">Vulnerability Devices</span>
+                            </label>
+                          )}
+
+                          {/* Scan History */}
+                          {counts.scanEntries > 0 && (
+                            <label className="flex items-start gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={!!importCategories.vulnScanCache}
+                                onChange={(e) => { setImportCategories((prev) => ({ ...prev, vulnScanCache: e.target.checked })); }}
+                                className="accent-amber-500 mt-0.5"
+                              />
+                              <span className="text-sm text-slate-200">Scan History</span>
+                            </label>
+                          )}
+
+                          {/* Preferences */}
+                          {counts.hasPreferences && (
+                            <label className="flex items-start gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={!!importCategories.preferences}
+                                onChange={(e) => { setImportCategories((prev) => ({ ...prev, preferences: e.target.checked })); }}
+                                className="accent-amber-500 mt-0.5"
+                              />
+                              <span className="text-sm text-slate-200">Preferences</span>
+                            </label>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Re-setup notices */}
+                      {counts.plugins > 0 && importCategories.plugins && (
+                        <div className="flex items-start gap-2 bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-2">
+                          <AlertCircle size={14} className="text-amber-400 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-sm text-amber-300">Plugin re-setup required</p>
+                            <p className="text-xs text-slate-400">{pluginNames.join(', ')} — credentials were stripped from the export. Re-configure after import.</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {counts.vulnDevices > 0 && importCategories.vulnDevices && (
+                        <div className="flex items-start gap-2 bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-2">
+                          <AlertCircle size={14} className="text-amber-400 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-sm text-amber-300">SNMP credentials need re-entry</p>
+                            <p className="text-xs text-slate-400">{counts.vulnDevices} device{counts.vulnDevices !== 1 ? 's' : ''} — SNMP communities were stripped from the export.</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Conflicts */}
+                      {conflicts.length > 0 && importStrategy === 'merge' && (
+                        <div>
+                          <h4 className="text-sm font-medium text-amber-400 mb-2">
+                            <AlertCircle size={14} className="inline-block mr-1 -mt-0.5" />
+                            {conflicts.length} conflict{conflicts.length > 1 ? 's' : ''} found
+                          </h4>
+                          <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {conflicts.map((c, i) => (
+                              <div
+                                key={`${c.id}-${i}`}
+                                className="flex items-center justify-between bg-forge-obsidian rounded-lg px-3 py-2"
+                              >
+                                <div className="text-sm">
+                                  <span className="text-slate-400 text-xs">{c.type}:</span>{' '}
+                                  <span className="text-slate-200">{c.name}</span>
+                                </div>
+                                <select
+                                  value={c.resolution}
+                                  onChange={(e) => {
+                                    const updated = [...conflicts];
+                                    updated[i] = { ...updated[i], resolution: e.target.value as ConflictResolution };
+                                    setConflicts(updated);
+                                  }}
+                                  className="bg-forge-graphite border border-forge-steel rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-forge-amber/50"
+                                >
+                                  <option value="skip">Skip</option>
+                                  <option value="overwrite">Overwrite</option>
+                                  <option value="rename">Rename</option>
+                                </select>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Error */}
+                      {importError && (
+                        <div className="flex items-center gap-2 text-red-400 text-sm">
+                          <AlertCircle size={14} className="shrink-0" />
+                          <span>{importError}</span>
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex justify-end gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowSummary(false);
+                            setDecryptedData(null);
+                            setConflicts([]);
+                          }}
+                          className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-slate-200 rounded-lg hover:bg-forge-graphite transition-colors"
+                        >
+                          Back
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleConfirmImport}
+                          disabled={!canConfirm}
+                          className="px-4 py-2 text-sm font-semibold bg-forge-amber text-forge-obsidian rounded-lg hover:bg-forge-amber-bright disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                        >
+                          <Upload size={14} />
+                          Confirm Import
+                        </button>
+                      </div>
+                    </>
+                  );
+                })()
               ) : (
                 /* ---- File + password input ---- */
                 <>
