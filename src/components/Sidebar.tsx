@@ -479,7 +479,8 @@ export function Sidebar({
                                   });
                                 }}
                               >
-                                {generatedConfigs.map((gc) => (
+                                <Sorted items={generatedConfigs}>
+                                {(sortedGc) => sortedGc.map((gc) => (
                                   <TreeNode
                                     key={gc.id}
                                     id={gc.id}
@@ -507,6 +508,7 @@ export function Sidebar({
                                     }}
                                   />
                                 ))}
+                                </Sorted>
                               </TreeNode>
                             )}
                           </TreeNode>
