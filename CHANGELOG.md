@@ -5,9 +5,19 @@ All notable changes to Forge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2026-04-02
 
 ### Added
+
+- Complete vault export: vulnDevices, preferences, and opt-in scan cache now included in .stvault files (FORGE-34)
+- Selective export: category checkboxes to include/exclude data types with item counts (FORGE-34)
+- Selective import: category checkboxes for each data type present in vault file (FORGE-34)
+- Merge/replace import strategy: "Replace all" option with confirmation gate (FORGE-34)
+- Enhanced import preview: full data category counts, plugin re-setup notices, SNMP re-entry notices (FORGE-34)
+- SNMP community stripping on export (consistent with plugin credential stripping from FORGE-64)
+- 5 new vault roundtrip tests covering backward compat, credential stripping, orphaned viewId handling
+
+### Fixed
 
 - User-resizable sidebar with drag handle (180-400px range, persisted) (FORGE-37, PR #30)
 
