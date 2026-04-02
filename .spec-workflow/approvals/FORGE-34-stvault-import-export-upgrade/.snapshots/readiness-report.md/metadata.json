@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-34-stvault-import-export-upgrade/readiness-report.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-04-02T00:56:25.367Z",
+      "trigger": "initial",
+      "approvalId": "approval_1775091385362_ribqgj7cm",
+      "approvalTitle": "Readiness Report: .stvault import/export pipeline upgrade"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-04-02T01:18:45.626Z",
+      "trigger": "approved",
+      "approvalId": "approval_1775091385362_ribqgj7cm",
+      "approvalTitle": "Readiness Report: .stvault import/export pipeline upgrade"
+    }
+  ]
+}
