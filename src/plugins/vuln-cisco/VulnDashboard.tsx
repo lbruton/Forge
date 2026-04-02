@@ -200,7 +200,7 @@ function DevicePage({
     const providers = getSecretsProviders();
     const infisicalPlugin = getPlugin('forge-infisical');
     const projectId = infisicalPlugin?.settings?.defaultProjectId as string | undefined;
-    const env = resolveInfisicalEnv('forge-vuln-cisco', getPlugin);
+    const env = resolveInfisicalEnv(pluginName, getPlugin);
 
     if (providers.length === 0 || !projectId) {
       setError('Infisical is not connected. Connect it first to resolve PSIRT credentials.');
@@ -997,12 +997,19 @@ export default function VulnDashboard({ pluginName, viewId }: VulnDashboardProps
       <OverviewPage pluginName={pluginName} viewId={viewId} />
 
       {/* Add Device Modal */}
-      <DeviceModal open={showAddModal} device={null} onSave={handleSaveDevice} onClose={handleCloseModal} />
+      <DeviceModal
+        open={showAddModal}
+        device={null}
+        pluginName={pluginName}
+        onSave={handleSaveDevice}
+        onClose={handleCloseModal}
+      />
 
       {/* Edit Device Modal */}
       <DeviceModal
         open={showEditModal}
         device={editDevice ?? null}
+        pluginName={pluginName}
         onSave={handleSaveDevice}
         onClose={handleCloseModal}
       />

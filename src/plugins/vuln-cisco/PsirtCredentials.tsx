@@ -59,7 +59,7 @@ export default function PsirtCredentials({ pluginName }: { pluginName: string })
 
       const infisicalPlugin = getPlugin(INFISICAL_MANIFEST.name);
       const projectId = infisicalPlugin?.settings?.defaultProjectId as string | undefined;
-      const env = resolveInfisicalEnv('forge-vuln-cisco', getPlugin);
+      const env = resolveInfisicalEnv(pluginName, getPlugin);
       if (!projectId) {
         setSaveError('No default project configured in Infisical plugin settings.');
         return;
@@ -192,6 +192,7 @@ export default function PsirtCredentials({ pluginName }: { pluginName: string })
       {pickingField && readableProvider && (
         <SecretPickerModal
           provider={readableProvider}
+          pluginName={pluginName}
           onPick={(key) => {
             handlePickSecret(pickingField, key);
           }}
@@ -331,10 +332,12 @@ function CredentialField({
 
 function SecretPickerModal({
   provider,
+  pluginName,
   onPick,
   onClose,
 }: {
   provider: { listSecrets: (_projectId: string, _env: string) => Promise<SecretEntry[]>; name: string };
+  pluginName: string;
   onPick: (_key: string) => void;
   onClose: () => void;
 }) {
@@ -342,7 +345,7 @@ function SecretPickerModal({
   const infisicalPlugin = getPlugin(INFISICAL_MANIFEST.name);
   const settings = (infisicalPlugin?.settings ?? {}) as Record<string, string>;
   const projectId = settings.defaultProjectId || '';
-  const environment = resolveInfisicalEnv('forge-vuln-cisco', getPlugin);
+  const environment = resolveInfisicalEnv(pluginName, getPlugin);
 
   const [secrets, setSecrets] = useState<SecretEntry[]>([]);
   const [filter, setFilter] = useState('');

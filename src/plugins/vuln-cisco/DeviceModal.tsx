@@ -9,11 +9,12 @@ import { resolveInfisicalEnv } from '../../lib/infisical-env.ts';
 interface DeviceModalProps {
   open: boolean;
   device: VulnDevice | null;
+  pluginName: string;
   onSave: (_device: Omit<VulnDevice, 'viewId'>) => void;
   onClose: () => void;
 }
 
-export default function DeviceModal({ open, device, onSave, onClose }: DeviceModalProps) {
+export default function DeviceModal({ open, device, pluginName, onSave, onClose }: DeviceModalProps) {
   const [hostname, setHostname] = useState('');
   const [ip, setIp] = useState('');
   const [snmpCommunity, setSnmpCommunity] = useState('');
@@ -59,7 +60,7 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
 
     const infisicalPlugin = getPlugin(INFISICAL_MANIFEST.name);
     const projectId = infisicalPlugin?.settings?.defaultProjectId as string | undefined;
-    const env = resolveInfisicalEnv('forge-vuln-cisco', getPlugin);
+    const env = resolveInfisicalEnv(pluginName, getPlugin);
     if (!projectId) {
       setSaveError('No default project configured in Infisical plugin settings.');
       return;
@@ -96,7 +97,7 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
       if (!readableProvider) return;
       const infisicalPlugin = getPlugin(INFISICAL_MANIFEST.name);
       const projectId = infisicalPlugin?.settings?.defaultProjectId as string | undefined;
-      const env = resolveInfisicalEnv('forge-vuln-cisco', getPlugin);
+      const env = resolveInfisicalEnv(pluginName, getPlugin);
       if (!projectId) return;
 
       try {
@@ -338,6 +339,7 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
       {showSecretPicker && readableProvider && (
         <SecretPickerOverlay
           provider={readableProvider}
+          pluginName={pluginName}
           onPick={handlePickSecret}
           onClose={() => {
             setShowSecretPicker(false);
@@ -354,10 +356,12 @@ export default function DeviceModal({ open, device, onSave, onClose }: DeviceMod
 
 function SecretPickerOverlay({
   provider,
+  pluginName,
   onPick,
   onClose,
 }: {
   provider: { listSecrets: (_projectId: string, _env: string) => Promise<SecretEntry[]>; name: string };
+  pluginName: string;
   onPick: (_key: string) => void;
   onClose: () => void;
 }) {
@@ -365,7 +369,7 @@ function SecretPickerOverlay({
   const infisicalPlugin = getPlugin(INFISICAL_MANIFEST.name);
   const settings = (infisicalPlugin?.settings ?? {}) as Record<string, string>;
   const projectId = settings.defaultProjectId || '';
-  const environment = resolveInfisicalEnv('forge-vuln-cisco', getPlugin);
+  const environment = resolveInfisicalEnv(pluginName, getPlugin);
 
   const [secrets, setSecrets] = useState<SecretEntry[]>([]);
   const [filter, setFilter] = useState('');
