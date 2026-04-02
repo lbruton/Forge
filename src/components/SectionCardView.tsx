@@ -213,7 +213,7 @@ function ModelView({
         <>
           <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Generated Configs</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {generatedConfigs.map((gc) => (
+            {[...generatedConfigs].sort((a, b) => a.name.localeCompare(b.name)).map((gc) => (
               <Card key={gc.id} onClick={() => { onNavigateGeneratedConfig(gc.id); }}>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 bg-forge-graphite rounded-md">
