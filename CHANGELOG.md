@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-04-03
+
+### Added
+
+- Config Secrets Linter: detection engine with 34 regex rules across 9 Cisco config categories (FORGE-78)
+- Severity classification: critical (cleartext/Type 0), high (Type 7 reversible), low (Type 5/8/9 hashed)
+- Non-intrusive warning banner above the template editor with collapsible finding list
+- Click-to-navigate: click a finding to scroll the editor to the flagged line
+- Automatic scan on text change (debounced) and format switch; CLI-only (skips JSON/XML/YAML)
+- Variable exclusion: `$var` and `${var}` in value positions are not flagged
+- 90 unit + integration tests covering all detection categories, realistic configs, and performance
+
 ## [0.2.0] - 2026-04-02
 
 ### Added
