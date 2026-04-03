@@ -32,7 +32,7 @@ This file provides core guidance to Claude Code when working with code in this r
 ```bash
 npm run dev       # Vite dev server
 npm run build     # tsc -b && vite build
-npm run test      # vitest run (11 test suites)
+npm run test      # vitest run (16 test suites)
 npm run lint      # eslint
 ```
 
@@ -71,28 +71,37 @@ src/
 │   ├── substitution-engine.ts # Variable substitution for config generation
 │   ├── vault-engine.ts        # .stvault encrypt/decrypt (AES-GCM)
 │   ├── storage-service.ts     # localStorage wrapper with prefix isolation
+│   ├── credential-store.ts    # Encrypted credential storage for sensitive plugin settings
 │   ├── plugin-service.ts      # Plugin lifecycle management
 │   ├── syntax-highlighter.ts  # Config syntax coloring
 │   └── validators.ts          # Shared validators (IPv4, secretKeyToVarName)
-├── components/                # 21 React components (see sidebar, editor, modals)
+├── components/                # 23 React components (see sidebar, editor, modals)
 ├── plugins/
 │   ├── init.ts                # Plugin bootstrap
 │   ├── configurations.ts      # Bundled plugin — config template management
-│   └── infisical/             # Bundled plugin — secrets integration
+│   ├── infisical/             # Integration plugin (shipped with app) — secrets integration
+│   │   ├── manifest.ts        # Plugin manifest + settings schema
+│   │   ├── provider.ts        # SecretsProvider implementation
+│   │   ├── api.ts             # InfisicalClient (HTTP + token lifecycle)
+│   │   ├── SecretsBrowser.tsx  # Secrets browsing UI
+│   │   └── SetupWizard.tsx    # Connection setup wizard
+│   └── vuln-cisco/            # Sidecar plugin — Cisco PSIRT vulnerability scanner (requires endpoint + apiKey)
 │       ├── manifest.ts        # Plugin manifest + settings schema
-│       ├── provider.ts        # SecretsProvider implementation
-│       ├── api.ts             # InfisicalClient (HTTP + token lifecycle)
-│       ├── SecretsBrowser.tsx  # Secrets browsing UI
-│       └── SetupWizard.tsx    # Connection setup wizard
-└── __tests__/                 # 11 Vitest test suites
+│       ├── types.ts           # Scan result types
+│       ├── DeviceModal.tsx    # Device scan configuration modal
+│       ├── PsirtCredentials.tsx # Cisco API credential entry
+│       ├── ScanReportViewer.tsx # Vulnerability scan report display
+│       └── VulnDashboard.tsx  # Main vulnerability scanner dashboard
+└── __tests__/                 # 16 Vitest test suites
 ```
 
 ## Plugin System
 
-Forge uses a two-tier plugin model:
+Forge uses a three-tier plugin model based on `manifest.type`:
 
-- **Bundled plugins** (Configurations, Infisical) — shipped with the app, enable/disable only
-- **Sidecar plugins** — external Docker containers (planned, see FORGE-23)
+- **Bundled** (Configurations) — shipped with the app, always configured, enable/disable only
+- **Integration** (Infisical) — shipped with the app but requires settings (API keys, endpoints) to be configured before use
+- **Sidecar** (Vuln-Cisco) — shipped manifest + external Docker container (`sidecar/vuln-cisco/` FastAPI service) that must be running and configured (endpoint + apiKey)
 
 Plugins register via manifests in `src/plugins/`. The registry is **global** (not per-View).
 Views store usage data (devices, results), not plugin instances.
