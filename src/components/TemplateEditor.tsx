@@ -20,6 +20,9 @@ import { parseVariables, parseSections, cleanUpSections, rebuildRawText } from '
 import { VariableDetectionPanel } from './VariableDetectionPanel.tsx';
 import { EditorSectionTabs } from './EditorSectionTabs.tsx';
 import type { VariableDefinition, TemplateSection, ConfigFormat } from '../types/index.ts';
+import { scanForSecrets } from '../lib/secrets-detector.ts';
+import type { SecretFinding } from '../lib/secrets-detector.ts';
+import { SecretsWarningBanner } from './SecretsWarningBanner.tsx';
 
 /**
  * Order-preserving merge of parsed variables into an existing array.
@@ -95,6 +98,8 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const [showAddSection, setShowAddSection] = useState(false);
   const [addSectionName, setAddSectionName] = useState('');
   const [customVariableOrder, setCustomVariableOrder] = useState(existingTemplate?.customVariableOrder ?? false);
+  const [secretFindings, setSecretFindings] = useState<SecretFinding[]>([]);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   // Context menu state for section marker insertion
   const [contextMenu, setContextMenu] = useState<{
@@ -121,6 +126,8 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const addSectionInputRef = useRef<HTMLInputElement>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rawTextRef = useRef(rawText);
+  rawTextRef.current = rawText;
 
   // Build variable-to-section mapping
   const buildVariableSectionMap = useCallback(
@@ -171,6 +178,8 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
         setGlobalNames(parsedVars.global);
         setSections(parsedSections);
         setVariableSectionMap(buildVariableSectionMap(text, parsedSections));
+        setSecretFindings(scanForSecrets(text, configFormat));
+        setBannerDismissed(false);
       }, 300);
     },
     [configFormat, buildVariableSectionMap, setEditorDirty],
@@ -194,10 +203,19 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
       const parsedSections = parseSections(rawText, configFormat);
       setSections(parsedSections);
       setVariableSectionMap(buildVariableSectionMap(rawText, parsedSections));
+      setSecretFindings(scanForSecrets(rawText, configFormat));
     }
     // Only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Re-scan for secrets when config format changes
+  useEffect(() => {
+    if (rawTextRef.current) {
+      setSecretFindings(scanForSecrets(rawTextRef.current, configFormat));
+      setBannerDismissed(false);
+    }
+  }, [configFormat]);
 
   // Sync detected global variable names to the View
   useEffect(() => {
@@ -262,6 +280,8 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     setGlobalNames(parsedVars.global);
     setSections(parsedSections);
     setVariableSectionMap(buildVariableSectionMap(cleaned, parsedSections));
+    setSecretFindings(scanForSecrets(cleaned, configFormat));
+    setBannerDismissed(false);
 
     // Show toast
     setCleanUpToast(true);
@@ -333,6 +353,8 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
         setVariables((prevVars) => mergeVariablesOrderPreserving(prevVars, parsedVars.local));
         setGlobalNames(parsedVars.global);
         setVariableSectionMap(buildVariableSectionMap(rebuilt, parsedSections));
+        setSecretFindings(scanForSecrets(rebuilt, configFormat));
+        setBannerDismissed(false);
 
         // Restore cursor position and sync overlay scroll after DOM update
         requestAnimationFrame(() => {
@@ -358,6 +380,22 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
       overlayRef.current.scrollTop = textareaRef.current.scrollTop;
       overlayRef.current.scrollLeft = textareaRef.current.scrollLeft;
     }
+  }, []);
+
+  // Navigate to a specific line (used by secrets warning banner)
+  const handleNavigateToFinding = useCallback((line: number) => {
+    // Clear section filter so full rawText is visible
+    setActiveSectionName(null);
+    // Use requestAnimationFrame to wait for re-render with full text
+    requestAnimationFrame(() => {
+      if (!textareaRef.current) return;
+      const lineHeight = 21.125; // 13px font * 1.625 (leading-relaxed)
+      const targetScroll = (line - 1) * lineHeight - textareaRef.current.clientHeight / 3;
+      textareaRef.current.scrollTop = Math.max(0, targetScroll);
+      if (overlayRef.current) {
+        overlayRef.current.scrollTop = textareaRef.current.scrollTop;
+      }
+    });
   }, []);
 
   // Jump to a section in the textarea
@@ -657,6 +695,15 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             activeSectionName={activeSectionName}
             onSelectSection={handleSelectSection}
           />
+          {secretFindings.length > 0 && !bannerDismissed && (
+            <div className="px-5 py-2 border-b border-forge-graphite">
+              <SecretsWarningBanner
+                findings={secretFindings}
+                onNavigate={handleNavigateToFinding}
+                onDismiss={() => setBannerDismissed(true)}
+              />
+            </div>
+          )}
           <div className="flex-1 relative">
             {/* Textarea — renders visible text */}
             <textarea
