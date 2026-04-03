@@ -20,6 +20,9 @@ import { parseVariables, parseSections, cleanUpSections, rebuildRawText } from '
 import { VariableDetectionPanel } from './VariableDetectionPanel.tsx';
 import { EditorSectionTabs } from './EditorSectionTabs.tsx';
 import type { VariableDefinition, TemplateSection, ConfigFormat } from '../types/index.ts';
+import { scanForSecrets } from '../lib/secrets-detector.ts';
+import type { SecretFinding } from '../lib/secrets-detector.ts';
+import { SecretsWarningBanner } from './SecretsWarningBanner.tsx';
 
 /**
  * Order-preserving merge of parsed variables into an existing array.
@@ -95,6 +98,8 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   const [showAddSection, setShowAddSection] = useState(false);
   const [addSectionName, setAddSectionName] = useState('');
   const [customVariableOrder, setCustomVariableOrder] = useState(existingTemplate?.customVariableOrder ?? false);
+  const [secretFindings, setSecretFindings] = useState<SecretFinding[]>([]);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   // Context menu state for section marker insertion
   const [contextMenu, setContextMenu] = useState<{
@@ -171,6 +176,8 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
         setGlobalNames(parsedVars.global);
         setSections(parsedSections);
         setVariableSectionMap(buildVariableSectionMap(text, parsedSections));
+        setSecretFindings(scanForSecrets(text, configFormat));
+        setBannerDismissed(false);
       }, 300);
     },
     [configFormat, buildVariableSectionMap, setEditorDirty],
@@ -198,6 +205,14 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     // Only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Re-scan for secrets when config format changes
+  useEffect(() => {
+    if (rawText) {
+      setSecretFindings(scanForSecrets(rawText, configFormat));
+      setBannerDismissed(false);
+    }
+  }, [configFormat]);
 
   // Sync detected global variable names to the View
   useEffect(() => {
@@ -357,6 +372,17 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     if (textareaRef.current && overlayRef.current) {
       overlayRef.current.scrollTop = textareaRef.current.scrollTop;
       overlayRef.current.scrollLeft = textareaRef.current.scrollLeft;
+    }
+  }, []);
+
+  // Navigate to a specific line (used by secrets warning banner)
+  const handleNavigateToFinding = useCallback((line: number) => {
+    if (!textareaRef.current) return;
+    const lineHeight = 21.125; // 13px font * 1.625 (leading-relaxed)
+    const targetScroll = (line - 1) * lineHeight - textareaRef.current.clientHeight / 3;
+    textareaRef.current.scrollTop = Math.max(0, targetScroll);
+    if (overlayRef.current) {
+      overlayRef.current.scrollTop = textareaRef.current.scrollTop;
     }
   }, []);
 
@@ -657,6 +683,15 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             activeSectionName={activeSectionName}
             onSelectSection={handleSelectSection}
           />
+          {secretFindings.length > 0 && !bannerDismissed && (
+            <div className="px-5 py-2 border-b border-forge-graphite">
+              <SecretsWarningBanner
+                findings={secretFindings}
+                onNavigate={handleNavigateToFinding}
+                onDismiss={() => setBannerDismissed(true)}
+              />
+            </div>
+          )}
           <div className="flex-1 relative">
             {/* Textarea — renders visible text */}
             <textarea
