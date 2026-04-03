@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AlertCircle, AlertTriangle, Shield, ChevronDown, ChevronUp, X } from 'lucide-react';
-import type { SecretFinding, SecretSeverity } from '../lib/secrets-detector';
+import type { SecretFinding, SecretSeverity } from '../lib/secrets-detector.ts';
 
 interface SecretsWarningBannerProps {
   findings: SecretFinding[];
@@ -81,6 +81,8 @@ export function SecretsWarningBanner({ findings, onNavigate, onDismiss }: Secret
           onClick={() => setExpanded((prev) => !prev)}
           className={`shrink-0 ${colors.dismiss} transition-colors`}
           aria-label={expanded ? 'Collapse findings' : 'Expand findings'}
+          aria-expanded={expanded}
+          aria-controls="secrets-findings-list"
         >
           {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
@@ -96,7 +98,7 @@ export function SecretsWarningBanner({ findings, onNavigate, onDismiss }: Secret
 
       {/* Expanded finding list */}
       {expanded && (
-        <div>
+        <div id="secrets-findings-list">
           {findings.map((finding, idx) => (
             <button
               key={`${finding.ruleId}-${finding.line}-${idx}`}

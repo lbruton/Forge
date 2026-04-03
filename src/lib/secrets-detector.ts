@@ -36,7 +36,7 @@ export interface SecretFinding {
 // Variable pattern — used to skip lines where the secret value is a template variable
 // ---------------------------------------------------------------------------
 
-const VARIABLE_PATTERN = /^\$\{?\w+\}?$/;
+const VARIABLE_PATTERN = /^\$\{?[A-Za-z_]\w*\}?$/;
 
 // ---------------------------------------------------------------------------
 // Severity helpers
@@ -323,7 +323,7 @@ export const DETECTION_RULES: SecretDetectionRule[] = [
     id: 'wlan-psk',
     category: 'Management',
     // wlan ... security wpa-psk ascii [0|7] <value>
-    pattern: /wlan\s+.*security\s+wpa-psk\s+ascii\s+(?:([07])\s+)?(\S+)/i,
+    pattern: /^wlan\s+.*security\s+wpa-psk\s+ascii\s+(?:([07])\s+)?(\S+)/i,
     severity: passwordTypeSeverity,
     description: 'WLAN pre-shared key exposed',
   },
@@ -372,7 +372,7 @@ export const DETECTION_RULES: SecretDetectionRule[] = [
     id: 'hashed-secret-catchall',
     category: 'Hashed Secrets',
     // secret [5|8|9] <hash>  OR  lines containing $1$, $5$, $8$, $9$, $14$ hash patterns
-    pattern: /(?:\bsecret\s+[589]\s+\S+|\$(?:1|5|8|9|14)\$\S+)/i,
+    pattern: /(?:\bsecret\s+[589]\s+\S+|\$(?:1|5|8|9|14)\$[A-Za-z0-9./]+\$[A-Za-z0-9./]+)/,
     severity: 'low',
     description: 'Hashed secret detected (not cleartext)',
   },
