@@ -71,7 +71,7 @@ src/
 │   ├── substitution-engine.ts # Variable substitution for config generation
 │   ├── vault-engine.ts        # .stvault encrypt/decrypt (AES-GCM)
 │   ├── storage-service.ts     # localStorage wrapper with prefix isolation
-│   ├── credential-store.ts    # Encrypted credential storage (PSIRT API keys)
+│   ├── credential-store.ts    # Encrypted credential storage for sensitive plugin settings
 │   ├── plugin-service.ts      # Plugin lifecycle management
 │   ├── syntax-highlighter.ts  # Config syntax coloring
 │   └── validators.ts          # Shared validators (IPv4, secretKeyToVarName)
@@ -79,13 +79,13 @@ src/
 ├── plugins/
 │   ├── init.ts                # Plugin bootstrap
 │   ├── configurations.ts      # Bundled plugin — config template management
-│   ├── infisical/             # Bundled plugin — secrets integration
+│   ├── infisical/             # Integration plugin (shipped with app) — secrets integration
 │   │   ├── manifest.ts        # Plugin manifest + settings schema
 │   │   ├── provider.ts        # SecretsProvider implementation
 │   │   ├── api.ts             # InfisicalClient (HTTP + token lifecycle)
 │   │   ├── SecretsBrowser.tsx  # Secrets browsing UI
 │   │   └── SetupWizard.tsx    # Connection setup wizard
-│   └── vuln-cisco/            # Bundled plugin — Cisco PSIRT vulnerability scanner
+│   └── vuln-cisco/            # Sidecar plugin — Cisco PSIRT vulnerability scanner (requires endpoint + apiKey)
 │       ├── manifest.ts        # Plugin manifest + settings schema
 │       ├── types.ts           # Scan result types
 │       ├── DeviceModal.tsx    # Device scan configuration modal
@@ -97,10 +97,11 @@ src/
 
 ## Plugin System
 
-Forge uses a two-tier plugin model:
+Forge uses a three-tier plugin model based on `manifest.type`:
 
-- **Bundled plugins** (Configurations, Infisical, Vuln-Cisco) — shipped with the app, enable/disable only
-- **Sidecar plugins** — external Docker containers that extend bundled plugins (e.g., `sidecar/vuln-cisco/` FastAPI service for PSIRT + Nuclei scanning)
+- **Bundled** (Configurations) — shipped with the app, always configured, enable/disable only
+- **Integration** (Infisical) — shipped with the app but requires settings (API keys, endpoints) to be configured before use
+- **Sidecar** (Vuln-Cisco) — shipped manifest + external Docker container (`sidecar/vuln-cisco/` FastAPI service) that must be running and configured (endpoint + apiKey)
 
 Plugins register via manifests in `src/plugins/`. The registry is **global** (not per-View).
 Views store usage data (devices, results), not plugin instances.
