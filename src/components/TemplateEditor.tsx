@@ -560,6 +560,13 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     return () => { window.removeEventListener('click', close); };
   }, [contextMenu]);
 
+  // Build a set of 1-based line numbers that have secret findings (for red highlight)
+  const secretLineSet = useMemo(() => {
+    const s = new Set<number>();
+    for (const f of secretFindings) s.add(f.line);
+    return s;
+  }, [secretFindings]);
+
   // Build highlighted overlay text
   const BANNER_RE = /^!#{3,}\s*.*\s*-\s*(?:START|END)\s*#{3,}$/i;
   const highlightedText = useMemo(() => {
@@ -595,6 +602,9 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
           </span>,
         );
 
+      // Check if this line has a secret finding (1-based line numbers)
+      const isSecretLine = secretLineSet.has(lineIdx + 1);
+
       // Strip Cisco type-9 password hashes before scanning (same as parseVariables)
       const sanitized = rawLine.replace(/\$\d\$\S+/g, (match) => '_'.repeat(match.length));
       // Split by variable patterns, keeping delimiters — braced form captured first
@@ -602,13 +612,15 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
       const globalVarPattern = /^\$\{[A-Za-z_]\w*\}$/;
       const localVarPattern = /^\$[A-Za-z_]\w*$/;
 
+      // Collect part spans — wrap in red highlight if this is a secret line
+      const lineSpans: React.ReactNode[] = [];
       let offset = 0;
       for (let pi = 0; pi < parts.length; pi++) {
         const part = parts[pi];
         const original = rawLine.substring(offset, offset + part.length);
         offset += part.length;
         if (globalVarPattern.test(part)) {
-          result.push(
+          lineSpans.push(
             <span
               key={`${lineIdx}-${pi}`}
               className="bg-green-500/25 text-transparent rounded-sm border-b border-green-500/40"
@@ -617,7 +629,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             </span>,
           );
         } else if (localVarPattern.test(part)) {
-          result.push(
+          lineSpans.push(
             <span
               key={`${lineIdx}-${pi}`}
               className="bg-amber-500/25 text-transparent rounded-sm border-b border-amber-500/40"
@@ -626,17 +638,28 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
             </span>,
           );
         } else {
-          result.push(
+          lineSpans.push(
             <span key={`${lineIdx}-${pi}`} className="text-transparent">
               {original}
             </span>,
           );
         }
       }
+
+      // Wrap secret lines in a red background highlight
+      if (isSecretLine) {
+        result.push(
+          <span key={`secret-${lineIdx}`} className="bg-red-500/15 text-transparent">
+            {lineSpans}
+          </span>,
+        );
+      } else {
+        result.push(...lineSpans);
+      }
     }
 
     return result;
-  }, [displayText]);
+  }, [displayText, secretLineSet]);
 
   // Determine if sections are real (not just "Full Config")
   const hasRealSections = sections.length > 0 && sections[0].name !== 'Full Config';
