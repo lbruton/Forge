@@ -24,6 +24,9 @@ import { scanForSecrets } from '../lib/secrets-detector.ts';
 import type { SecretFinding } from '../lib/secrets-detector.ts';
 import { SecretsWarningBanner } from './SecretsWarningBanner.tsx';
 
+// Section banner pattern — hoisted to module level for stable identity (useMemo dep)
+const BANNER_RE = /^!#{3,}\s*.*\s*-\s*(?:START|END)\s*#{3,}$/i;
+
 /**
  * Order-preserving merge of parsed variables into an existing array.
  * - Existing variables keep their position if still present in parsed output
@@ -568,7 +571,6 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
   }, [secretFindings]);
 
   // Build highlighted overlay text
-  const BANNER_RE = /^!#{3,}\s*.*\s*-\s*(?:START|END)\s*#{3,}$/i;
   const highlightedText = useMemo(() => {
     if (!displayText) return null;
 
@@ -602,8 +604,9 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
           </span>,
         );
 
-      // Check if this line has a secret finding (1-based line numbers)
-      const isSecretLine = secretLineSet.has(lineIdx + 1);
+      // Check if this line has a secret finding (1-based line numbers relative to full rawText)
+      const absoluteLine = (sectionRange?.start ?? 0) + lineIdx + 1;
+      const isSecretLine = secretLineSet.has(absoluteLine);
 
       // Strip Cisco type-9 password hashes before scanning (same as parseVariables)
       const sanitized = rawLine.replace(/\$\d\$\S+/g, (match) => '_'.repeat(match.length));
@@ -659,7 +662,7 @@ function TemplateEditor({ variantId }: TemplateEditorProps) {
     }
 
     return result;
-  }, [displayText, secretLineSet]);
+  }, [displayText, secretLineSet, sectionRange]);
 
   // Determine if sections are real (not just "Full Config")
   const hasRealSections = sections.length > 0 && sections[0].name !== 'Full Config';
