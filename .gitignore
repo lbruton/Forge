@@ -28,5 +28,8 @@ seed-models/
 *.sln
 *.sw?
 
+# Environment overrides (create from .env.example)
+.env
+
 # Codacy triage log (local developer context)
 .codacy-triage.json
