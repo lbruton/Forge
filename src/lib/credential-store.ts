@@ -16,6 +16,7 @@
  * @see FORGE-64 — Security hardening baseline
  */
 
+// nosemgrep: typescript.lang.security.audit.hardcoded-password — this is a localStorage key name, not a credential
 const CREDENTIAL_KEY_STORAGE = 'forge_credential_key';
 
 // ---------------------------------------------------------------------------
