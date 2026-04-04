@@ -621,7 +621,7 @@ export function Sidebar({
                             label={device.hostname}
                             icon={<Cpu size={14} />}
                             depth={3}
-                            hasChildren={!!device.lastScanAt}
+                            hasChildren={true}
                             onSelect={() => {
                               setSelectedGeneratedConfigId(null);
                               setSelectedPluginName(VULN_CISCO_MANIFEST.name);
@@ -656,7 +656,6 @@ export function Sidebar({
                           >
                             {(() => {
                               const scans = vulnScanCache[device.id] ?? [];
-                              if (scans.length === 0 && !device.lastScanAt) return null;
                               return (
                                 <TreeNode
                                   id={`vuln-scans-${device.id}`}
