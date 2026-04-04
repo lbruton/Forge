@@ -127,28 +127,40 @@ export function Sidebar({
   const setVulnScanCache = useForgeStore((s) => s.setVulnScanCache);
   // vulnDevices filtered per view — computed inline in the view loop below
 
-  // Populate scan cache for vuln devices that have scans but no cache entry.
-  // This ensures sidebar "Scans" nodes load without visiting the dashboard first.
+  // Populate scan cache from sidecar for devices without cached scan entries.
+  // Fetches directly from the sidecar API — same data source as VulnDashboard.
+  // Does NOT depend on lastScanAt (which requires a prior dashboard visit to set).
   useEffect(() => {
     if (!vulnEnabled || !vulnPlugin?.endpoint || !vulnPlugin?.apiKey) return;
 
-    const devicesNeedingSync = vulnDevicesRaw.filter((d) => d.lastScanAt && !(vulnScanCache[d.id]?.length > 0));
+    const { endpoint, apiKey } = vulnPlugin;
+    const devicesNeedingSync = vulnDevicesRaw.filter((d) => !(vulnScanCache[d.id]?.length > 0));
     if (devicesNeedingSync.length === 0) return;
 
+    // Use a ref-like flag to avoid re-fetching on every render cycle
+    let cancelled = false;
+
     for (const device of devicesNeedingSync) {
-      pluginFetch(vulnPlugin.endpoint, vulnPlugin.apiKey, `/results/${encodeURIComponent(device.ip)}`)
+      if (cancelled) break;
+      pluginFetch(endpoint, apiKey, `/results/${encodeURIComponent(device.ip)}`)
         .then(async (resp) => {
-          if (!resp.ok) return;
+          if (cancelled || !resp.ok) return;
           const scans: ScanEntry[] = await resp.json();
-          setVulnScanCache(
-            device.id,
-            scans.sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
-          );
+          if (scans.length > 0) {
+            setVulnScanCache(
+              device.id,
+              scans.sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
+            );
+          }
         })
         .catch(() => {
-          // Non-critical — sidebar just won't show scan nodes until dashboard is visited
+          // Non-critical — sidecar may be offline
         });
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [vulnEnabled, vulnPlugin?.endpoint, vulnPlugin?.apiKey, vulnDevicesRaw, vulnScanCache, setVulnScanCache]);
 
   // Auto-expand Configurations nodes for each view when plugin is enabled
