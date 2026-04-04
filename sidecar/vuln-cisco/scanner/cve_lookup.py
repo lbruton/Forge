@@ -25,6 +25,8 @@ from pathlib import Path
 from typing import Any, Callable
 
 import requests
+
+from scanner.kev_lookup import enrich_findings_with_kev, load_kev_catalog
 from pysnmp.hlapi.v3arch.asyncio import (
     CommunityData,
     ContextData,
@@ -251,6 +253,102 @@ def _psirt_query(
     return filtered
 
 
+def _extract_model_family(model: str) -> str | None:
+    """Extract a normalised model family string from an SNMP model identifier.
+
+    Returns a short family string suitable for substring matching against
+    Cisco PSIRT advisory ``productNames``, or ``None`` if the model string
+    does not match any known pattern.
+
+    Examples::
+
+        WS-C3560CX-12PD-S  -> "3560-CX"
+        C9200L-24P-4G       -> "9200-L"
+        IE-3300-8T2S        -> "3300"
+        ASA5525-K9          -> "ASA 5525"
+        ISR4331/K9          -> "ISR 4331"
+    """
+    # WS-C prefix (Catalyst with WS- prefix, e.g. WS-C3560CX-12PD-S)
+    m = re.match(r"WS-C(\d+)([A-Za-z]+)?", model)
+    if m:
+        digits = m.group(1)
+        letters = m.group(2) or ""
+        if letters:
+            return f"{digits}-{letters.upper()}"
+        return digits
+
+    # IE- prefix (Industrial Ethernet, e.g. IE-3300-8T2S)
+    m = re.match(r"IE-(\d+)", model)
+    if m:
+        return m.group(1)
+
+    # ASA prefix (e.g. ASA5525-K9)
+    m = re.match(r"ASA(\d+)", model)
+    if m:
+        return f"ASA {m.group(1)}"
+
+    # ISR prefix (e.g. ISR4331/K9)
+    m = re.match(r"ISR(\d+)", model)
+    if m:
+        return f"ISR {m.group(1)}"
+
+    # C prefix (Catalyst without WS-, e.g. C9200L-24P-4G, C9200CX-12P)
+    m = re.match(r"C(\d+)([A-Za-z]+)?", model)
+    if m:
+        digits = m.group(1)
+        letters = m.group(2) or ""
+        if letters:
+            return f"{digits}-{letters.upper()}"
+        return digits
+
+    return None
+
+
+def _filter_by_product(
+    advisories: list[dict[str, Any]], device_model: str
+) -> list[dict[str, Any]]:
+    """Filter PSIRT advisories by matching ``productNames`` against the device model.
+
+    Each kept advisory gets a ``product_match`` key:
+
+    - ``"verified"``   -- family substring found in at least one product name
+    - ``"no_data"``    -- advisory has no ``productNames`` data
+    - ``"unverified"`` -- model could not be parsed into a known family
+
+    Advisories whose ``productNames`` do not match the device family are
+    excluded entirely.
+    """
+    family = _extract_model_family(device_model)
+
+    filtered: list[dict[str, Any]] = []
+    for adv in advisories:
+        advisory_id = adv.get("advisoryId", adv.get("advisory_id", "unknown"))
+
+        if family is None:
+            adv["product_match"] = "unverified"
+            filtered.append(adv)
+            continue
+
+        product_names: list[str] | None = adv.get("productNames")
+        if not product_names:
+            adv["product_match"] = "no_data"
+            filtered.append(adv)
+            continue
+
+        family_lower = family.lower()
+        if any(family_lower in pn.lower() for pn in product_names):
+            adv["product_match"] = "verified"
+            filtered.append(adv)
+        else:
+            logger.info(
+                "Filtered advisory %s: product mismatch for %s",
+                advisory_id,
+                device_model,
+            )
+
+    return filtered
+
+
 def _normalize_cisco_advisory(adv: dict[str, Any]) -> dict[str, Any]:
     """Normalize a Cisco openVuln advisory to the common finding schema."""
     cvss_raw = adv.get("cvssBaseScore", 0)
@@ -259,11 +357,12 @@ def _normalize_cisco_advisory(adv: dict[str, Any]) -> dict[str, Any]:
     except (ValueError, TypeError):
         cvss = 0.0
 
+    cve_ids = sorted(adv.get("cves", []))
     return {
         "source": "cisco_openvuln",
         "advisory_id": adv.get("advisoryId", ""),
         "title": adv.get("advisoryTitle", ""),
-        "cve_ids": adv.get("cves", []),
+        "cve_ids": cve_ids,
         "severity": adv.get("sir", "").upper(),
         "cvss_base": cvss,
         "cwe": adv.get("cwe", []),
@@ -272,10 +371,36 @@ def _normalize_cisco_advisory(adv: dict[str, Any]) -> dict[str, Any]:
         "first_published": adv.get("firstPublished", ""),
         "url": adv.get("publicationUrl", ""),
         "bug_ids": adv.get("bugIDs", []),
+        "description": adv.get("summary", ""),
+        "remediation": "",
+        "impact": "",
+        "references": [adv.get("publicationUrl", "")] if adv.get("publicationUrl") else [],
+        "epss_score": 0.0,
+        "epss_percentile": 0.0,
+        "cpe": "",
+        "kev": False,
+        "kev_date_added": "",
+        "kev_due_date": "",
+        "product_match": adv.get("product_match", "no_data"),
     }
 
 
 # ─── Nuclei Stage ─────────────────────────────────────────────────────────
+
+
+def _nvd_url(cve_ids: list[str]) -> str:
+    """Return NVD detail URL for the first CVE ID, or empty string."""
+    if cve_ids:
+        return f"https://nvd.nist.gov/vuln/detail/{cve_ids[0]}"
+    return ""
+
+
+def _safe_float(val: Any) -> float:
+    """Convert a value to float, returning 0.0 on any failure."""
+    try:
+        return float(val or 0)
+    except (ValueError, TypeError):
+        return 0.0
 
 
 def _run_nuclei(target: str) -> list[dict[str, Any]]:
@@ -329,6 +454,7 @@ def _run_nuclei(target: str) -> list[dict[str, Any]]:
             cve_ids = classification.get("cve-id", []) or []
             if isinstance(cve_ids, str):
                 cve_ids = [cve_ids] if cve_ids else []
+            cve_ids.sort()
 
             cvss_raw = classification.get("cvss-score", 0)
             try:
@@ -343,12 +469,23 @@ def _run_nuclei(target: str) -> list[dict[str, Any]]:
                 "cve_ids": cve_ids,
                 "severity": sev,
                 "cvss_base": cvss,
-                "cwe": [],
+                "cwe": classification.get("cwe-id", []) or [],
                 "summary": info.get("description", "").strip(),
                 "first_fixed": [],
                 "first_published": "",
-                "url": n.get("matched-at", ""),
+                "url": (info.get("reference", []) or [""])[0] or _nvd_url(cve_ids) or "",
                 "bug_ids": [],
+                "description": info.get("description", "").strip(),
+                "remediation": info.get("remediation", ""),
+                "impact": info.get("impact", ""),
+                "references": info.get("reference", []) or [],
+                "epss_score": _safe_float(classification.get("epss-score", 0)),
+                "epss_percentile": _safe_float(classification.get("epss-percentile", 0)),
+                "cpe": classification.get("cpe", ""),
+                "kev": False,
+                "kev_date_added": "",
+                "kev_due_date": "",
+                "product_match": "no_data",
             })
         except (json.JSONDecodeError, KeyError):
             continue
@@ -358,6 +495,9 @@ def _run_nuclei(target: str) -> list[dict[str, Any]]:
 
 
 # ─── Deduplication ────────────────────────────────────────────────────────
+
+_ENRICHMENT_SCALARS = ("description", "remediation", "impact", "epss_score", "epss_percentile", "cpe")
+_ENRICHMENT_LISTS = ("references", "cwe")
 
 
 def _deduplicate(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -375,18 +515,33 @@ def _deduplicate(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
             seen.add(key)
             deduped.append(f)
         else:
-            # Merge: prefer Cisco source for first_fixed data
+            # Merge: cross-enrich between sources
             existing = next(
-                (d for d in deduped if tuple(d["cve_ids"]) == tuple(f["cve_ids"])),
+                (d for d in deduped
+                 if (tuple(d["cve_ids"]) if d["cve_ids"] else (d["advisory_id"],)) == key),
                 None,
             )
-            if (
-                existing
-                and f["source"] == "cisco_openvuln"
-                and not existing.get("first_fixed")
-            ):
-                existing["first_fixed"] = f["first_fixed"]
-                existing["advisory_id"] = f["advisory_id"]
+            if existing:
+                # Prefer Cisco source for first_fixed/advisory data
+                if (
+                    f["source"] == "cisco_openvuln"
+                    and not existing.get("first_fixed")
+                ):
+                    existing["first_fixed"] = f["first_fixed"]
+                    existing["advisory_id"] = f["advisory_id"]
+                # Merge Nuclei enrichment into surviving record
+                for field in _ENRICHMENT_SCALARS:
+                    src_val = f.get(field)
+                    dst_val = existing.get(field)
+                    # Prefer non-empty value from either source
+                    if src_val and not dst_val:
+                        existing[field] = src_val
+                for field in _ENRICHMENT_LISTS:
+                    src_val = f.get(field, [])
+                    dst_val = existing.get(field, [])
+                    if src_val:
+                        combined = list(dict.fromkeys(dst_val + src_val))
+                        existing[field] = combined
 
     return deduped
 
@@ -781,6 +936,12 @@ async def run_scan(
     logger.info("Stage 2: Cisco PSIRT API query for %s %s", platform, version)
     token = _psirt_get_token(cisco_client_id, cisco_client_secret)
     advisories = _psirt_query(version, platform, token)
+
+    # ── Product Filtering ──
+    _progress("Product filtering")
+    advisories = _filter_by_product(advisories, device_info["model"])
+    logger.info("After product filtering: %d advisories", len(advisories))
+
     findings = [_normalize_cisco_advisory(adv) for adv in advisories]
     logger.info("PSIRT stage: %d findings", len(findings))
 
@@ -807,6 +968,17 @@ async def run_scan(
     # ── Deduplicate & summarize ──
     findings = _deduplicate(findings)
     findings.sort(key=lambda f: f["cvss_base"], reverse=True)
+
+    # ── KEV Cross-Reference ──
+    _progress("KEV lookup")
+    kev_catalog = load_kev_catalog()
+    if kev_catalog:
+        enrich_findings_with_kev(findings, kev_catalog)
+        logger.info("KEV enrichment: catalog has %d entries", len(kev_catalog))
+    else:
+        notes.append("CISA KEV data unavailable — KEV status not checked.")
+        logger.warning("KEV catalog empty — skipping KEV enrichment")
+
     severity = _severity_summary(findings)
 
     # ── Stage 4: Report Generation ──

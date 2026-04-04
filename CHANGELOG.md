@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-04-04
+
+### Added
+
+- PSIRT product filtering: advisories filtered by device model family to eliminate false positives (FORGE-67)
+- Nuclei metadata enrichment: full info block extraction (description, remediation, references, EPSS, CWE, CPE) (FORGE-67)
+- CISA KEV integration: disk-cached catalog with 24h TTL, cross-references findings by CVE ID (FORGE-67)
+- Finding Detail Modal: two-column view with severity, CVSS, KEV status, references, and remediation (FORGE-67)
+- KEV badge on scan report findings that appear in CISA Known Exploited Vulnerabilities catalog (FORGE-67)
+- Clickable scan report rows to open finding details (FORGE-67)
+
+### Fixed
+
+- Advisory links now point to Cisco/NVD advisory pages instead of the scanned device IP (FORGE-67)
+- "No fix available" styling for platforms with no reachable fix version (FORGE-67)
+- Catalyst subfamily matching: C9200L and C9200CX now differentiated correctly (FORGE-67)
+- Deduplication now merges Nuclei enrichment into PSIRT records when CVEs overlap (FORGE-67)
+
 ## [0.2.1] - 2026-04-03
 
 ### Added
