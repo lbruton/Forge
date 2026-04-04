@@ -21,7 +21,7 @@ app = FastAPI(
 # LAN-only sidecar behind firewall — CORS * is intentional
 app.add_middleware(  # nosemgrep: cors-wildcard
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:4173", "http://127.0.0.1:5173"],  # Vite dev + preview + loopback
+    allow_origins=["*"],  # nosemgrep: cors-wildcard — LAN-only sidecar behind NPM reverse proxy; origin varies by deployment
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
