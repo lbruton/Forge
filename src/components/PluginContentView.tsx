@@ -74,6 +74,7 @@ export default function PluginContentView({ pluginName, nodeId, viewId }: Plugin
     }
   }, [isIntegrationPlugin, isVulnCiscoPlugin, registration, pluginName, nodeId, displayName]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- async fire-and-forget, not synchronous setState
   useEffect(() => {
     void fetchContent();
   }, [fetchContent]);

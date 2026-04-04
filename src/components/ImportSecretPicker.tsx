@@ -28,6 +28,7 @@ export function ImportSecretPicker({
   const overlayRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLInputElement>(null);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- async fetch pattern: setLoading before await is standard
   useEffect(() => {
     let cancelled = false;
     setLoading(true);

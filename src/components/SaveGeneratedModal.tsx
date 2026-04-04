@@ -36,6 +36,7 @@ export function SaveGeneratedModal({
     variableValuesRef.current = variableValues;
   }, [variableValues]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- reset form state on open is intentional
   useEffect(() => {
     if (isOpen) {
       const vals = variableValuesRef.current;

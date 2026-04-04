@@ -24,10 +24,12 @@ engines:
       - "src/__tests__/**"
 
   # markdownlint: exclude spec-workflow archives (generated/historical content)
+  # and CHANGELOG.md (repeated headings like ### Added per version are intentional)
   markdownlint:
     exclude_paths:
       - ".spec-workflow/**"
       - "research/**"
+      - "CHANGELOG.md"
 
   # Bandit (Python SAST): exclude test files
   bandit:

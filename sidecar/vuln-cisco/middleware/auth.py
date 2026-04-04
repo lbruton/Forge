@@ -27,12 +27,12 @@ def init_api_key() -> str:
 
     if API_KEY_PATH.exists():
         _api_key = API_KEY_PATH.read_text().strip()
-        logger.info("Loaded existing API key from %s", API_KEY_PATH)
+        logger.info("Loaded existing API key from %s", API_KEY_PATH)  # nosemgrep: python.lang.security.audit.logging.logger-credential-leak — %s is a file path, not a secret
     else:
         _api_key = str(uuid.uuid4())
         API_KEY_PATH.parent.mkdir(parents=True, exist_ok=True)
         API_KEY_PATH.write_text(_api_key)
-        logger.info("Generated new API key and stored it at %s", API_KEY_PATH)
+        logger.info("Generated new API key and stored it at %s", API_KEY_PATH)  # nosemgrep: python.lang.security.audit.logging.logger-credential-leak — %s is a file path, not a secret
 
     return _api_key
 

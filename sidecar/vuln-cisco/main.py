@@ -18,10 +18,13 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# LAN-only sidecar behind firewall — CORS * is intentional
-app.add_middleware(  # nosemgrep: cors-wildcard
+# CORS: allow the Forge frontend origin (NPM proxy URL).
+# Override with FORGE_CORS_ORIGIN if the frontend moves to a different hostname.
+_cors_origin = os.environ.get("FORGE_CORS_ORIGIN", "https://forge.lbruton.cc")
+_allowed_origins = [_cors_origin, "http://localhost:5173", "http://localhost:4173"]
+app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

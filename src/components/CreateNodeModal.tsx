@@ -31,6 +31,7 @@ export function CreateNodeModal({ open, nodeType, onClose, onSubmit }: CreateNod
   const nameRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- reset form state on open is intentional
   useEffect(() => {
     if (open) {
       setName('');
