@@ -3,6 +3,7 @@ import { ArrowLeft, AlertTriangle, ExternalLink, Trash2, ShieldAlert } from 'luc
 import { useForgeStore } from '../../store/index.ts';
 import { pluginFetch } from '../../lib/plugin-service.ts';
 import FindingDetailModal from './FindingDetailModal.tsx';
+import { openAdvisoryPopup } from './link-utils.ts';
 
 interface ScanReportViewerProps {
   pluginName: string;
@@ -444,10 +445,8 @@ function FindingRow({ finding, onSelect }: { finding: Finding; onSelect: (f: Fin
               <a
                 key={cve}
                 href={`https://nvd.nist.gov/vuln/detail/${cve}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="text-sky-400 hover:underline text-xs font-mono inline-flex items-center gap-1"
+                onClick={(e) => openAdvisoryPopup(`https://nvd.nist.gov/vuln/detail/${cve}`, e)}
+                className="text-sky-400 hover:underline text-xs font-mono inline-flex items-center gap-1 cursor-pointer"
               >
                 {cve}
                 <ExternalLink size={10} />
@@ -464,10 +463,8 @@ function FindingRow({ finding, onSelect }: { finding: Finding; onSelect: (f: Fin
         {finding.advisory_id && advisoryLink ? (
           <a
             href={advisoryLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-sky-400 hover:underline text-xs inline-flex items-center gap-1"
+            onClick={(e) => openAdvisoryPopup(advisoryLink!, e)}
+            className="text-sky-400 hover:underline text-xs inline-flex items-center gap-1 cursor-pointer"
           >
             {finding.advisory_id}
             <ExternalLink size={10} />
