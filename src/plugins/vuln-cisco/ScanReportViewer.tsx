@@ -3,17 +3,7 @@ import { ArrowLeft, AlertTriangle, ExternalLink, Trash2, ShieldAlert } from 'luc
 import { useForgeStore } from '../../store/index.ts';
 import { pluginFetch } from '../../lib/plugin-service.ts';
 import FindingDetailModal from './FindingDetailModal.tsx';
-
-/** Open a URL in a centered popup window (1250×800). */
-export function openAdvisoryPopup(url: string, e?: React.MouseEvent) {
-  e?.preventDefault();
-  e?.stopPropagation();
-  const w = 1250,
-    h = 800;
-  const left = (screen.width - w) / 2;
-  const top = (screen.height - h) / 2;
-  window.open(url, '_blank', `width=${w},height=${h},left=${left},top=${top},noopener,noreferrer`);
-}
+import { openAdvisoryPopup } from './link-utils.ts';
 
 interface ScanReportViewerProps {
   pluginName: string;

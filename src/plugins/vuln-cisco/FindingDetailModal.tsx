@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { X, CheckCircle, HelpCircle, MinusCircle, ExternalLink, Shield, AlertTriangle } from 'lucide-react';
-import { openAdvisoryPopup } from './ScanReportViewer.tsx';
+import { openAdvisoryPopup } from './link-utils.ts';
 import type { Finding } from './ScanReportViewer.tsx';
 
 interface FindingDetailModalProps {
