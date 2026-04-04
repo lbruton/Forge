@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-78-config-secrets-linter/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-04-03T18:27:19.253Z",
+      "trigger": "initial",
+      "approvalId": "approval_1775240839247_sucwe3qlq",
+      "approvalTitle": "Tasks: Config Secrets Linter — 5 tasks (detection engine, tests, banner, editor integration, verification)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-04-03T18:37:51.401Z",
+      "trigger": "approved",
+      "approvalId": "approval_1775240839247_sucwe3qlq",
+      "approvalTitle": "Tasks: Config Secrets Linter — 5 tasks (detection engine, tests, banner, editor integration, verification)"
+    }
+  ]
+}

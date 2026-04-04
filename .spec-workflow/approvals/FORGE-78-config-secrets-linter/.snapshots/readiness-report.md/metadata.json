@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-78-config-secrets-linter/readiness-report.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-04-03T18:38:40.627Z",
+      "trigger": "initial",
+      "approvalId": "approval_1775241520604_ym3x28r8s",
+      "approvalTitle": "Readiness Gate: FORGE-78 Config Secrets Linter — PASS (5/5 requirements covered, no contradictions)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-04-03T18:41:59.515Z",
+      "trigger": "approved",
+      "approvalId": "approval_1775241520604_ym3x28r8s",
+      "approvalTitle": "Readiness Gate: FORGE-78 Config Secrets Linter — PASS (5/5 requirements covered, no contradictions)"
+    }
+  ]
+}
