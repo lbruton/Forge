@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-63-infisical-environment-per-plugin/readiness-report.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-04-02T20:25:39.511Z",
+      "trigger": "initial",
+      "approvalId": "approval_1775161539504_3w7gepqu6",
+      "approvalTitle": "Readiness Gate: FORGE-63 Infisical environment per-plugin"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-04-02T20:25:56.871Z",
+      "trigger": "approved",
+      "approvalId": "approval_1775161539504_3w7gepqu6",
+      "approvalTitle": "Readiness Gate: FORGE-63 Infisical environment per-plugin"
+    }
+  ]
+}

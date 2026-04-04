@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/FORGE-63-infisical-environment-per-plugin/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-04-02T20:14:13.303Z",
+      "trigger": "initial",
+      "approvalId": "approval_1775160853300_pxud9a57r",
+      "approvalTitle": "Tasks: Infisical environment per-plugin"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-04-02T20:20:47.379Z",
+      "trigger": "approved",
+      "approvalId": "approval_1775160853300_pxud9a57r",
+      "approvalTitle": "Tasks: Infisical environment per-plugin"
+    }
+  ]
+}
