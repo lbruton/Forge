@@ -19,13 +19,9 @@ app = FastAPI(
 )
 
 # CORS: allow the Forge frontend origin (NPM proxy URL).
-# Set FORGE_CORS_ORIGIN to the frontend URL, e.g. "https://forge.example.com".
-# Falls back to localhost dev origins when unset.
-_cors_origin = os.environ.get("FORGE_CORS_ORIGIN", "")
-_allowed_origins = (
-    [_cors_origin] if _cors_origin
-    else ["http://localhost:5173", "http://localhost:4173", "http://127.0.0.1:5173"]
-)
+# Override with FORGE_CORS_ORIGIN if the frontend moves to a different hostname.
+_cors_origin = os.environ.get("FORGE_CORS_ORIGIN", "https://forge.lbruton.cc")
+_allowed_origins = [_cors_origin, "http://localhost:5173", "http://localhost:4173"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,
