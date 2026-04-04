@@ -18,9 +18,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS: allow the Forge frontend origin (NPM proxy URL).
-# Override with FORGE_CORS_ORIGIN if the frontend moves to a different hostname.
-_cors_origin = os.environ.get("FORGE_CORS_ORIGIN", "https://forge.lbruton.cc")
+# CORS: allow the Forge frontend origin.
+# Set FORGE_CORS_ORIGIN in .env (see .env.example). Defaults to Vite dev server.
+_cors_origin = os.environ.get("FORGE_CORS_ORIGIN", "http://localhost:5173")
 _allowed_origins = [_cors_origin, "http://localhost:5173", "http://localhost:4173"]
 app.add_middleware(
     CORSMiddleware,
