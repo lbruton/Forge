@@ -22,6 +22,7 @@ services:
     network_mode: host
     environment:
       - PYTHONUNBUFFERED=1
+      - FORGE_CORS_ORIGIN=https://forge.lbruton.cc
     volumes:
       - forge-vuln-data:/data
     depends_on:
