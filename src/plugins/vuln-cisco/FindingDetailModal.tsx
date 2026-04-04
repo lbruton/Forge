@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { X, CheckCircle, HelpCircle, MinusCircle, ExternalLink, Shield, AlertTriangle } from 'lucide-react';
-import type { Finding } from './ScanReportViewer.ts';
+import { openAdvisoryPopup } from './ScanReportViewer.tsx';
+import type { Finding } from './ScanReportViewer.tsx';
 
 interface FindingDetailModalProps {
   finding: Finding | null;
@@ -109,9 +110,8 @@ export default function FindingDetailModal({ finding, onClose }: FindingDetailMo
                     <li key={i}>
                       <a
                         href={ref}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-amber-400 hover:text-amber-300 underline text-sm truncate inline-flex items-center gap-1 max-w-full"
+                        onClick={(e) => openAdvisoryPopup(ref, e)}
+                        className="text-amber-400 hover:text-amber-300 underline text-sm truncate inline-flex items-center gap-1 max-w-full cursor-pointer"
                       >
                         <span className="truncate">{ref}</span>
                         <ExternalLink size={12} className="shrink-0" />
@@ -131,9 +131,8 @@ export default function FindingDetailModal({ finding, onClose }: FindingDetailMo
                     <a
                       key={cve}
                       href={`https://nvd.nist.gov/vuln/detail/${cve}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-amber-400 text-sm font-mono inline-flex items-center gap-1 hover:text-amber-300"
+                      onClick={(e) => openAdvisoryPopup(`https://nvd.nist.gov/vuln/detail/${cve}`, e)}
+                      className="text-amber-400 text-sm font-mono inline-flex items-center gap-1 hover:text-amber-300 cursor-pointer"
                     >
                       {cve}
                       <ExternalLink size={10} />

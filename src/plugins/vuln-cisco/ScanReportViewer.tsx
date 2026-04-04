@@ -4,6 +4,17 @@ import { useForgeStore } from '../../store/index.ts';
 import { pluginFetch } from '../../lib/plugin-service.ts';
 import FindingDetailModal from './FindingDetailModal.tsx';
 
+/** Open a URL in a centered popup window (1250×800). */
+export function openAdvisoryPopup(url: string, e?: React.MouseEvent) {
+  e?.preventDefault();
+  e?.stopPropagation();
+  const w = 1250,
+    h = 800;
+  const left = (screen.width - w) / 2;
+  const top = (screen.height - h) / 2;
+  window.open(url, '_blank', `width=${w},height=${h},left=${left},top=${top},noopener,noreferrer`);
+}
+
 interface ScanReportViewerProps {
   pluginName: string;
   device: string;
@@ -444,10 +455,8 @@ function FindingRow({ finding, onSelect }: { finding: Finding; onSelect: (f: Fin
               <a
                 key={cve}
                 href={`https://nvd.nist.gov/vuln/detail/${cve}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="text-sky-400 hover:underline text-xs font-mono inline-flex items-center gap-1"
+                onClick={(e) => openAdvisoryPopup(`https://nvd.nist.gov/vuln/detail/${cve}`, e)}
+                className="text-sky-400 hover:underline text-xs font-mono inline-flex items-center gap-1 cursor-pointer"
               >
                 {cve}
                 <ExternalLink size={10} />
@@ -464,10 +473,8 @@ function FindingRow({ finding, onSelect }: { finding: Finding; onSelect: (f: Fin
         {finding.advisory_id && advisoryLink ? (
           <a
             href={advisoryLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-sky-400 hover:underline text-xs inline-flex items-center gap-1"
+            onClick={(e) => openAdvisoryPopup(advisoryLink!, e)}
+            className="text-sky-400 hover:underline text-xs inline-flex items-center gap-1 cursor-pointer"
           >
             {finding.advisory_id}
             <ExternalLink size={10} />
