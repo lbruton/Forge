@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from scanner.cve_lookup import _normalize_cisco_advisory, _nvd_url, _run_nuclei, run_scan
+from scanner.cve_lookup import _deduplicate, _normalize_cisco_advisory, _nvd_url, _run_nuclei, run_scan
 
 
 # ─── _nvd_url tests ─────────────────────────────────────────────────────
@@ -378,3 +378,74 @@ async def test_run_scan_pipeline_enrichment(
 
     # Notes should NOT contain KEV unavailable message (catalog was present)
     assert not any("KEV" in n for n in result["notes"])
+
+
+def test_deduplicate_merges_nuclei_enrichment():
+    """When PSIRT and Nuclei share a CVE, dedup keeps PSIRT but merges Nuclei enrichment."""
+    psirt_finding = {
+        "source": "cisco_openvuln",
+        "advisory_id": "cisco-sa-test",
+        "cve_ids": ["CVE-2023-99999"],
+        "severity": "HIGH",
+        "cvss_base": 8.1,
+        "title": "Test Advisory",
+        "summary": "PSIRT summary only",
+        "first_fixed": ["15.2(8)E"],
+        "description": "",
+        "remediation": "",
+        "impact": "",
+        "references": ["https://sec.cloudapps.cisco.com/advisory/cisco-sa-test"],
+        "epss_score": 0.0,
+        "epss_percentile": 0.0,
+        "cpe": "",
+        "cwe": [],
+        "first_published": "",
+        "url": "",
+        "bug_ids": [],
+        "kev": False,
+        "kev_date_added": "",
+        "kev_due_date": "",
+        "product_match": "verified",
+    }
+    nuclei_finding = {
+        "source": "nuclei",
+        "advisory_id": "CVE-2023-99999",
+        "cve_ids": ["CVE-2023-99999"],
+        "severity": "HIGH",
+        "cvss_base": 8.1,
+        "title": "CVE-2023-99999",
+        "summary": "Nuclei detailed description",
+        "first_fixed": [],
+        "description": "A detailed vulnerability description from Nuclei",
+        "remediation": "Upgrade firmware to latest version",
+        "impact": "Remote code execution",
+        "references": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2023-99999",
+            "https://example.com/advisory",
+        ],
+        "epss_score": 0.75,
+        "epss_percentile": 0.95,
+        "cpe": "cpe:2.3:o:cisco:ios:15.2:*",
+        "cwe": ["CWE-787"],
+        "first_published": "",
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-99999",
+        "bug_ids": [],
+        "kev": False,
+        "kev_date_added": "",
+        "kev_due_date": "",
+        "product_match": "no_data",
+    }
+    # PSIRT comes first (appended before Nuclei in run_scan)
+    result = _deduplicate([psirt_finding, nuclei_finding])
+    assert len(result) == 1
+    merged = result[0]
+    # Kept PSIRT source and fix version
+    assert merged["source"] == "cisco_openvuln"
+    assert merged["first_fixed"] == ["15.2(8)E"]
+    # Merged Nuclei enrichment into PSIRT record
+    assert merged["description"] == "A detailed vulnerability description from Nuclei"
+    assert merged["remediation"] == "Upgrade firmware to latest version"
+    assert merged["impact"] == "Remote code execution"
+    assert merged["epss_score"] == 0.75
+    assert merged["epss_percentile"] == 0.95
+    assert merged["cpe"] == "cpe:2.3:o:cisco:ios:15.2:*"

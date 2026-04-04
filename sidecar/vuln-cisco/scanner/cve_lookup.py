@@ -292,10 +292,10 @@ def _extract_model_family(model: str) -> str | None:
     if m:
         return f"ISR {m.group(1)}"
 
-    # C prefix (Catalyst without WS-, e.g. C9200L-24P-4G)
-    m = re.match(r"C(\d+)", model)
+    # C prefix (Catalyst without WS-, e.g. C9200L-24P-4G, C9200CX-12P)
+    m = re.match(r"C(\d+[A-Za-z]*)", model)
     if m:
-        return m.group(1)
+        return m.group(1).upper()
 
     return None
 
@@ -498,18 +498,30 @@ def _deduplicate(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
             seen.add(key)
             deduped.append(f)
         else:
-            # Merge: prefer Cisco source for first_fixed data
+            # Merge: cross-enrich between sources
             existing = next(
                 (d for d in deduped if tuple(d["cve_ids"]) == tuple(f["cve_ids"])),
                 None,
             )
-            if (
-                existing
-                and f["source"] == "cisco_openvuln"
-                and not existing.get("first_fixed")
-            ):
-                existing["first_fixed"] = f["first_fixed"]
-                existing["advisory_id"] = f["advisory_id"]
+            if existing:
+                # Prefer Cisco source for first_fixed/advisory data
+                if (
+                    f["source"] == "cisco_openvuln"
+                    and not existing.get("first_fixed")
+                ):
+                    existing["first_fixed"] = f["first_fixed"]
+                    existing["advisory_id"] = f["advisory_id"]
+                # Merge Nuclei enrichment into surviving record
+                _ENRICHMENT_FIELDS = (
+                    "description", "remediation", "impact", "references",
+                    "epss_score", "epss_percentile", "cpe",
+                )
+                for field in _ENRICHMENT_FIELDS:
+                    src_val = f.get(field)
+                    dst_val = existing.get(field)
+                    # Prefer non-empty value from either source
+                    if src_val and not dst_val:
+                        existing[field] = src_val
 
     return deduped
 
