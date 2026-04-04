@@ -7,9 +7,11 @@ const ALLOWED_SCHEMES = ['https:', 'http:'];
  *
  * - Validates URL scheme (https/http only) to prevent javascript: injection
  * - Centers on the current browser window, not the physical display
- * - Falls back to default anchor navigation if the popup is blocked
+ * - Falls back to a new tab if popup is blocked
  */
 export function openAdvisoryPopup(url: string, e?: React.MouseEvent) {
+  // Always prevent default FIRST — the <a href> will navigate the main tab otherwise
+  e?.preventDefault();
   e?.stopPropagation();
 
   // Scheme validation — reject non-http(s) URLs
@@ -29,8 +31,8 @@ export function openAdvisoryPopup(url: string, e?: React.MouseEvent) {
 
   const popup = window.open(url, '_blank', `width=${w},height=${h},left=${left},top=${top},noopener,noreferrer`);
 
-  // Only prevent default if popup succeeded — if blocked, let the anchor navigate normally
-  if (popup) {
-    e?.preventDefault();
+  // If popup was blocked, fall back to opening in a new tab
+  if (!popup) {
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 }

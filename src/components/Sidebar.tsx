@@ -20,6 +20,8 @@ import { CreateNodeModal, type CreateNodeType, type CreateNodeData } from './Cre
 import type { SectionSelection } from './SectionCardView.tsx';
 import { isPluginConfigured } from '../plugins/init.ts';
 import { VULN_CISCO_MANIFEST } from '../plugins/vuln-cisco/manifest.ts';
+import { pluginFetch } from '../lib/plugin-service.ts';
+import type { ScanEntry } from '../plugins/vuln-cisco/types.ts';
 
 const PLUGIN_ICONS: Record<string, typeof Puzzle> = {
   puzzle: Puzzle,
@@ -122,7 +124,32 @@ export function Sidebar({
   const vulnDevicesRaw = useForgeStore((s) => s.vulnDevices);
   const vulnScanCache = useForgeStore((s) => s.vulnScanCache);
   const deleteVulnDevice = useForgeStore((s) => s.deleteVulnDevice);
+  const setVulnScanCache = useForgeStore((s) => s.setVulnScanCache);
   // vulnDevices filtered per view — computed inline in the view loop below
+
+  // Populate scan cache for vuln devices that have scans but no cache entry.
+  // This ensures sidebar "Scans" nodes load without visiting the dashboard first.
+  useEffect(() => {
+    if (!vulnEnabled || !vulnPlugin?.endpoint || !vulnPlugin?.apiKey) return;
+
+    const devicesNeedingSync = vulnDevicesRaw.filter((d) => d.lastScanAt && !(vulnScanCache[d.id]?.length > 0));
+    if (devicesNeedingSync.length === 0) return;
+
+    for (const device of devicesNeedingSync) {
+      pluginFetch(vulnPlugin.endpoint, vulnPlugin.apiKey, `/results/${encodeURIComponent(device.ip)}`)
+        .then(async (resp) => {
+          if (!resp.ok) return;
+          const scans: ScanEntry[] = await resp.json();
+          setVulnScanCache(
+            device.id,
+            scans.sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
+          );
+        })
+        .catch(() => {
+          // Non-critical — sidebar just won't show scan nodes until dashboard is visited
+        });
+    }
+  }, [vulnEnabled, vulnPlugin?.endpoint, vulnPlugin?.apiKey, vulnDevicesRaw, vulnScanCache, setVulnScanCache]);
 
   // Auto-expand Configurations nodes for each view when plugin is enabled
   useEffect(() => {
@@ -350,10 +377,18 @@ export function Sidebar({
                       depth={2}
                       hasChildren={vendor.models.length > 0}
                       isSection
-                      onAdd={() => { openCreate('model', view.id, vendor.id); }}
-                      onEdit={() => { handleEdit('vendor', { viewId: view.id, vendorId: vendor.id }, vendor.name); }}
-                      onDelete={() => { handleDelete('vendor', { viewId: view.id, vendorId: vendor.id }); }}
-                      onSelect={() => { onSelectSection?.({ type: 'vendor', viewId: view.id, vendorId: vendor.id }); }}
+                      onAdd={() => {
+                        openCreate('model', view.id, vendor.id);
+                      }}
+                      onEdit={() => {
+                        handleEdit('vendor', { viewId: view.id, vendorId: vendor.id }, vendor.name);
+                      }}
+                      onDelete={() => {
+                        handleDelete('vendor', { viewId: view.id, vendorId: vendor.id });
+                      }}
+                      onSelect={() => {
+                        onSelectSection?.({ type: 'vendor', viewId: view.id, vendorId: vendor.id });
+                      }}
                     >
                       {vendor.models.map((model) => {
                         const generatedConfigs = getGeneratedConfigs(model.id);
@@ -423,7 +458,9 @@ export function Sidebar({
                                       isSelected={
                                         selectedVariantId === variant.id && selectedGeneratedConfigId === null
                                       }
-                                      onSelect={() => { handleSelectVariant(variant.id); }}
+                                      onSelect={() => {
+                                        handleSelectVariant(variant.id);
+                                      }}
                                       onEdit={() => {
                                         handleEdit(
                                           'variant',
@@ -480,34 +517,36 @@ export function Sidebar({
                                 }}
                               >
                                 <Sorted items={generatedConfigs}>
-                                {(sortedGc) => sortedGc.map((gc) => (
-                                  <TreeNode
-                                    key={gc.id}
-                                    id={gc.id}
-                                    label={`${truncateName(gc.name)} — ${formatShortDate(gc.createdAt)}`}
-                                    icon={<FileCheck size={14} />}
-                                    depth={5}
-                                    hasChildren={false}
-                                    isSelected={selectedGeneratedConfigId === gc.id}
-                                    onSelect={() => {
-                                      handleSelectGeneratedConfig(gc.id);
-                                    }}
-                                    onEdit={() => {
-                                      const newName = prompt('Rename generated config:', gc.name);
-                                      if (newName?.trim() && newName.trim() !== gc.name) {
-                                        renameGeneratedConfig(gc.id, newName.trim());
-                                      }
-                                    }}
-                                    onDelete={() => {
-                                      if (confirm(`Delete "${gc.name}"?`)) {
-                                        deleteGeneratedConfig(gc.id);
-                                        if (selectedGeneratedConfigId === gc.id) {
-                                          setSelectedGeneratedConfigId(null);
-                                        }
-                                      }
-                                    }}
-                                  />
-                                ))}
+                                  {(sortedGc) =>
+                                    sortedGc.map((gc) => (
+                                      <TreeNode
+                                        key={gc.id}
+                                        id={gc.id}
+                                        label={`${truncateName(gc.name)} — ${formatShortDate(gc.createdAt)}`}
+                                        icon={<FileCheck size={14} />}
+                                        depth={5}
+                                        hasChildren={false}
+                                        isSelected={selectedGeneratedConfigId === gc.id}
+                                        onSelect={() => {
+                                          handleSelectGeneratedConfig(gc.id);
+                                        }}
+                                        onEdit={() => {
+                                          const newName = prompt('Rename generated config:', gc.name);
+                                          if (newName?.trim() && newName.trim() !== gc.name) {
+                                            renameGeneratedConfig(gc.id, newName.trim());
+                                          }
+                                        }}
+                                        onDelete={() => {
+                                          if (confirm(`Delete "${gc.name}"?`)) {
+                                            deleteGeneratedConfig(gc.id);
+                                            if (selectedGeneratedConfigId === gc.id) {
+                                              setSelectedGeneratedConfigId(null);
+                                            }
+                                          }
+                                        }}
+                                      />
+                                    ))
+                                  }
                                 </Sorted>
                               </TreeNode>
                             )}
