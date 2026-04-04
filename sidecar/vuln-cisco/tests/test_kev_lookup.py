@@ -148,6 +148,48 @@ def test_load_kev_catalog_corrupt_cache(mock_get, tmp_path):
     mock_get.assert_called_once()
 
 
+@patch("scanner.kev_lookup.requests.get")
+def test_load_kev_catalog_naive_datetime_cache(mock_get, tmp_path):
+    """Cache with naive datetime (no timezone) raises TypeError — should be caught."""
+    cache_path = tmp_path / "kev_cache.json"
+    meta_path = tmp_path / "kev_cache_meta.json"
+    cache_path.write_text(json.dumps(EXPECTED_CATALOG))
+    # Write a naive datetime (no timezone info) — fromisoformat succeeds but
+    # subtracting from an aware datetime raises TypeError
+    meta_path.write_text(json.dumps({"fetched_at": "2026-01-01T00:00:00"}))
+
+    mock_resp = MagicMock()
+    mock_resp.json.return_value = SAMPLE_KEV_RESPONSE
+    mock_resp.raise_for_status = MagicMock()
+    mock_get.return_value = mock_resp
+
+    result = load_kev_catalog(cache_dir=str(tmp_path))
+
+    # Should recover via re-fetch, not crash
+    assert result == EXPECTED_CATALOG
+    mock_get.assert_called_once()
+
+
+@patch("scanner.kev_lookup.requests.get")
+def test_load_kev_catalog_write_cache_oserror(mock_get, tmp_path):
+    """OSError during cache write should not crash — catalog still returned."""
+    mock_resp = MagicMock()
+    mock_resp.json.return_value = SAMPLE_KEV_RESPONSE
+    mock_resp.raise_for_status = MagicMock()
+    mock_get.return_value = mock_resp
+
+    # Make cache dir read-only to trigger OSError on write
+    cache_dir = tmp_path / "readonly"
+    cache_dir.mkdir()
+    cache_dir.chmod(0o444)
+
+    result = load_kev_catalog(cache_dir=str(cache_dir))
+
+    assert result == EXPECTED_CATALOG
+    # Restore permissions for cleanup
+    cache_dir.chmod(0o755)
+
+
 def test_enrich_findings_with_kev_match():
     """Finding with a matching CVE gets kev=True and date fields."""
     findings = [

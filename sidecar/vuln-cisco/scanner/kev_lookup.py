@@ -37,7 +37,7 @@ def load_kev_catalog(cache_dir: str = "/data") -> dict[str, dict]:
             if datetime.now(timezone.utc) - fetched_at < CACHE_TTL:
                 cache_is_fresh = True
             cached_data = json.loads(cache_path.read_text())
-    except (json.JSONDecodeError, KeyError, ValueError):
+    except (json.JSONDecodeError, KeyError, ValueError, TypeError, OSError):
         logger.warning("Corrupt KEV cache detected, will delete and re-fetch")
         _delete_cache(cache_path, meta_path)
         cached_data = None
@@ -52,7 +52,10 @@ def load_kev_catalog(cache_dir: str = "/data") -> dict[str, dict]:
         resp.raise_for_status()
         data = resp.json()
         catalog = _parse_kev_response(data)
-        _write_cache(cache_path, meta_path, catalog)
+        try:
+            _write_cache(cache_path, meta_path, catalog)
+        except OSError:
+            logger.warning("Failed to write KEV cache — continuing with in-memory catalog")
         logger.info("Fetched fresh KEV catalog (%d entries)", len(catalog))
         return catalog
     except requests.RequestException as exc:

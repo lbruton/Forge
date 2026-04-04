@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { X, CheckCircle, HelpCircle, MinusCircle, ExternalLink, Shield, AlertTriangle } from 'lucide-react';
 import type { Finding } from './ScanReportViewer.ts';
 
@@ -15,6 +16,15 @@ const SEV_BADGE: Record<string, { bg: string; text: string }> = {
 };
 
 export default function FindingDetailModal({ finding, onClose }: FindingDetailModalProps) {
+  useEffect(() => {
+    if (!finding) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [finding, onClose]);
+
   if (!finding) return null;
 
   const sevColors = SEV_BADGE[finding.severity] ?? SEV_BADGE.INFO;

@@ -263,7 +263,7 @@ def _extract_model_family(model: str) -> str | None:
     Examples::
 
         WS-C3560CX-12PD-S  -> "3560-CX"
-        C9200L-24P-4G       -> "9200"
+        C9200L-24P-4G       -> "9200-L"
         IE-3300-8T2S        -> "3300"
         ASA5525-K9          -> "ASA 5525"
         ISR4331/K9          -> "ISR 4331"
@@ -293,9 +293,13 @@ def _extract_model_family(model: str) -> str | None:
         return f"ISR {m.group(1)}"
 
     # C prefix (Catalyst without WS-, e.g. C9200L-24P-4G, C9200CX-12P)
-    m = re.match(r"C(\d+[A-Za-z]*)", model)
+    m = re.match(r"C(\d+)([A-Za-z]+)?", model)
     if m:
-        return m.group(1).upper()
+        digits = m.group(1)
+        letters = m.group(2) or ""
+        if letters:
+            return f"{digits}-{letters.upper()}"
+        return digits
 
     return None
 
@@ -353,11 +357,12 @@ def _normalize_cisco_advisory(adv: dict[str, Any]) -> dict[str, Any]:
     except (ValueError, TypeError):
         cvss = 0.0
 
+    cve_ids = sorted(adv.get("cves", []))
     return {
         "source": "cisco_openvuln",
         "advisory_id": adv.get("advisoryId", ""),
         "title": adv.get("advisoryTitle", ""),
-        "cve_ids": adv.get("cves", []),
+        "cve_ids": cve_ids,
         "severity": adv.get("sir", "").upper(),
         "cvss_base": cvss,
         "cwe": adv.get("cwe", []),
@@ -388,6 +393,14 @@ def _nvd_url(cve_ids: list[str]) -> str:
     if cve_ids:
         return f"https://nvd.nist.gov/vuln/detail/{cve_ids[0]}"
     return ""
+
+
+def _safe_float(val: Any) -> float:
+    """Convert a value to float, returning 0.0 on any failure."""
+    try:
+        return float(val or 0)
+    except (ValueError, TypeError):
+        return 0.0
 
 
 def _run_nuclei(target: str) -> list[dict[str, Any]]:
@@ -441,6 +454,7 @@ def _run_nuclei(target: str) -> list[dict[str, Any]]:
             cve_ids = classification.get("cve-id", []) or []
             if isinstance(cve_ids, str):
                 cve_ids = [cve_ids] if cve_ids else []
+            cve_ids.sort()
 
             cvss_raw = classification.get("cvss-score", 0)
             try:
@@ -465,8 +479,8 @@ def _run_nuclei(target: str) -> list[dict[str, Any]]:
                 "remediation": info.get("remediation", ""),
                 "impact": info.get("impact", ""),
                 "references": info.get("reference", []) or [],
-                "epss_score": float(classification.get("epss-score", 0) or 0),
-                "epss_percentile": float(classification.get("epss-percentile", 0) or 0),
+                "epss_score": _safe_float(classification.get("epss-score", 0)),
+                "epss_percentile": _safe_float(classification.get("epss-percentile", 0)),
                 "cpe": classification.get("cpe", ""),
                 "kev": False,
                 "kev_date_added": "",
@@ -481,6 +495,9 @@ def _run_nuclei(target: str) -> list[dict[str, Any]]:
 
 
 # ─── Deduplication ────────────────────────────────────────────────────────
+
+_ENRICHMENT_SCALARS = ("description", "remediation", "impact", "epss_score", "epss_percentile", "cpe")
+_ENRICHMENT_LISTS = ("references", "cwe")
 
 
 def _deduplicate(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -500,7 +517,8 @@ def _deduplicate(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
         else:
             # Merge: cross-enrich between sources
             existing = next(
-                (d for d in deduped if tuple(d["cve_ids"]) == tuple(f["cve_ids"])),
+                (d for d in deduped
+                 if (tuple(d["cve_ids"]) if d["cve_ids"] else (d["advisory_id"],)) == key),
                 None,
             )
             if existing:
@@ -512,16 +530,18 @@ def _deduplicate(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     existing["first_fixed"] = f["first_fixed"]
                     existing["advisory_id"] = f["advisory_id"]
                 # Merge Nuclei enrichment into surviving record
-                _ENRICHMENT_FIELDS = (
-                    "description", "remediation", "impact", "references",
-                    "epss_score", "epss_percentile", "cpe",
-                )
-                for field in _ENRICHMENT_FIELDS:
+                for field in _ENRICHMENT_SCALARS:
                     src_val = f.get(field)
                     dst_val = existing.get(field)
                     # Prefer non-empty value from either source
                     if src_val and not dst_val:
                         existing[field] = src_val
+                for field in _ENRICHMENT_LISTS:
+                    src_val = f.get(field, [])
+                    dst_val = existing.get(field, [])
+                    if src_val:
+                        combined = list(dict.fromkeys(dst_val + src_val))
+                        existing[field] = combined
 
     return deduped
 

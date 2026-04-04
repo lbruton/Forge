@@ -17,11 +17,11 @@ class TestExtractModelFamily:
         assert _extract_model_family("WS-C3560CX-12PD-S") == "3560-CX"
 
     def test_c_prefix_catalyst(self):
-        assert _extract_model_family("C9200L-24P-4G") == "9200L"
+        assert _extract_model_family("C9200L-24P-4G") == "9200-L"
 
     def test_c_prefix_subfamily_distinction(self):
         """C9200CX and C9200L must extract differently to avoid cross-matching."""
-        assert _extract_model_family("C9200CX-12P-2X2G") == "9200CX"
+        assert _extract_model_family("C9200CX-12P-2X2G") == "9200-CX"
         assert _extract_model_family("C9200L-24P-4G") != _extract_model_family("C9200CX-12P-2X2G")
 
     def test_ie_prefix(self):
@@ -117,7 +117,7 @@ class TestFilterByProduct:
     def test_mixed_advisories(self):
         """Mix of matching, non-matching, and no-data advisories."""
         advs = [
-            _make_advisory("sa-match", ["Cisco Catalyst 9200L Series Switches"]),
+            _make_advisory("sa-match", ["Cisco Catalyst 9200-L Series Switches"]),
             _make_advisory("sa-miss", ["Cisco ASA 5500 Series"]),
             _make_advisory("sa-empty", []),
         ]

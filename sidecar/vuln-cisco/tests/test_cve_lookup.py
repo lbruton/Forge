@@ -449,3 +449,92 @@ def test_deduplicate_merges_nuclei_enrichment():
     assert merged["epss_score"] == 0.75
     assert merged["epss_percentile"] == 0.95
     assert merged["cpe"] == "cpe:2.3:o:cisco:ios:15.2:*"
+    # List fields should be combined and deduplicated
+    assert merged["references"] == [
+        "https://sec.cloudapps.cisco.com/advisory/cisco-sa-test",
+        "https://nvd.nist.gov/vuln/detail/CVE-2023-99999",
+        "https://example.com/advisory",
+    ]
+    assert merged["cwe"] == ["CWE-787"]
+
+
+def test_deduplicate_no_cve_collision():
+    """Two different no-CVE findings must NOT merge — each has a unique advisory_id key."""
+    finding_a = {
+        "source": "nuclei",
+        "advisory_id": "nuclei-detect-alpha",
+        "cve_ids": [],
+        "severity": "MEDIUM",
+        "cvss_base": 5.0,
+        "title": "Alpha Detection",
+        "summary": "Alpha",
+        "first_fixed": [],
+        "description": "Alpha detection",
+        "remediation": "",
+        "impact": "",
+        "references": [],
+        "epss_score": 0.0,
+        "epss_percentile": 0.0,
+        "cpe": "",
+        "cwe": [],
+        "first_published": "",
+        "url": "",
+        "bug_ids": [],
+        "kev": False,
+        "kev_date_added": "",
+        "kev_due_date": "",
+        "product_match": "no_data",
+    }
+    finding_b = {
+        "source": "nuclei",
+        "advisory_id": "nuclei-detect-beta",
+        "cve_ids": [],
+        "severity": "LOW",
+        "cvss_base": 3.0,
+        "title": "Beta Detection",
+        "summary": "Beta",
+        "first_fixed": [],
+        "description": "Beta detection",
+        "remediation": "",
+        "impact": "",
+        "references": [],
+        "epss_score": 0.0,
+        "epss_percentile": 0.0,
+        "cpe": "",
+        "cwe": [],
+        "first_published": "",
+        "url": "",
+        "bug_ids": [],
+        "kev": False,
+        "kev_date_added": "",
+        "kev_due_date": "",
+        "product_match": "no_data",
+    }
+    result = _deduplicate([finding_a, finding_b])
+    assert len(result) == 2
+    ids = [f["advisory_id"] for f in result]
+    assert "nuclei-detect-alpha" in ids
+    assert "nuclei-detect-beta" in ids
+
+
+@patch("shutil.which", return_value="/usr/bin/nuclei")
+@patch("subprocess.run")
+def test_run_nuclei_epss_malformed_string(mock_run, mock_which):
+    """Malformed EPSS string values should default to 0.0, not raise ValueError."""
+    line = json.dumps({
+        "template-id": "epss-bad",
+        "matched-at": "https://10.0.0.1",
+        "info": {
+            "severity": "medium",
+            "classification": {
+                "epss-score": "not-a-number",
+                "epss-percentile": "also-bad",
+            },
+        },
+    })
+    mock_run.return_value = MagicMock(stdout=line, stderr="", returncode=0)
+
+    findings = _run_nuclei("10.0.0.1")
+    assert len(findings) == 1
+    assert findings[0]["epss_score"] == 0.0
+    assert findings[0]["epss_percentile"] == 0.0

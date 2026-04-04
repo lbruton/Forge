@@ -392,7 +392,7 @@ function FindingRow({ finding, onSelect }: { finding: Finding; onSelect: (f: Fin
   const sourceStyle = SOURCE_STYLES[finding.source] ?? 'bg-slate-700 text-slate-300';
 
   // Advisory link logic based on source
-  const advisoryLink = (() => {
+  let advisoryLink = (() => {
     if (finding.source === 'cisco_openvuln' && finding.advisory_id) {
       return `https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/${finding.advisory_id}`;
     }
@@ -402,10 +402,23 @@ function FindingRow({ finding, onSelect }: { finding: Finding; onSelect: (f: Fin
     return null;
   })();
 
+  // Fallback: use finding.url for Nuclei findings with no CVE IDs
+  if (!advisoryLink && finding.url) {
+    advisoryLink = finding.url;
+  }
+
   return (
     <tr
       className="border-t border-forge-graphite/50 cursor-pointer hover:bg-white/[0.03] transition-colors"
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(finding)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect(finding);
+        }
+      }}
     >
       {/* Severity badge + KEV */}
       <td className="px-4 py-2.5">
