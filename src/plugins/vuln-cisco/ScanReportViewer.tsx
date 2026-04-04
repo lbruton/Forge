@@ -1,13 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import {
-  ArrowLeft,
-  AlertTriangle,
-  ExternalLink,
-  Trash2,
-  ShieldAlert,
-} from 'lucide-react';
+import { ArrowLeft, AlertTriangle, ExternalLink, Trash2, ShieldAlert } from 'lucide-react';
 import { useForgeStore } from '../../store/index.ts';
 import { pluginFetch } from '../../lib/plugin-service.ts';
+import FindingDetailModal from './FindingDetailModal.tsx';
 
 interface ScanReportViewerProps {
   pluginName: string;
@@ -17,7 +12,7 @@ interface ScanReportViewerProps {
   onDeleted?: () => void;
 }
 
-interface Finding {
+export interface Finding {
   source: string;
   advisory_id: string;
   title: string;
@@ -30,6 +25,18 @@ interface Finding {
   first_published: string;
   url: string;
   bug_ids: string[];
+  // Enrichment fields (from sidecar Tasks 1-4)
+  description: string;
+  remediation: string;
+  impact: string;
+  references: string[];
+  epss_score: number;
+  epss_percentile: number;
+  cpe: string;
+  kev: boolean;
+  kev_date_added: string;
+  kev_due_date: string;
+  product_match: string; // "verified" | "unverified" | "no_data"
 }
 
 interface ScanReport {
@@ -58,16 +65,10 @@ interface ScanReport {
   notes: string[];
 }
 
-type ReportState =
-  | { kind: 'loading' }
-  | { kind: 'error'; message: string }
-  | { kind: 'loaded'; report: ScanReport };
+type ReportState = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'loaded'; report: ScanReport };
 
 function fixTimestamp(ts: string): string {
-  return ts.replace(
-    /T(\d{2})-(\d{2})-(\d{2})(.*?)([+-]\d{2})-(\d{2})$/,
-    'T$1:$2:$3$4$5:$6',
-  );
+  return ts.replace(/T(\d{2})-(\d{2})-(\d{2})(.*?)([+-]\d{2})-(\d{2})$/, 'T$1:$2:$3$4$5:$6');
 }
 
 function formatDate(iso: string): string {
@@ -100,15 +101,10 @@ const SOURCE_STYLES: Record<string, string> = {
   nvd: 'bg-blue-900/50 text-blue-400',
 };
 
-export default function ScanReportViewer({
-  pluginName,
-  device,
-  timestamp,
-  onBack,
-  onDeleted,
-}: ScanReportViewerProps) {
+export default function ScanReportViewer({ pluginName, device, timestamp, onBack, onDeleted }: ScanReportViewerProps) {
   const [state, setState] = useState<ReportState>({ kind: 'loading' });
   const [deleting, setDeleting] = useState(false);
+  const [selectedFinding, setSelectedFinding] = useState<Finding | null>(null);
   const getPlugin = useForgeStore((s) => s.getPlugin);
 
   const fetchReport = useCallback(async () => {
@@ -223,7 +219,9 @@ export default function ScanReportViewer({
       )}
 
       {/* Report content */}
-      {state.kind === 'loaded' && <ReportContent report={state.report} />}
+      {state.kind === 'loaded' && <ReportContent report={state.report} onSelectFinding={setSelectedFinding} />}
+
+      <FindingDetailModal finding={selectedFinding} onClose={() => setSelectedFinding(null)} />
     </div>
   );
 }
@@ -232,7 +230,7 @@ export default function ScanReportViewer({
 // Report Content — native React rendering
 // ========================
 
-function ReportContent({ report }: { report: ScanReport }) {
+function ReportContent({ report, onSelectFinding }: { report: ScanReport; onSelectFinding: (f: Finding) => void }) {
   const { device_info, severity_summary, findings, notes } = report;
   const total = findings.length;
   const sev = severity_summary;
@@ -254,9 +252,7 @@ function ReportContent({ report }: { report: ScanReport }) {
             <ShieldAlert size={20} className="text-forge-amber" />
             Vulnerability Scan Report
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Forge Cisco Vulnerability Scanner
-          </p>
+          <p className="text-xs text-slate-500 mt-0.5">Forge Cisco Vulnerability Scanner</p>
         </div>
         <div className="text-xs text-slate-500 sm:text-right">
           <div>{formatDate(report.scan_date)}</div>
@@ -318,7 +314,9 @@ function ReportContent({ report }: { report: ScanReport }) {
           <h3 className="text-xs font-semibold text-sky-400 mb-2">Notes</h3>
           <ul className="list-disc pl-5 space-y-0.5">
             {notes.map((note, i) => (
-              <li key={i} className="text-xs text-slate-400">{note}</li>
+              <li key={i} className="text-xs text-slate-400">
+                {note}
+              </li>
             ))}
           </ul>
         </div>
@@ -329,14 +327,30 @@ function ReportContent({ report }: { report: ScanReport }) {
         <table className="w-full border-collapse text-[13px] min-w-[900px]">
           <thead>
             <tr className="bg-forge-graphite/50">
-              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">Severity</th>
-              <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">CVSS</th>
-              <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">CVE</th>
-              <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">Advisory</th>
-              <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">Description</th>
-              <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">Fix Version</th>
-              <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">Bug IDs</th>
-              <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">Source</th>
+              <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Severity
+              </th>
+              <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                CVSS
+              </th>
+              <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                CVE
+              </th>
+              <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Advisory
+              </th>
+              <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Description
+              </th>
+              <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Fix Version
+              </th>
+              <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Bug IDs
+              </th>
+              <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Source
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -347,7 +361,9 @@ function ReportContent({ report }: { report: ScanReport }) {
                 </td>
               </tr>
             ) : (
-              findings.map((f, i) => <FindingRow key={`${f.advisory_id}-${i}`} finding={f} />)
+              findings.map((f, i) => (
+                <FindingRow key={`${f.advisory_id}-${i}`} finding={f} onSelect={onSelectFinding} />
+              ))
             )}
           </tbody>
         </table>
@@ -370,24 +386,42 @@ function StatCard({ label, count, colorClass }: { label: string; count: number; 
   );
 }
 
-function FindingRow({ finding }: { finding: Finding }) {
+function FindingRow({ finding, onSelect }: { finding: Finding; onSelect: (f: Finding) => void }) {
   const sev = finding.severity;
   const colors = SEV_COLORS[sev] ?? SEV_COLORS.INFO;
   const sourceStyle = SOURCE_STYLES[finding.source] ?? 'bg-slate-700 text-slate-300';
 
+  // Advisory link logic based on source
+  const advisoryLink = (() => {
+    if (finding.source === 'cisco_openvuln' && finding.advisory_id) {
+      return `https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/${finding.advisory_id}`;
+    }
+    if (finding.source === 'nuclei' && finding.cve_ids.length > 0) {
+      return `https://nvd.nist.gov/vuln/detail/${finding.cve_ids[0]}`;
+    }
+    return null;
+  })();
+
   return (
-    <tr className="border-t border-forge-graphite/50 hover:bg-white/[0.02] transition-colors">
-      {/* Severity badge */}
+    <tr
+      className="border-t border-forge-graphite/50 cursor-pointer hover:bg-white/[0.03] transition-colors"
+      onClick={() => onSelect(finding)}
+    >
+      {/* Severity badge + KEV */}
       <td className="px-4 py-2.5">
-        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold text-white ${colors.bg}`}>
-          {sev}
-        </span>
+        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold text-white ${colors.bg}`}>{sev}</span>
+        {finding.kev && (
+          <span
+            className="ml-1.5 px-1.5 py-0.5 bg-red-500/15 text-red-400 text-[10px] font-bold rounded"
+            title={`KEV: Added ${finding.kev_date_added} | Due ${finding.kev_due_date}`}
+          >
+            KEV
+          </span>
+        )}
       </td>
 
       {/* CVSS */}
-      <td className="px-3 py-2.5 font-mono font-bold text-sm text-slate-200">
-        {finding.cvss_base.toFixed(1)}
-      </td>
+      <td className="px-3 py-2.5 font-mono font-bold text-sm text-slate-200">{finding.cvss_base.toFixed(1)}</td>
 
       {/* CVE links */}
       <td className="px-3 py-2.5">
@@ -399,6 +433,7 @@ function FindingRow({ finding }: { finding: Finding }) {
                 href={`https://nvd.nist.gov/vuln/detail/${cve}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
                 className="text-sky-400 hover:underline text-xs font-mono inline-flex items-center gap-1"
               >
                 {cve}
@@ -413,35 +448,46 @@ function FindingRow({ finding }: { finding: Finding }) {
 
       {/* Advisory link */}
       <td className="px-3 py-2.5">
-        {finding.advisory_id && finding.url ? (
+        {finding.advisory_id && advisoryLink ? (
           <a
-            href={finding.url}
+            href={advisoryLink}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
             className="text-sky-400 hover:underline text-xs inline-flex items-center gap-1"
           >
             {finding.advisory_id}
             <ExternalLink size={10} />
           </a>
+        ) : finding.advisory_id ? (
+          <span
+            className="text-sky-400 hover:underline text-xs cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(finding);
+            }}
+          >
+            {finding.advisory_id}
+          </span>
         ) : (
-          <span className="text-xs text-slate-500">{finding.advisory_id || '—'}</span>
+          <span className="text-xs text-slate-500">—</span>
         )}
       </td>
 
       {/* Description */}
-      <td className="px-3 py-2.5 text-xs text-slate-300 max-w-[300px]">
-        {finding.title}
-      </td>
+      <td className="px-3 py-2.5 text-xs text-slate-300 max-w-[300px]">{finding.title}</td>
 
       {/* Fix version */}
-      <td className="px-3 py-2.5 text-xs text-slate-400 font-mono">
-        {finding.first_fixed.join(', ') || '—'}
+      <td className="px-3 py-2.5 text-xs font-mono">
+        {finding.first_fixed.some((f) => f.includes('No fix available')) ? (
+          <span className="text-amber-400 text-xs font-medium">No fix available</span>
+        ) : (
+          <span className="text-slate-400">{finding.first_fixed.join(', ') || '—'}</span>
+        )}
       </td>
 
       {/* Bug IDs */}
-      <td className="px-3 py-2.5 text-xs text-slate-400 font-mono">
-        {finding.bug_ids.join(', ') || '—'}
-      </td>
+      <td className="px-3 py-2.5 text-xs text-slate-400 font-mono">{finding.bug_ids.join(', ') || '—'}</td>
 
       {/* Source badge */}
       <td className="px-3 py-2.5">
