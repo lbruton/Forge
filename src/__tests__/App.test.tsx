@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { describe, test, expect, vi, beforeAll } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 
 // Stub out globals that App.tsx depends on
@@ -112,7 +112,9 @@ vi.mock('../components/SectionCardView.tsx', () => ({
 // ── Suite: Portfolio link in header ─────────────────────────────
 
 describe('Portfolio link in header', () => {
-  beforeAll(async () => {
+  afterEach(() => cleanup());
+
+  beforeEach(async () => {
     const { default: App } = await import('../App.tsx');
     render(<App />);
   });

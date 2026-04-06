@@ -484,7 +484,7 @@ function App() {
             Network Workshop
           </span>
           <span className="hidden sm:inline text-[9px] font-mono text-slate-600 mt-0.5">v{__APP_VERSION__}</span>
-          <span className="hidden sm:inline text-[9px] text-slate-700 mt-0.5">·</span>
+          <span className="hidden sm:inline text-[9px] text-slate-700 mt-0.5" aria-hidden="true">·</span>
           <a href="https://www.lbruton.cc" target="_blank" rel="noopener noreferrer" className="hidden sm:inline text-[9px] font-mono text-slate-600 hover:text-slate-400 transition-colors mt-0.5">lbruton.cc</a>
         </div>
 
