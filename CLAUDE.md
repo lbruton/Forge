@@ -47,9 +47,9 @@ The `dompurify` type error is pre-existing — ignore it.
 
 ## Testing Notes
 
-- RTL with happy-dom does NOT auto-cleanup between tests — always use `afterEach(cleanup)` with `beforeEach` renders
+- RTL auto-cleanup requires Vitest globals — this project has globals disabled, so always use explicit `afterEach(cleanup)` with `beforeEach` renders
 - Test dependencies: `@testing-library/react`, `@testing-library/jest-dom`, `happy-dom` (no jsdom needed)
-- Use `// @vitest-environment happy-dom` directive at top of test files
+- Use `// @vitest-environment happy-dom` directive at top of component test files that render React (not needed for pure logic tests)
 
 ## Versioning
 
