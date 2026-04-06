@@ -12,14 +12,14 @@ This file provides core guidance to Claude Code when working with code in this r
 
 ## At a Glance
 
-| Field | Value |
-|-------|-------|
-| Repo | [lbruton/Forge](https://github.com/lbruton/Forge) |
-| Branches | `main` (default) |
-| Path | `/Volumes/DATA/GitHub/Forge/` |
-| Issue Prefix | `FORGE` |
-| DocVault | `Projects/Forge/` |
-| Version Lock | `devops/version.lock` |
+| Field        | Value                                             |
+| ------------ | ------------------------------------------------- |
+| Repo         | [lbruton/Forge](https://github.com/lbruton/Forge) |
+| Branches     | `main` (default)                                  |
+| Path         | `/Volumes/DATA/GitHub/Forge/`                     |
+| Issue Prefix | `FORGE`                                           |
+| DocVault     | `Projects/Forge/`                                 |
+| Version Lock | `devops/version.lock`                             |
 
 ## Technical Baseline
 
@@ -32,7 +32,7 @@ This file provides core guidance to Claude Code when working with code in this r
 ```bash
 npm run dev       # Vite dev server
 npm run build     # tsc -b && vite build
-npm run test      # vitest run (16 test suites)
+npm run test      # vitest run (18 test suites)
 npm run lint      # eslint
 ```
 
@@ -45,11 +45,18 @@ npx tsc --noEmit -p tsconfig.app.json
 
 The `dompurify` type error is pre-existing — ignore it.
 
+## Testing Notes
+
+- RTL with happy-dom does NOT auto-cleanup between tests — always use `afterEach(cleanup)` with `beforeEach` renders
+- Test dependencies: `@testing-library/react`, `@testing-library/jest-dom`, `happy-dom` (no jsdom needed)
+- Use `// @vitest-environment happy-dom` directive at top of test files
+
 ## Versioning
 
 Forge uses a simplified version lock workflow (no `dev` branch, no GitHub Releases yet).
 
 **Version files** (bumped by `/release patch`):
+
 1. `package.json` — Vite reads this at build time → `__APP_VERSION__` in header
 2. `devops/version.lock` — claim system for concurrent agent coordination
 3. `CHANGELOG.md` — new version heading + entries
@@ -92,7 +99,7 @@ src/
 │       ├── PsirtCredentials.tsx # Cisco API credential entry
 │       ├── ScanReportViewer.tsx # Vulnerability scan report display
 │       └── VulnDashboard.tsx  # Main vulnerability scanner dashboard
-└── __tests__/                 # 16 Vitest test suites
+└── __tests__/                 # 18 Vitest test suites
 ```
 
 ## Plugin System
