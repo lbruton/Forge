@@ -1,1 +1,2 @@
+npx gitleaks protect --verbose --staged
 npx lint-staged
