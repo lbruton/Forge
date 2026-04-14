@@ -130,6 +130,11 @@ All visual design decisions are documented in `/Users/lbruton/Devops/Forge/BRAND
 - **Variable**: A `$name` or `${name}` placeholder in template text, auto-detected from source config
 - **stvault**: Encrypted export format for sharing/backing up device models and templates
 
+## Hooks
+
+- **gitleaks**: Pre-commit hook scans for accidental secret commits. Runs via `pre-commit` framework. Installed 2026-04-14 (OPS-116).
+- **lint-staged**: Runs `npx lint-staged` on commit. Preserved from husky in `.pre-commit-config.yaml`.
+
 ## Variable Pattern
 
 Uses DNAC-compatible syntax so team muscle memory transfers:
