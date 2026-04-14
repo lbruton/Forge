@@ -1,0 +1,50 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Skill(*)",
+      "mcp__*",
+      "WebFetch",
+      "WebSearch",
+      "Read(//Volumes/DATA/GitHub/**)",
+      "Write(//Volumes/DATA/GitHub/**)",
+      "Edit(//Volumes/DATA/GitHub/**)",
+      "Read(//Users/lbruton/.claude/**)",
+      "Write(//Users/lbruton/.claude/**)",
+      "Edit(//Users/lbruton/.claude/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import sys,json; d=json.load(sys.stdin); f=d.get('tool_input',{}).get('file_path',''); blocked=any(x in f for x in ['.env','credential-store','secrets.json']); print(f'[block] Refusing edit to sensitive file: {f}') if blocked else None; sys.exit(2 if blocked else 0)\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Volumes/DATA/GitHub/Forge/.claude/hooks/post-edit-lint.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Volumes/DATA/GitHub/Forge/.claude/hooks/post-edit-lint.py"
+          }
+        ]
+      }
+    ]
+  }
+}

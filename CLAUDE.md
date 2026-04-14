@@ -12,14 +12,14 @@ This file provides core guidance to Claude Code when working with code in this r
 
 ## At a Glance
 
-| Field | Value |
-|-------|-------|
-| Repo | [lbruton/Forge](https://github.com/lbruton/Forge) |
-| Branches | `main` (default) |
-| Path | `/Volumes/DATA/GitHub/Forge/` |
-| Issue Prefix | `FORGE` |
-| DocVault | `Projects/Forge/` |
-| Version Lock | `devops/version.lock` |
+| Field        | Value                                             |
+| ------------ | ------------------------------------------------- |
+| Repo         | [lbruton/Forge](https://github.com/lbruton/Forge) |
+| Branches     | `main` (default)                                  |
+| Path         | `/Volumes/DATA/GitHub/Forge/`                     |
+| Issue Prefix | `FORGE`                                           |
+| DocVault     | `Projects/Forge/`                                 |
+| Version Lock | `devops/version.lock`                             |
 
 ## Technical Baseline
 
@@ -50,6 +50,7 @@ The `dompurify` type error is pre-existing — ignore it.
 Forge uses a simplified version lock workflow (no `dev` branch, no GitHub Releases yet).
 
 **Version files** (bumped by `/release patch`):
+
 1. `package.json` — Vite reads this at build time → `__APP_VERSION__` in header
 2. `devops/version.lock` — claim system for concurrent agent coordination
 3. `CHANGELOG.md` — new version heading + entries
@@ -132,8 +133,8 @@ All visual design decisions are documented in `/Users/lbruton/Devops/Forge/BRAND
 
 ## Hooks
 
-- **gitleaks**: Pre-commit hook scans for accidental secret commits. Runs via `pre-commit` framework. Installed 2026-04-14 (OPS-116).
-- **lint-staged**: Runs `npx lint-staged` on commit. Preserved from husky in `.pre-commit-config.yaml`.
+- **gitleaks**: Pre-commit hook scans for accidental secret commits. Runs via husky in `.husky/pre-commit`. Installed 2026-04-14 (OPS-116).
+- **lint-staged**: Runs `npx lint-staged` on commit. Configured in `.husky/pre-commit`.
 
 ## Variable Pattern
 
