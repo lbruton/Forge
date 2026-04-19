@@ -80,11 +80,7 @@ reviews:
       instructions: |
         - Check for SQL injection risks in dynamic queries.
         - Verify migrations are reversible where possible.
-    - path: "tests/**"
-      instructions: |
-        - Verify meaningful assertions (not just "it runs without error").
-        - Check for proper cleanup/teardown.
-    - path: "**/__tests__/**"
+    - path: "**/{tests,__tests__}/**"
       instructions: |
         - Verify meaningful assertions (not just "it runs without error").
         - Check for proper cleanup/teardown.
@@ -93,8 +89,6 @@ reviews:
   finishing_touches:
     docstrings:
       enabled: false
-    autofix:
-      enabled: true
 
   # Static analysis tools
   tools:
@@ -114,7 +108,7 @@ reviews:
 # Knowledge base — learn from feedback over time
 knowledge_base:
   learnings:
-    enabled: true
+    scope: auto
 
 # Chat — allow @coderabbitai interactions in PR comments
 chat:
