@@ -4,6 +4,25 @@ This file provides core guidance to Claude Code when working with code in this r
 
 > See `~/.claude/CLAUDE.md` for global workflow rules (push safety, version checkout gate, PR lifecycle, MCP tools, code search tiers, plugins).
 
+## Documentation
+
+**Tier 1 — Foundation docs** (start here). Canonical pages at `DocVault/Projects/Forge/Foundation/`:
+
+| File | When to read |
+|------|--------------|
+| `architecture.md` | Stack, core+sidecar model, plugin types, directory layout, data tree |
+| `coding-standards.md` | Build/test commands, tsc gotcha, versioning, hooks, workflow gates |
+| `design-philosophy.md` | UI identity, color/typography tokens, `INPUT_CLASSES`, anti-patterns — **MUST read before any UI code** |
+| `infrastructure.md` | Hosting, Portainer deploy, sidecar contract + env vars, storage model |
+| `reusable-patterns.md` | `PluginManifest`, `SecretsProvider`, credential resolution, sidecar UI checklist |
+| `integrations.md` | Infisical (plugin + MCP), Cisco Vuln Scanner, planned NPM/IPAM |
+
+**Tier 2 — Deep dives.** Topic docs at `DocVault/Projects/Forge/` (security reviews, issues, specs).
+
+**Tier 3 — Source code.** When a doc disagrees with code, **code wins**. File a drift fix.
+
+Run `/vault-drift Forge` periodically to audit Foundation claims vs source.
+
 ## Project Overview
 
 **Forge** is a network configuration template generator for teams replacing Cisco DNAC CLI template workflows. It provides device model management, sectioned template editing with DNAC-compatible `$variable` / `${variable}` syntax, multi-format output (Cisco CLI, XML, JSON, YAML), and encrypted `.stvault` export/import for safe public hosting.
@@ -82,7 +101,7 @@ src/
 │   ├── plugin-service.ts      # Plugin lifecycle management
 │   ├── syntax-highlighter.ts  # Config syntax coloring
 │   └── validators.ts          # Shared validators (IPv4, secretKeyToVarName)
-├── components/                # 23 React components (see sidebar, editor, modals)
+├── components/                # React components (see `ls src/components/`)
 ├── plugins/
 │   ├── init.ts                # Plugin bootstrap
 │   ├── configurations.ts      # Bundled plugin — config template management
@@ -123,7 +142,7 @@ Sync convention: variables synced to Infisical get a `FORGE_` prefix on the secr
 
 ## Branding
 
-All visual design decisions are documented in `/Users/lbruton/Devops/Forge/BRANDING.md`. Key points:
+All visual design decisions are documented in the `design-philosophy.md` Foundation doc (Tier-1). Key points:
 
 - Dark mode only (slate backgrounds, amber accent)
 - Inter for UI text, JetBrains Mono for config/code content
