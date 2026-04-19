@@ -101,7 +101,7 @@ src/
 │   ├── plugin-service.ts      # Plugin lifecycle management
 │   ├── syntax-highlighter.ts  # Config syntax coloring
 │   └── validators.ts          # Shared validators (IPv4, secretKeyToVarName)
-├── components/                # 23 React components (see sidebar, editor, modals)
+├── components/                # React components (see `ls src/components/`)
 ├── plugins/
 │   ├── init.ts                # Plugin bootstrap
 │   ├── configurations.ts      # Bundled plugin — config template management
