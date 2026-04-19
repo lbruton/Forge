@@ -142,7 +142,7 @@ Sync convention: variables synced to Infisical get a `FORGE_` prefix on the secr
 
 ## Branding
 
-All visual design decisions are documented in `/Users/lbruton/Devops/Forge/BRANDING.md`. Key points:
+All visual design decisions are documented in the `design-philosophy.md` Foundation doc (Tier-1). Key points:
 
 - Dark mode only (slate backgrounds, amber accent)
 - Inter for UI text, JetBrains Mono for config/code content
