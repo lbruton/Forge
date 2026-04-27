@@ -1,0 +1,8 @@
+{
+  "project": "Forge",
+  "docvault": "../DocVault",
+  "issue_prefix": "FRGE",
+  "issue_backend": "plane",
+  "plane_workspace": "lbruton",
+  "plane_project_id": "2cbdf16f-54a5-481e-ac5a-39043477995f"
+}
